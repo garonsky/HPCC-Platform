@@ -57,6 +57,8 @@
 #include "jregexp.hpp"
 #include "portlist.h"
 
+#include <sys/inotify.h>
+#include <unistd.h>
 
 // #define REMOTE_DISCONNECT_ON_DESTRUCTOR  // enable to disconnect on IFile destructor
                                             // this should not be enabled in WindowRemoteDirectory used
@@ -3732,7 +3734,82 @@ public:
     }
 };
 
+#ifdef __linux__
 
+bool doINotify(const char *mask, bool sub, bool includedirs, unsigned timeout, IFile *ifile)
+{
+
+  static int fd = 0;
+  int wd = 0;
+  int ret = 0;
+  
+  StringBuffer strfile;
+
+  if (fd == 0)
+  {
+    fd = inotify_init();
+  }
+
+  if ( fd < 0 )
+  {
+    return false;
+  }
+
+  strfile.clear();
+  strfile.appendf("%s%s",ifile->queryFilename(),mask);
+  wd = inotify_add_watch(fd, strfile.toCharArray(),IN_ALL_EVENTS | IN_ONESHOT);
+  struct timeval time;
+  fd_set rfds;
+  int ret;
+
+  FD_ZERO(&rfds);
+
+  FD_SET(fd,&rfds);
+  
+  time.tv_sec = timeout/1000;
+  time.tv_usec = 0;
+
+  
+  ret = select(fd+1,&rfds,NULL,NULL,&time);
+
+  #define BUF_LEN        (1024 * (EVENT_SIZE + 16))
+  #define EVENT_SIZE  (sizeof (struct inotify_event))
+  char buf[(1024 * (EVENT_SIZE + 16))];
+  int i=0;
+  if (ret > 0 && FD_ISSET (fd, &rfds))
+  {
+    int len = read (fd, buf, BUF_LEN);
+    
+
+    while (i < len) {
+        struct inotify_event *event;
+
+        event = (struct inotify_event *) &buf[i];
+
+/*        printf ("wd=%d mask=%u cookie=%u len=%u\n",
+                event->wd, event->mask,
+                event->cookie, event->len);*/
+
+        if (event->len)
+                printf ("name=%s\n", event->name);
+
+        i += EVENT_SIZE + event->len;
+}
+
+
+  }
+
+//  inotify_rm_watch(fd,wd);
+
+  if(ret == 0)
+  {
+    return false;
+  }
+
+  return true;
+}
+
+#endif // __linux__
 
 IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,            // in
                              const char *mask,
@@ -3757,8 +3834,19 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
             if (abortsem->wait(checkinterval))
                 break;
         }
+
+#ifdef __linux__
+        else if (doINotify(mask,sub,includedirs,timeout,this) == false)
+        {
+          break;
+        }
+#else
         else
+        {
             Sleep(checkinterval);
+        }
+#endif // __linux__
+
         Owned<IDirectoryIterator> current = directoryFiles(mask,sub,includedirs);
         if (!current)
             break;
