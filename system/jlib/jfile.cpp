@@ -57,8 +57,15 @@
 #include "jregexp.hpp"
 #include "portlist.h"
 
-#include <sys/inotify.h>
 #include <unistd.h>
+
+#ifdef __linux__
+  #include <sys/inotify.h>
+
+  #define EVENT_SIZE (sizeof (struct inotify_event))
+  #define BUF_LEN    (1024 * (EVENT_SIZE + 16))
+#endif //__linux__
+
 
 // #define REMOTE_DISCONNECT_ON_DESTRUCTOR  // enable to disconnect on IFile destructor
                                             // this should not be enabled in WindowRemoteDirectory used
@@ -81,6 +88,7 @@
 #else
 #define NULLFILE -1
 #endif
+
 
 static IFile *createIFileByHook(const RemoteFilename & filename);
 static IFile *createContainedIFileByHook(const char *filename);
@@ -219,7 +227,11 @@ static StringBuffer &getLocalOrRemoteName(StringBuffer &name,const RemoteFilenam
 }
 
 
+#ifdef __linux__
+CFile::CFile(const char * _filename) : m_inotify_queue(inotify_init())
+#else
 CFile::CFile(const char * _filename)
+#endif //__linux__
 {
     filename.set(_filename);
     flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)<<16);
@@ -3735,45 +3747,44 @@ public:
 };
 
 #ifdef __linux__
-
-bool doINotify(const char *mask, bool sub, bool includedirs, unsigned timeout, IFile *ifile)
+/*  return value of -1 is a failure of inotify
+    return vlaue of 0 is  a timeout 
+    return value of >=1 is a notification  */
+int doINotify(const char *mask, bool sub, bool includedirs, unsigned timeout, IFile *ifile)
 {
-
-  static int fd = 0;
-  int wd = 0;
-  int ret = 0;
-  
+  struct timeval time;
   StringBuffer strfile;
-
+  fd_set rfds;
+  int ret = 0;
+  int wd  = 0;
+  int retVal = -1;
+  static int fd = 0;
+  
+  // one shot initialization
   if (fd == 0)
   {
     fd = inotify_init();
   }
 
+  // if initialization failed we don't try again.
   if ( fd < 0 )
   {
-    return false;
+    // return failure of inotify
+    return fd;
   }
 
   strfile.clear();
   strfile.appendf("%s%s",ifile->queryFilename(),mask);
   wd = inotify_add_watch(fd, strfile.toCharArray(),IN_ALL_EVENTS | IN_ONESHOT);
-  struct timeval time;
-  fd_set rfds;
-  int ret;
 
   FD_ZERO(&rfds);
-
   FD_SET(fd,&rfds);
   
   time.tv_sec = timeout/1000;
   time.tv_usec = 0;
-
   
   ret = select(fd+1,&rfds,NULL,NULL,&time);
 
-  #define BUF_LEN        (1024 * (EVENT_SIZE + 16))
-  #define EVENT_SIZE  (sizeof (struct inotify_event))
   char buf[(1024 * (EVENT_SIZE + 16))];
   int i=0;
   if (ret > 0 && FD_ISSET (fd, &rfds))
@@ -3811,6 +3822,68 @@ bool doINotify(const char *mask, bool sub, bool includedirs, unsigned timeout, I
 
 #endif // __linux__
 
+
+#ifdef __linux__
+
+int CFile::useINotify(const char *mask, unsigned timeout)
+{
+  StringBuffer strfile;
+  struct timeval tvTimeout;
+  int retVal = 0;
+  fd_set rfds;
+  
+  if (m_inotify_queue < 0)
+  {
+    return -1;
+  }
+
+  strfile.clear();
+  strfile.appendf("%s%s",this->queryFilename(),mask);
+
+  if (inotify_add_watch(m_inotify_queue, strfile.toCharArray(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT) == -1)
+  {
+    return -1;
+  }
+
+  FD_ZERO(&rfds);
+  FD_SET(m_inotify_queue,&rfds);
+  
+  if (timeout != (unsigned)-1)
+  {
+    tvTimeout.tv_sec = timeout/1000;
+  }
+
+  retVal = select(m_inotify_queue+1, &rfds, NULL, NULL, timeout == (unsigned)-1 ? NULL : &tvTimeout);
+
+  if (retVal < 0) //error
+  {
+    return -1;
+  }
+  else if (retVal == 0) //timeout
+  {
+    return 0;
+  }
+  else if (FD_ISSET(m_inotify_queue, &rfds))
+  {
+/*  int bytes_read = 0;
+    int len = read (fd, buf, BUF_LEN);
+    
+    if (len <= 0)  //error or EOF, int either case treat it as an error
+    {
+      return -1;
+    }*/
+    return 1;
+  }
+  else
+  {
+    return -1;
+  }
+
+  return 1; //event notification
+}
+
+#endif //__linux__
+
 IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,            // in
                              const char *mask,
                              bool sub,
@@ -3834,18 +3907,28 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
             if (abortsem->wait(checkinterval))
                 break;
         }
-
 #ifdef __linux__
-        else if (doINotify(mask,sub,includedirs,timeout,this) == false)
+        // inotify doesn't monitor sub directories, so don't use it if we need to monitor subdirectories
+        else if (includedirs == false && sub == false && m_inotify_queue >= 0)
         {
-          break;
+          int retVal = useINotify(mask, timeout);
+
+          if (retVal ==  0) // check for timeout
+          {
+            break;
+          }
+          else if (retVal == -1) // check for error
+          {
+             // honor the check interval even if inotify fails
+             Sleep(checkinterval); 
+          }
+          // if retVal > 0 a file has been changed so proceed on
         }
-#else
+#endif
         else
         {
             Sleep(checkinterval);
         }
-#endif // __linux__
 
         Owned<IDirectoryIterator> current = directoryFiles(mask,sub,includedirs);
         if (!current)
