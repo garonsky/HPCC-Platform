@@ -67,6 +67,9 @@ public:
                                   unsigned checkinterval=60*1000,
                                   unsigned timeout=(unsigned)-1,
                                   Semaphore *abortsem=NULL);
+#ifdef __linux__
+    virtual int useINotify(const char *mask = NULL, unsigned timeout = (unsigned)-1);
+#endif //__linux__
 
     virtual unsigned getCRC();
 
@@ -91,6 +94,9 @@ public:
 protected:
     StringAttr filename;
     unsigned flags;
+#ifdef __linux__
+    int m_inotify_queue;
+#endif //__linux__
 };
 
 
