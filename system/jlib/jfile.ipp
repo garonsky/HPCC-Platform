@@ -68,7 +68,7 @@ public:
                                   unsigned timeout=(unsigned)-1,
                                   Semaphore *abortsem=NULL);
 #ifdef __linux__
-    virtual int useINotify(const char *mask = NULL, unsigned timeout = (unsigned)-1);
+    virtual int useINotify(const char *mask = NULL, unsigned timeout = (unsigned)-1, IDirectoryIterator *dirIter = NULL);
 #endif //__linux__
 
     virtual unsigned getCRC();

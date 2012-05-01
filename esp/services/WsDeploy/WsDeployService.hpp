@@ -130,6 +130,169 @@ private:
         Linked<CWsDeployExCE> m_pService;
         Linked<IConstEnvironment> m_constEnv;
     };
+<<<<<<< HEAD
+=======
+  public:
+
+    class CConfigChangeNotification : implements INotification
+    {
+    public:
+
+      CConfigChangeNotification(IObservable *pSource) : m_pSource(pSource)
+      {
+      };
+
+      virtual ~CConfigChangeNotification()
+      {
+      };
+
+      virtual NotifyAction getAction(void)
+      {
+        return NotifyNone;
+      }
+
+      virtual IObservable* querySource(void)
+      {
+        return m_pSource;
+      }
+
+    private:
+      IObservable* m_pSource;
+      CConfigChangeNotification() {};
+    };
+
+    class CConfigFileMonitorThread
+      : public CInterface, implements IThreaded, implements IObservable
+    {
+    public:
+      CConfigFileMonitorThread(unsigned int uCheckInterval, unsigned int uTimeout)
+        : m_pWorkerThread(NULL), m_quitThread(false), m_uCheckInterval(uCheckInterval), m_uTimeout(uTimeout), m_configChangeNotification(this)
+      {
+      };
+
+      virtual ~CConfigFileMonitorThread()
+      {
+        m_quitThread = true;
+        m_pWorkerThread->join();
+        delete m_pWorkerThread;
+      };
+
+      IMPLEMENT_IINTERFACE;
+
+      virtual void notify(IDirectoryDifferenceIterator *diffIter)
+      {
+        if ( diffIter == NULL )
+        {
+          return;
+        }
+        else
+        {
+          m_mutexObserverQueue.lock();
+
+          for (unsigned int idxObservers = 0; idxObservers < m_qObservers.ordinality(); idxObservers++)
+          {
+            IConfigFileObserver *pConfigFileObserver = dynamic_cast<IConfigFileObserver*>(m_qObservers.query(idxObservers));
+
+            for (diffIter->first(); diffIter->isValid() == true; diffIter->next())
+            {
+              bool bDoNotify = true;
+
+              if ( (diffIter->getFlags() == IDDIunchanged) || (pConfigFileObserver != NULL && (strcmp( pConfigFileObserver->getConfigFilePath(), diffIter->query().queryFilename() ) != 0)) )
+              {
+                bDoNotify = false;
+              }
+
+              if (bDoNotify == true)
+              {
+                 m_qObservers.query(idxObservers)->onNotify(m_configChangeNotification);
+              }
+            }
+          }
+
+          m_mutexObserverQueue.unlock();
+        }
+      }
+
+      virtual void addObserver( IObserver &observer )
+      {
+         m_mutexObserverQueue.lock();
+
+        //allow observers to register only once
+        if (m_qObservers.find(&observer) == (unsigned)-1)
+        {
+          m_qObservers.enqueue(&observer);
+        }
+
+        m_mutexObserverQueue.unlock();
+      }
+
+      virtual void removeObserver( IObserver &observer )
+      {
+        m_mutexObserverQueue.lock();
+
+        m_qObservers.dequeue(&observer);
+
+        m_mutexObserverQueue.unlock();
+      }
+
+      virtual void main()
+      {
+        while(m_quitThread == false)
+        {
+          Owned<IFile> configFiles = createIFile(ENVIRONMENT_SOURCE_DIR);
+
+          while ( m_quitThread == false )
+          {
+            IDirectoryDifferenceIterator* diffIter = configFiles->monitorDirectory(NULL, NULL, false, false, m_uCheckInterval, m_uTimeout);
+
+            if (diffIter != NULL)
+            {
+              notify(diffIter);
+            }
+          }
+          Sleep(0);
+         }
+       };
+
+      void init()
+      {
+        if ( m_pWorkerThread == NULL)
+        {
+          m_pWorkerThread = new CThreaded("CConfigFileMonitorThread");
+          IThreaded* pIThreaded = this;
+          m_pWorkerThread->init(pIThreaded);
+        }
+      };
+
+      static CConfigFileMonitorThread* getInstance()
+      {
+        static CConfigFileMonitorThread* s_pConfigFileMonitorSingleton = NULL;
+
+        if ( s_pConfigFileMonitorSingleton == NULL )
+        {
+          s_pConfigFileMonitorSingleton = new CWsDeployFileInfo::CConfigFileMonitorThread(CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD);
+          s_pConfigFileMonitorSingleton->init();
+        }
+
+        return s_pConfigFileMonitorSingleton;
+      };
+
+    protected:
+      CThreaded* m_pWorkerThread;
+
+      bool m_quitThread;
+      unsigned int m_uTimeout;
+      unsigned int m_uCheckInterval;
+      QueueOf<IObserver,false> m_qObservers;
+      Mutex m_mutexObserverQueue;
+      CConfigChangeNotification m_configChangeNotification;
+
+    private:
+      CConfigFileMonitorThread() : m_configChangeNotification(NULL) {};
+      CConfigFileMonitorThread(const CConfigFileMonitorThread& configFileThread) : m_configChangeNotification(NULL) {};
+      CConfigFileMonitorThread& operator=(CConfigFileMonitorThread const&) {};
+    };
+>>>>>>> 180ac80... Got directory monitoring for inotify working
 
     class CClientAliveThread : public CInterface, implements IThreaded, implements IInterface
     {
