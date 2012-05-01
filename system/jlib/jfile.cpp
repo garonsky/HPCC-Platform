@@ -3747,85 +3747,8 @@ public:
 };
 
 #ifdef __linux__
-/*  return value of -1 is a failure of inotify
-    return vlaue of 0 is  a timeout 
-    return value of >=1 is a notification  */
-int doINotify(const char *mask, bool sub, bool includedirs, unsigned timeout, IFile *ifile)
-{
-  struct timeval time;
-  StringBuffer strfile;
-  fd_set rfds;
-  int ret = 0;
-  int wd  = 0;
-  int retVal = -1;
-  static int fd = 0;
-  
-  // one shot initialization
-  if (fd == 0)
-  {
-    fd = inotify_init();
-  }
 
-  // if initialization failed we don't try again.
-  if ( fd < 0 )
-  {
-    // return failure of inotify
-    return fd;
-  }
-
-  strfile.clear();
-  strfile.appendf("%s%s",ifile->queryFilename(),mask);
-  wd = inotify_add_watch(fd, strfile.toCharArray(),IN_ALL_EVENTS | IN_ONESHOT);
-
-  FD_ZERO(&rfds);
-  FD_SET(fd,&rfds);
-  
-  time.tv_sec = timeout/1000;
-  time.tv_usec = 0;
-  
-  ret = select(fd+1,&rfds,NULL,NULL,&time);
-
-  char buf[(1024 * (EVENT_SIZE + 16))];
-  int i=0;
-  if (ret > 0 && FD_ISSET (fd, &rfds))
-  {
-    int len = read (fd, buf, BUF_LEN);
-    
-
-    while (i < len) {
-        struct inotify_event *event;
-
-        event = (struct inotify_event *) &buf[i];
-
-/*        printf ("wd=%d mask=%u cookie=%u len=%u\n",
-                event->wd, event->mask,
-                event->cookie, event->len);*/
-
-        if (event->len)
-                printf ("name=%s\n", event->name);
-
-        i += EVENT_SIZE + event->len;
-}
-
-
-  }
-
-//  inotify_rm_watch(fd,wd);
-
-  if(ret == 0)
-  {
-    return false;
-  }
-
-  return true;
-}
-
-#endif // __linux__
-
-
-#ifdef __linux__
-
-int CFile::useINotify(const char *mask, unsigned timeout)
+int CFile::useINotify(const char *mask, unsigned timeout, IDirectoryIterator *dirIter)
 {
   StringBuffer strfile;
   struct timeval tvTimeout;
@@ -3837,12 +3760,28 @@ int CFile::useINotify(const char *mask, unsigned timeout)
     return -1;
   }
 
+  memset(&tvTimeout,0,sizeof(tvTimeout));
   strfile.clear();
-  strfile.appendf("%s%s",this->queryFilename(),mask);
+  strfile.appendf("%s%s",this->queryFilename(),mask ? mask : "");
 
   if (inotify_add_watch(m_inotify_queue, strfile.toCharArray(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT) == -1)
   {
     return -1;
+  }
+
+  if (dirIter != NULL)
+  {
+    StringBuffer temp;
+    temp.clear();
+
+    if (dirIter->first())
+    {
+      inotify_add_watch(m_inotify_queue, dirIter->getName(temp).toCharArray(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT);
+    }
+    while (dirIter->next())
+    {
+      inotify_add_watch(m_inotify_queue, dirIter->getName(temp).str(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT);
+    }
   }
 
   FD_ZERO(&rfds);
@@ -3865,21 +3804,12 @@ int CFile::useINotify(const char *mask, unsigned timeout)
   }
   else if (FD_ISSET(m_inotify_queue, &rfds))
   {
-/*  int bytes_read = 0;
-    int len = read (fd, buf, BUF_LEN);
-    
-    if (len <= 0)  //error or EOF, int either case treat it as an error
-    {
-      return -1;
-    }*/
     return 1;
   }
   else
   {
     return -1;
   }
-
-  return 1; //event notification
 }
 
 #endif //__linux__
@@ -3900,7 +3830,9 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
     if (!prev)
         return NULL;
     Owned<CDirectoryDifferenceIterator> base = new CDirectoryDifferenceIterator(prev,NULL);
-    prev.clear(); // not needed now
+#ifndef __linux__
+    prev.clear();
+#endif //__linux__
     unsigned start=msTick();
     loop {
         if (abortsem) {
@@ -3908,10 +3840,9 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
                 break;
         }
 #ifdef __linux__
-        // inotify doesn't monitor sub directories, so don't use it if we need to monitor subdirectories
-        else if (includedirs == false && sub == false && m_inotify_queue >= 0)
+        else if (m_inotify_queue >= 0)
         {
-          int retVal = useINotify(mask, timeout);
+          int retVal = useINotify(mask, timeout, prev);
 
           if (retVal ==  0) // check for timeout
           {
@@ -3919,10 +3850,9 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
           }
           else if (retVal == -1) // check for error
           {
-             // honor the check interval even if inotify fails
-             Sleep(checkinterval); 
+            // honor the check interval even if inotify fails
+            Sleep(checkinterval);
           }
-          // if retVal > 0 a file has been changed so proceed on
         }
 #endif
         else
