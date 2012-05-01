@@ -292,7 +292,6 @@ private:
       CConfigFileMonitorThread(const CConfigFileMonitorThread& configFileThread) : m_configChangeNotification(NULL) {};
       CConfigFileMonitorThread& operator=(CConfigFileMonitorThread const&) {};
     };
->>>>>>> 180ac80... Got directory monitoring for inotify working
 
     class CClientAliveThread : public CInterface, implements IThreaded, implements IInterface
     {
