@@ -4095,6 +4095,146 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
   return true;
 }
 
+bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp)
+{
+  synchronized block(m_mutex);
+  const char* xmlArg = req.getXmlArgs();
+  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
+
+  Owned<IPropertyTreeIterator> iter = pSrcTree->getElements("Setting[@operation='delete']");
+  iter->first();
+
+  if (iter->isValid() == false)
+    return false;
+
+  IPropertyTree* pSetting = &iter->query();
+
+  StringBuffer decodedParams( pSetting->queryProp("@params") );
+  decodedParams.replaceString("::", "\n");
+  Owned<IProperties> pParams = createProperties();
+  pParams->loadProps(decodedParams.str());
+
+  StringBuffer xpath;
+  const char* pszUpdate = NULL;
+  int idx = 1;
+  StringBuffer sbUpdate;
+
+  while (true)
+  {
+    sbUpdate.clear().appendf("Update%dKey", idx);
+    const char* key = pParams->queryProp(sbUpdate.str());
+
+    if (!key)
+      break;
+    else if (!strcmp(key, "name") || !strcmp(key, "Name"))
+    {
+      sbUpdate.clear().appendf("Update%dValue", idx);
+      pszUpdate = pParams->queryProp(sbUpdate.str());
+      break;
+    }
+    idx++;
+  }
+
+  const char* pszParams = NULL;
+  idx = 2;
+  StringBuffer sbParams;
+  StringBuffer sb;
+  bool flag = false;
+  const char* isAttr = pParams->queryProp("isAttr");
+
+  Owned<IProperties> pSubParams = createProperties();
+
+  while (true)
+  {
+    sbParams.clear().appendf("parentParams%d", idx);
+    const char* val = pParams->queryProp(sbParams.str());
+
+    if (!val || !*val)
+    {
+      if (!flag)
+        flag = true;
+      else
+      {
+        if (pszUpdate)
+        {
+          sbParams.clear().appendf("parentParams%d", idx-2);
+          const char* val = pParams->queryProp(sbParams.str());
+          String st(val);
+
+          if (st.indexOf("pcName=") != -1)
+            sbParams.clear().append("[@name='").append(*st.substring(st.indexOf("pcName=") + 7)).append("']");
+
+          String str(xpath.str());
+          sb.clear().append(*str.substring(0, str.indexOf(sbParams.str())));
+          sb.appendf("[@name='%s']", pszUpdate);
+          xpath.clear().append(sb.str());
+        }
+        break;
+      }
+      idx++;
+      continue;
+    }
+    else
+    {
+      flag = false;
+      sb.clear();
+      StringBuffer params(val);
+      params.replaceString(":", "\n");
+      pSubParams->loadProps(params.str());
+      sb.append(pSubParams->queryProp("pcType"));
+
+      if (sb.length())
+        xpath.append(xpath.length()?"/":"").append(sb.str());
+
+      sb.clear().append(pSubParams->queryProp("pcName"));
+
+      if (sb.length())
+        xpath.appendf("[@name='%s']", sb.str());
+    }
+
+    idx++;
+  }
+
+  Owned<IPropertyTree> pEnvRoot = &m_Environment->getPTree();
+  xpath.appendf("./%s[name='%s']", pSubParams->queryProp("pcType"), pSubParams->queryProp("pcName"));
+
+  StringBuffer xpath2 =  pSetting->queryProp("@params");
+  IPropertyTree* pComp = pEnvRoot->queryPropTree(xpath2.str());
+
+  StringBuffer xml;
+  StringBuffer attrib;
+  int count = xpath2.length()-1;
+
+  while (xpath2[count] != '=')
+    count--;
+  count--;
+
+  for (int i=count; i >= 0 && xpath2[i] != '['; i--)
+    attrib.insert(0,xpath2[i]);
+
+  int index = xpath2.length()-1;
+
+  while (index > 0)
+  {
+    if (xpath2[index] == '/')
+      break;
+    index--;
+  }
+
+  char temp[1024];
+  memset(temp,0,sizeof(temp));
+  xpath2.getChars(0,index+1,temp);
+
+  if (req.getBLeaf() == true)
+    pComp->removeProp(attrib);
+  else
+    pEnvRoot->queryPropTree(temp)->removeTree(pComp);
+
+  resp.setStatus("true");
+  resp.setCompName(XML_TAG_SOFTWARE);
+
+  return true;
+}
 
 bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp)
 {
@@ -4168,6 +4308,16 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
           resp.setCompName(compName);
         }
       }
+    }
+  }
+  else if (!strcmp(operation, "Delete2"))
+  {
+    Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
+    ForEach(*iterComp)
+    {
+      IPropertyTree& pComp = iterComp->query();
+      const char* compName = pComp.queryProp(XML_ATTR_NAME);
+      const char* compType = pComp.queryProp("@compType");
     }
   }
 
@@ -6493,6 +6643,12 @@ bool CWsDeployEx::onHandleComponent(IEspContext &context, IEspHandleComponentReq
   return fi->handleComponent(context, req, resp);
 }
 
+bool CWsDeployEx::onHandleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp)
+{
+  CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
+  return fi->handleAttributeDelete(context, req, resp);
+}
+
 bool CWsDeployEx::onHandleInstance(IEspContext &context, IEspHandleInstanceRequest &req, IEspHandleInstanceResponse &resp)
 {
   CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
@@ -6745,6 +6901,11 @@ bool CWsDeployExCE::onHandleThorTopology(IEspContext &context, IEspHandleThorTop
 }
 
 bool CWsDeployExCE::onHandleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp)
+{
+  return supportedInEEOnly();
+}
+
+bool CWsDeployExCE::onHandleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp)
 {
   return supportedInEEOnly();
 }

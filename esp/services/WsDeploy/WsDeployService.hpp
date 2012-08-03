@@ -471,6 +471,7 @@ public:
     virtual bool getComputersForRoxie(IEspContext &context, IEspGetComputersForRoxieRequest &req, IEspGetComputersForRoxieResponse &resp);
     virtual bool handleRoxieOperation(IEspContext &context, IEspHandleRoxieOperationRequest &req, IEspHandleRoxieOperationResponse &resp);
     virtual bool handleThorTopology(IEspContext &context, IEspHandleThorTopologyRequest &req, IEspHandleThorTopologyResponse &resp);
+    virtual bool handleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp);
     virtual bool handleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp);
     virtual bool handleInstance(IEspContext &context, IEspHandleInstanceRequest &req, IEspHandleInstanceResponse &resp);
     virtual bool handleEspServiceBindings(IEspContext &context, IEspHandleEspServiceBindingsRequest &req, IEspHandleEspServiceBindingsResponse &resp);
@@ -950,7 +951,8 @@ public:
     virtual bool onGetComputersForRoxie(IEspContext &context, IEspGetComputersForRoxieRequest &req, IEspGetComputersForRoxieResponse &resp);
     virtual bool onHandleRoxieOperation(IEspContext &context, IEspHandleRoxieOperationRequest &req, IEspHandleRoxieOperationResponse &resp);
     virtual bool onHandleThorTopology(IEspContext &context, IEspHandleThorTopologyRequest &req, IEspHandleThorTopologyResponse &resp);
-    virtual bool onHandleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp);
+   virtual bool onHandleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp);
+   virtual bool onHandleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp);
     virtual bool onHandleInstance(IEspContext &context, IEspHandleInstanceRequest &req, IEspHandleInstanceResponse &resp);
     virtual bool onHandleEspServiceBindings(IEspContext &context, IEspHandleEspServiceBindingsRequest &req, IEspHandleEspServiceBindingsResponse &resp);
     virtual bool onHandleComputer(IEspContext &context, IEspHandleComputerRequest &req, IEspHandleComputerResponse &resp);
@@ -1020,6 +1022,7 @@ public:
     virtual bool onGetComputersForRoxie(IEspContext &context, IEspGetComputersForRoxieRequest &req, IEspGetComputersForRoxieResponse &resp);
     virtual bool onHandleRoxieOperation(IEspContext &context, IEspHandleRoxieOperationRequest &req, IEspHandleRoxieOperationResponse &resp);
     virtual bool onHandleThorTopology(IEspContext &context, IEspHandleThorTopologyRequest &req, IEspHandleThorTopologyResponse &resp);
+    virtual bool onHandleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp);
     virtual bool onHandleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp);
     virtual bool onHandleInstance(IEspContext &context, IEspHandleInstanceRequest &req, IEspHandleInstanceResponse &resp);
     virtual bool onHandleEspServiceBindings(IEspContext &context, IEspHandleEspServiceBindingsRequest &req, IEspHandleEspServiceBindingsResponse &resp);
