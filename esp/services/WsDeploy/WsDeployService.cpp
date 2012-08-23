@@ -4143,58 +4143,6 @@ bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAt
   const char* isAttr = pParams->queryProp("isAttr");
 
   Owned<IProperties> pSubParams = createProperties();
-
-  while (true)
-  {
-    sbParams.clear().appendf("parentParams%d", idx);
-    const char* val = pParams->queryProp(sbParams.str());
-
-    if (!val || !*val)
-    {
-      if (!flag)
-        flag = true;
-      else
-      {
-        if (pszUpdate)
-        {
-          sbParams.clear().appendf("parentParams%d", idx-2);
-          const char* val = pParams->queryProp(sbParams.str());
-          String st(val);
-
-          if (st.indexOf("pcName=") != -1)
-            sbParams.clear().append("[@name='").append(*st.substring(st.indexOf("pcName=") + 7)).append("']");
-
-          String str(xpath.str());
-          sb.clear().append(*str.substring(0, str.indexOf(sbParams.str())));
-          sb.appendf("[@name='%s']", pszUpdate);
-          xpath.clear().append(sb.str());
-        }
-        break;
-      }
-      idx++;
-      continue;
-    }
-    else
-    {
-      flag = false;
-      sb.clear();
-      StringBuffer params(val);
-      params.replaceString(":", "\n");
-      pSubParams->loadProps(params.str());
-      sb.append(pSubParams->queryProp("pcType"));
-
-      if (sb.length())
-        xpath.append(xpath.length()?"/":"").append(sb.str());
-
-      sb.clear().append(pSubParams->queryProp("pcName"));
-
-      if (sb.length())
-        xpath.appendf("[@name='%s']", sb.str());
-    }
-
-    idx++;
-  }
-
   Owned<IPropertyTree> pEnvRoot = &m_Environment->getPTree();
   xpath.appendf("./%s[name='%s']", pSubParams->queryProp("pcType"), pSubParams->queryProp("pcName"));
 
@@ -4203,9 +4151,13 @@ bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAt
 
   StringBuffer xml;
   StringBuffer attrib;
-  int count = xpath2.length()-1;
 
-  while (xpath2[count] != '=')
+  int count = xpath2.length()-2;
+
+  if (count <= 0)
+    MakeStringException(-1,"Bad XPath %s (Try refreshing the browser?)", xpath2.str());
+
+  while (xpath2[count] != '=' || xpath2[count+1] != '\'')
     count--;
   count--;
 
