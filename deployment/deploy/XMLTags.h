@@ -118,6 +118,7 @@
 #define XML_ATTR_DATAMODEL             "@dataModel"
 #define XML_ATTR_DATASEGMENT           "@dataSegment"
 #define XML_ATTR_DEBUGXML              "@debugXml"
+#define XML_ATTR_DEFAULT               "@default"
 #define XML_ATTR_DEFAULTHOLE           "@defaultHole"
 #define XML_ATTR_DESCRIPTION           "@description"
 #define XML_ATTR_DESTPATH              "@destPath"
@@ -216,6 +217,7 @@
 #define XML_ATTR_TRACELEVEL            "@traceLevel"
 #define XML_ATTR_TYPE                  "@type"
 #define XML_ATTR_URL                   "@url"
+#define XML_ATTR_USE                   "@use"
 #define XML_ATTR_USEBLOBS              "@useBlobs"
 #define XML_ATTR_USERNAME              "@username"
 #define XML_ATTR_VERSION               "@version"
@@ -280,6 +282,8 @@
 #define TAG_LDAPSERVER                  "ldapServer"
 #define TAG_SERVICE                     "service"
 #define TAG_FILESBASEDN                 "filesBasedn"
+#define TAG_OPTIONAL                    "optional"
+#define TAG_REQUIRED                    "required"
 
 //---------------------------------------------------------------------------
 #endif // !defined(AFX_XMLTAGS_H__57887617_2BDE_4E3E_92CB_43FCDEDD05B8__INCLUDED_)
