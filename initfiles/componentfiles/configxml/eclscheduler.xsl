@@ -23,7 +23,7 @@
 <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" omit-xml-declaration="yes"/>
         
 <xsl:param name="process" select="'eclscheduler'"/>
-<xsl:param name="instance" select="'s1'"/>
+<xsl:param name="instance" select="'s1 '"/>
 <xsl:param name="isLinuxInstance" select="0"/>
 <xsl:param name="outputFilePath" select="'eclscheduler.xml'"/>
 <xsl:param name="tempPath" select="'c:\temp\'"/>
