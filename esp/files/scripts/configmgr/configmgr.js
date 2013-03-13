@@ -2461,6 +2461,35 @@ function onMenuItemClickExportServers(p_sType, p_aArgs, p_oValue) {
 function onMenuItemClick(p_sType, p_aArgs, p_oValue) {
 }
 
+function onMenuItemClickDuplicateCluster(p_sType, p_aArgs, p_oValue)
+{
+  var Dom = YAHOO.util.Dom;
+  var oTarget = this.parent.contextEventTarget;
+  var oSelectedTR = oTarget.nodeName.toUpperCase() === "TR" ?
+                                        oTarget : Dom.getAncestorByTagName(oTarget, "TR");
+
+  var recSet = this.parent.dt.getRecordSet();
+  var selRows = this.parent.dt.getSelectedRows();
+  var msg = "";
+  var xmlArgs = "";
+
+  XmlArgs = "<Component name=\"hthor\" compType=\"Cluster\"/>";
+  YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComponent', {
+    success: function(o) {
+      var form = top.window.document.forms['treeForm'];
+      form.isChanged.value = "true";
+      top.document.stopWait(document);
+      top.document.navDT.clickCurrentSelOrName(top.document.navDT);
+    },
+    failure: function(o) {
+    top.document.stopWait(document);
+      alert(o.statusText);
+    },
+    scope: this
+  },
+  top.document.navDT.getFileName(true) + 'Operation=Duplicate' + '&XmlArgs=' + xmlArgs);
+}
+
 function onMenuItemClickTopology(p_sType, p_aArgs, p_oValue) {
   if (top.document.forms['treeForm'].isLocked.value === 'false')
     return;
@@ -2654,7 +2683,8 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
                                { text: "Add EclScheduler", onclick: { fn: onMenuItemClickTopology} },
                                { text: "Add Thor", onclick: { fn: onMenuItemClickTopology} },
                                { text: "Add Roxie", onclick: { fn: onMenuItemClickTopology} },
-                               { text: "Delete", onclick: { fn: onMenuItemClickTopology} }
+                               { text: "Delete", onclick: { fn: onMenuItemClickTopology} },
+                               { text: "Duplicate", onclick: { fn: onMenuItemClickDuplicateCluster} }
                             ],
       "TopologyThor": [
                                { text: "Delete", onclick: { fn: onMenuItemClickTopology} }
