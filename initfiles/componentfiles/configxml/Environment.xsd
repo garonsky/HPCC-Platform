@@ -122,6 +122,11 @@
                                     <xs:attribute name="computerType" type="xs:string"/>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="NAS" type="NASType">
+                              <xs:annotation>
+                                <xs:documentation>NAS Translation</xs:documentation>
+                              </xs:annotation>
+                            </xs:element>
                         </xs:choice>
                         <xs:attribute name="include" type="xs:string"/>
                     </xs:complexType>
@@ -904,6 +909,12 @@
         <xs:attribute name="name" type="xs:string"/>
         <xs:attribute name="process" type="xs:string" use="required"/>
         <xs:attribute name="binding" type="xs:string" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="NASType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="mask" type="ipAddress"/>
+        <xs:attribute name="subnet" type="ipAddress"/>
+        <xs:attribute name="trace" type="xs:boolean"/>
     </xs:complexType>
     <xs:complexType name="ComputerTypeType">
         <xs:attribute name="name" type="xs:string" use="required"/>

@@ -486,17 +486,19 @@ IPropertyTree* CWizardInputs::createEnvironment()
 
   xpath.clear().appendf("./%s/@snmpSecurityString", XML_TAG_DOMAIN);
   pCompTree->removeProp(xpath.str());
-  
-  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_COMPUTERTYPE); 
-  pCompTree->setProp(xpath.str(), "linuxmachine"); 
-  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_MANUFACTURER); 
-  pCompTree->setProp(xpath.str(), "unknown"); 
-  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_NAME); 
-  pCompTree->setProp(xpath.str(), "linuxmachine"); 
-  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_OPSYS);    
-  pCompTree->setProp(xpath.str(), "linux"); 
 
-  unsigned x;
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_COMPUTERTYPE);
+  pCompTree->setProp(xpath.str(), "linuxmachine"); 
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_MANUFACTURER);
+  pCompTree->setProp(xpath.str(), "unknown"); 
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_NAME);
+  pCompTree->setProp(xpath.str(), "linuxmachine"); 
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_OPSYS);
+  pCompTree->setProp(xpath.str(), "linux"); 
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_NICSPEED);
+  pCompTree->setProp(xpath.str(), "1000");
+
+   unsigned x;
   IpAddress ipaddr;
 
   for(unsigned i = 0; i < m_ipaddressSupport.ordinality(); i++)
