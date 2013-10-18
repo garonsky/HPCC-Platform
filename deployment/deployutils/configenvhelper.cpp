@@ -20,6 +20,7 @@
 #include "configenvhelper.hpp"
 #include "deployutils.hpp"
 #include "build-config.h"
+#include "confighelper.hpp"
 
 bool CConfigEnvHelper::handleRoxieOperation(const char* cmd, const char* xmlStr)
 {
@@ -27,6 +28,8 @@ bool CConfigEnvHelper::handleRoxieOperation(const char* cmd, const char* xmlStr)
   if (!strcmp(cmd, "AddRoxieFarm"))
     retVal = this->addRoxieServers(xmlStr);
   else if (!strcmp(cmd, "DeleteRoxieFarm"))
+    retVal = this->deleteRoxiePorts(xmlStr);
+  else if (!strcmp(cmd, "DeleteRoxieServers"))
     retVal = this->deleteRoxieServers(xmlStr);
   else if (!strcmp(cmd, "RoxieSlaveConfig"))
     retVal = this->handleRoxieSlaveConfig(xmlStr);
@@ -564,6 +567,27 @@ IPropertyTree* CConfigEnvHelper::findLegacyServer(IPropertyTree* pRoxieCluster, 
 
 bool CConfigEnvHelper::deleteRoxieServers(const char* xmlArg)
 {
+    Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
+    const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
+
+    StringBuffer xpath;
+    xpath.clear().appendf("Software/RoxieCluster[@name='%s']", pszRoxieCluster);
+
+    IPropertyTree* pRoxieCluster = m_pRoot->queryPropTree(xpath.str());
+
+    if (pRoxieCluster == NULL)
+        return false;
+
+    IPropertyTree* pChild = NULL;
+
+    while ((pChild = pRoxieCluster->queryPropTree( XML_TAG_ROXIE_SERVER_PROCESSS"[1]")) != NULL)
+        pRoxieCluster->removeTree( pChild );
+
+    return true;
+}
+
+bool CConfigEnvHelper::deleteRoxiePorts(const char* xmlArg)
+{
   Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
   const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
   const char* pParentName = pSrcTree->queryPropTree(XML_TAG_ROXIE_FARM) != NULL ? pSrcTree->queryPropTree(XML_TAG_ROXIE_FARM)->queryProp("@parent"): "";
@@ -685,12 +709,12 @@ void CConfigEnvHelper::addComponent(const char* pszBuildSet, StringBuffer& sbNew
     // NOTE - we are assuming buildSet is unique in a build.
     StringBuffer xPath, value;
     xPath.appendf("./Programs/Build/BuildSet[@name=\"%s\"]", pszBuildSet);
-    Owned<IPropertyTreeIterator> buildSet = m_pRoot->getElements(xPath.str());
+    Owned<IPropertyTreeIterator> buildSet = CConfigHelper::getInstance()->getBuildSetTree()->getElements(xPath.str());
     buildSet->first();
     IPropertyTree* pBuildSet = &buildSet->query();
     const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
     const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
-    const char* buildName = m_pRoot->queryPropTree("./Programs/Build[1]")->queryProp(XML_ATTR_NAME);
+    const char* buildName = CConfigHelper::getInstance()->getBuildSetTree()->queryPropTree("./Programs/Build[1]")->queryProp(XML_ATTR_NAME);
     if (!processName) //support non-generic components as well
       processName = buildSetName;
 

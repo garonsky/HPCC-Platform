@@ -17,15 +17,18 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/dom",
+    "dojo/dom-style",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
     "dijit/Tooltip",
+
+    "dojox/widget/UpgradeBar",
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
     "hpcc/WsAccount",
+    "hpcc/WsSMC",
+    "hpcc/GraphWidget",
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
@@ -48,26 +51,103 @@ define([
     "hpcc/HPCCPlatformRoxieWidget",
     "hpcc/HPCCPlatformOpsWidget"
 
-], function (declare, lang, dom,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Tooltip,
-                _TabContainerWidget, ESPRequest, WsAccount,
+], function (declare, lang, dom, domStyle,
+                registry, Tooltip,
+                UpgradeBar,
+                _TabContainerWidget, ESPRequest, WsAccount, WsSMC, GraphWidget,
                 template) {
-    return declare("HPCCPlatformWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformWidget",
+
+        banner: "",
+        upgradeBar: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
             this.searchText = registry.byId(this.id + "FindText");
+            this.aboutDialog = registry.byId(this.id + "AboutDialog");
+            this.setBannerDialog = registry.byId(this.id + "SetBannerDialog");
             this.searchPage = registry.byId(this.id + "_Main" + "_Search");
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
+            this.errWarnPage = registry.byId(this.id + "_ErrWarn");
             this.mainStackContainer = registry.byId(this.mainPage.id + "TabContainer");
             this.searchPage = registry.byId(this.id + "_Main" + "_Search");
+
+            this.upgradeBar = new UpgradeBar({
+                notifications: [],
+                noRemindButton: ""
+            });
         },
 
         startup: function (args) {
             this.inherited(arguments);
+            domStyle.set(dom.byId(this.id + "StackController_stub_ErrWarn").parentNode.parentNode, {
+                visibility: "hidden"
+            });
+        },
+
+        //  Implementation  ---
+        parseBuildString: function (build) {
+            this.build = {};
+            this.build.orig = build;
+            this.build.prefix = "";
+            this.build.postfix = "";
+            var verArray = build.split("[");
+            if (verArray.length > 1) {
+                this.build.postfix = verArray[1].split("]")[0];
+            }
+            verArray = verArray[0].split("_");
+            if (verArray.length > 1) {
+                this.build.prefix = verArray[0];
+                verArray.splice(0, 1);
+            }
+            this.build.version = verArray.join("_");
+        },
+
+        refreshActivityResponse: function(response) {
+            if (lang.exists("ActivityResponse.Build", response)) {
+                this.parseBuildString(response.ActivityResponse.Build);
+                this.banner = lang.exists("ActivityResponse.BannerContent", response) ? response.ActivityResponse.BannerContent : "";
+                if (this.banner) {
+                    this.upgradeBar.notify("<div style='text-align:center'><b>" + this.banner + "</b></div>");
+                    this.upgradeBar.show();
+                }
+            }
+        },
+
+        init: function (params) {
+             if (this.inherited(arguments))
+                return;
+
+            var context = this;
+            WsAccount.MyAccount({
+            }).then(function (response) {
+                if (lang.exists("MyAccountResponse.username", response)) {
+                    dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
+                }
+            });
+
+            WsSMC.Activity({
+            }).then(function (response) {
+                context.refreshActivityResponse(response);
+            });
+
+            this.createStackControllerTooltip(this.id + "_ECL", "ECL");
+            this.createStackControllerTooltip(this.id + "_Files", "Files");
+            this.createStackControllerTooltip(this.id + "_Queries", "Published Queries");
+            this.createStackControllerTooltip(this.id + "_OPS", "Operations");
+            this.initTab();
+        },
+
+        initTab: function () {
+            var currSel = this.getSelectedChild();
+            if (currSel && !currSel.initalized) {
+                if (currSel.init) {
+                    currSel.init({});
+                }
+            }
         },
 
         getTitle: function () {
@@ -86,7 +166,55 @@ define([
             win.focus();
         },
 
+        _onOpenReleaseNotes: function (evt) {
+            var win = window.open("http://hpccsystems.com/download/free-community-edition-known-limitations#" + this.build.version, "_blank");
+            win.focus();
+        },
+
+        _onOpenErrWarn: function (evt) {
+            this.stackContainer.selectChild(this.errWarnPage);
+        },
+
+        _onAboutLoaded: false,
         _onAbout: function (evt) {
+            if (!this._onAboutLoaded) {
+                this._onAboutLoaded = true;
+                dom.byId(this.id + "ServerVersion").value = this.build.version;
+                var gc = registry.byId(this.id + "GraphControl");
+                dom.byId(this.id + "GraphControlVersion").value = gc.getVersion();
+            }
+            this.aboutDialog.show();
+        },
+
+        _onAboutClose: function (evt) {
+            this.aboutDialog.hide();
+        },
+
+        _onSetBanner: function (evt) {
+            dom.byId(this.id + "BannerText").value = this.banner;
+            this.setBannerDialog.show();
+        },
+
+        _onSetBannerOk: function (evt) {
+            var context = this;
+            WsSMC.Activity({
+                request: {
+                    FromSubmitBtn: true,
+                    BannerAction: dom.byId(this.id + "BannerText").value != "",
+                    EnableChatURL: 0,
+                    BannerContent: dom.byId(this.id + "BannerText").value,
+                    BannerColor: "red",
+                    BannerSize: 4,
+                    BannerScroll: 2
+                }
+            }).then(function (response) {
+                context.refreshActivityResponse(response);
+            });
+            this.setBannerDialog.hide();
+        },
+
+        _onSetBannerCancel: function (evt) {
+            this.setBannerDialog.hide();
         },
 
         createStackControllerTooltip: function (widgetID, text) {
@@ -96,38 +224,6 @@ define([
                 showDelay: 1,
                 position: ["below"]
             });
-        },
-
-        //  Implementation  ---
-        init: function (params) {
-            if (this.initalized)
-                return;
-            this.initalized = true;
-
-            var context = this;
-            WsAccount.MyAccount({
-            }).then(function (response) {
-                if (lang.exists("MyAccountResponse.username", response)) {
-                    dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
-                }
-            },
-            function (error) {
-            });
-
-            this.createStackControllerTooltip(this.id + "_ECL", "ECL");
-            this.createStackControllerTooltip(this.id + "_Files", "Files");
-            this.createStackControllerTooltip(this.id + "_Queries", "Published Queries");
-            this.createStackControllerTooltip(this.id + "_OPS", "Operations");
-            this.initTab();
-        },
-
-        initTab: function () {
-            var currSel = this.getSelectedChild();
-            if (currSel && !currSel.initalized) {
-                if (currSel.init) {
-                    currSel.init(currSel.params);
-                }
-            }
         }
     });
 });

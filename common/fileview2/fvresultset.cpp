@@ -116,12 +116,26 @@ IFvDataSource * createFileDataSource(IDistributedFile * df, const char * logical
         return NULL;
     }
     const char * recordEcl = properties.queryProp("ECL");
-    if (!recordEcl)
-        throwError1(FVERR_NoRecordDescription, logicalName);
+    OwnedHqlExpr diskRecord;
+    if (recordEcl)
+    {
+        diskRecord.setown(parseQuery(recordEcl));
 
-    OwnedHqlExpr diskRecord = parseQuery(recordEcl);
-    if (!diskRecord)
-        throwError1(FVERR_BadRecordDesc, logicalName);
+        if (!diskRecord)
+            throwError1(FVERR_BadRecordDesc, logicalName);
+    }
+    else
+    {
+        size32_t len = (size32_t)properties.getPropInt("@recordSize", 0);
+        if (len)
+        {
+            VStringBuffer recordText("{ string%u contents };", len);
+            diskRecord.setown(parseQuery(recordText));
+        }
+
+        if (!diskRecord)
+            throwError1(FVERR_NoRecordDescription, logicalName);
+    }
 
     Owned<ADataSource> ds;
     try
@@ -239,6 +253,8 @@ static __int64 getIntFromSwapInt(ITypeInfo & type, const void * cur, bool isMapp
         case 6: result = rtlRevUInt6(cur); break;
         case 7: result = rtlRevUInt7(cur); break;
         case 8: result = rtlRevUInt8(cur); break;
+        default:
+            throwUnexpected();
         }
         if (isSigned && isMappedIndexField)
             result -= getIntBias(size);
@@ -573,7 +589,7 @@ ITypeInfo * containsSingleSimpleFieldBlankXPath(IResultSetMetaData * meta)
 
 void fvSplitXPath(const char *xpath, StringBuffer &s, const char *&name, const char **childname=NULL)
 {
-    if (!xpath || !*xpath)
+    if (!xpath)
         return;
     const char * slash = strchr(xpath, '/');
     if (!slash)
@@ -612,7 +628,7 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
         case FVFFbeginrecord:
             if (useXPath)
                 fvSplitXPath(meta->queryXPath(idx), xname, name);
-            builder.beginRecord(name);
+            builder.beginRecord(name, meta->mixedContent(idx), NULL);
             break;
         case FVFFendrecord:
             if (useXPath)
@@ -627,9 +643,10 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
                 ITypeInfo * singleFieldType = (useXPath && name && *name && childname && *childname) ? containsSingleSimpleFieldBlankXPath(column.childMeta.get()) : NULL;
                 if (!singleFieldType || !builder.addSingleFieldDataset(name, childname, *singleFieldType))
                 {
-                    if (builder.beginDataset(name, childname))
+                    const CResultSetMetaData *childMeta = static_cast<const CResultSetMetaData *>(column.childMeta.get());
+                    if (builder.beginDataset(name, childname, childMeta->meta->mixedContent(), NULL))
                     {
-                        static_cast<const CResultSetMetaData *>(column.childMeta.get())->getXmlSchema(builder, useXPath);
+                        childMeta->getXmlSchema(builder, useXPath);
                     }
                     builder.endDataset(name, childname);
                 }

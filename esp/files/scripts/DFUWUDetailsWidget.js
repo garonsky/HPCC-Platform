@@ -23,8 +23,6 @@ define([
     "dojo/dom-style",
     "dojo/query",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -45,10 +43,10 @@ define([
     "dojox/layout/TableContainer"
 
 ], function (exports, declare, arrayUtil, dom, domAttr, domClass, domStyle, query,
-                _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
+                BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
                 _TabContainerWidget, FileSpray, ESPDFUWorkunit, ECLSourceWidget, LFDetailsWidget,
                 template) {
-    exports.fixCircularDependency = declare("DFUWUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    exports.fixCircularDependency = declare("DFUWUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "DFUWUDetailsWidget",
         summaryWidget: null,
@@ -108,9 +106,8 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             //dom.byId("showWuid").innerHTML = params.Wuid;
             if (params.Wuid) {
@@ -121,7 +118,7 @@ define([
                 this.clearInput();
                 this.wu = ESPDFUWorkunit.Get(params.Wuid);
                 var data = this.wu.getData();
-                for (key in data) {
+                for (var key in data) {
                     this.updateInput(key, null, data[key]);
                 }
                 var context = this;

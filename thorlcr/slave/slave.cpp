@@ -206,7 +206,6 @@ void ProcessSlaveActivity::done()
 #include "join/thjoinslave.ipp"
 #include "keyedjoin/thkeyedjoinslave.ipp"
 #include "limit/thlimitslave.ipp"
-#include "lookupjoin/thlookupjoinslave.ipp"
 #include "merge/thmergeslave.ipp"
 #include "msort/thgroupsortslave.ipp"
 #include "msort/thmsortslave.ipp"
@@ -232,6 +231,8 @@ void ProcessSlaveActivity::done()
 #include "wuidwrite/thwuidwriteslave.ipp"
 #include "xmlwrite/thxmlwriteslave.ipp"
 
+CActivityBase *createLookupJoinSlave(CGraphElementBase *container);
+CActivityBase *createAllJoinSlave(CGraphElementBase *container);
 CActivityBase *createXmlParseSlave(CGraphElementBase *container);
 CActivityBase *createKeyDiffSlave(CGraphElementBase *container);
 CActivityBase *createKeyPatchSlave(CGraphElementBase *container);
@@ -438,9 +439,16 @@ public:
                 ret = createHashJoinSlave(this);
                 break;
             case TAKlookupjoin:
+            case TAKlookupdenormalize:
+            case TAKlookupdenormalizegroup:
+            case TAKsmartjoin:
+            case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
                 ret = createLookupJoinSlave(this);
                 break;
             case TAKalljoin:
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
                 ret = createAllJoinSlave(this);
                 break;
             case TAKselfjoin:
@@ -533,14 +541,6 @@ public:
             case TAKnwaymergejoin:
             case TAKnwayjoin:
                 ret = createNWayMergeJoinActivity(this);
-                break;
-            case TAKalldenormalize:
-            case TAKalldenormalizegroup:
-                ret = createAllDenormalizeSlave(this);
-                break;
-            case TAKlookupdenormalize:
-            case TAKlookupdenormalizegroup:
-                ret = createLookupDenormalizeSlave(this);
                 break;
             case TAKchilddataset:
                 UNIMPLEMENTED;

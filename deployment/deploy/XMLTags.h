@@ -69,6 +69,7 @@
 #define XML_TAG_PLUGINREF              "PluginRef"
 #define XML_TAG_ROXIE_FARM             "RoxieFarmProcess"
 #define XML_TAG_ROXIE_SERVER           "RoxieServerProcess"
+#define XML_TAG_ROXIE_SERVER_PROCESSS  XML_TAG_ROXIE_SERVER
 #define XML_TAG_ROXIE_SLAVE            "RoxieSlaveProcess"
 #define XML_TAG_ROXIE_ONLY_SLAVE       "RoxieSlave"
 #define XML_TAG_ROXIE_CHANNEL          "RoxieChannel"
@@ -209,7 +210,6 @@
 #define XML_ATTR_SCHEMA_LOCATION       "@schemaLocation"
 #define XML_ATTR_SERVERCURDIR          "@serverCurDir"
 #define XML_ATTR_SERVICE               "@service"
-#define XML_ATTR_SLAVES                "@slaves"
 #define XML_ATTR_SLAVESNAME            "@slavesName"
 #define XML_ATTR_SPARESNAME            "@sparesName"
 #define XML_ATTR_SRCPATH               "@srcPath"

@@ -203,6 +203,11 @@
                 <xsl:attribute name="memoryLimit">
                    <xsl:value-of select="@xrefMaxMemory"/>
                 </xsl:attribute>
+                <xsl:if test="string(@suspendCoalescerDuringXref) != ''">
+                 <xsl:attribute name="suspendCoalescerDuringXref">
+                   <xsl:value-of select="@suspendCoalescerDuringXref"/>
+                 </xsl:attribute>
+                </xsl:if>
             </xsl:element>
             <xsl:element name="DfuExpiry">
                 <xsl:attribute name="interval">
@@ -211,6 +216,16 @@
                 <xsl:attribute name="at">
                    <xsl:value-of select="@ExpiryAt"/>
                 </xsl:attribute>
+                <xsl:if test="string(@PersistExpiryDefault) != ''">
+                    <xsl:attribute name="persistExpiryDefault">
+                       <xsl:value-of select="@PersistExpiryDefault"/>
+                    </xsl:attribute>
+                </xsl:if>
+                <xsl:if test="string(@ExpiryDefault) != ''">
+                    <xsl:attribute name="expiryDefault">
+                       <xsl:value-of select="@ExpiryDefault"/>
+                    </xsl:attribute>
+                </xsl:if>
             </xsl:element>
             <xsl:element name="ThorQMon">
                 <xsl:attribute name="queues">

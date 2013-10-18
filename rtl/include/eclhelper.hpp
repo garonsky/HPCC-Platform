@@ -850,6 +850,9 @@ enum ThorActivityKind
     TAKexternalprocess,
     TAKdictionaryworkunitwrite,
     TAKdictionaryresultwrite,
+    TAKsmartjoin,
+    TAKsmartdenormalize,
+    TAKsmartdenormalizegroup,
 
     TAKlast
 };
@@ -1072,6 +1075,7 @@ enum
     TDWnewcompress      = 0x20000,      // new compressed format - only specified on output
     TDWnooverwrite      = 0x40000,
     TDWupdatecrc        = 0x80000,      // has format crc
+    TDWexpires          = 0x100000,
 };
 
 //flags for thor index read
@@ -1111,6 +1115,7 @@ enum
     TIWnooverwrite      = 0x0200,
     TIWupdatecrc        = 0x0400,
     TIWhaswidth         = 0x0800,
+    TIWexpires          = 0x1000,
 };
 
 //flags for thor dataset/temp tables
@@ -1571,6 +1576,8 @@ enum {
     JFindexfromactivity          = 0x02000000,
     JFleftSortedLocally          = 0x04000000,
     JFrightSortedLocally         = 0x08000000,
+    JFsmart                      = 0x10000000,
+    JFunstable                   = 0x20000000, // can sorts be unstable?
 };
 
 // FetchFlags
@@ -1850,6 +1857,7 @@ enum
     KDPtransform            = 0x0002,
     KDPvaroutputname        = 0x0004,
     KDPnooverwrite          = 0x0008,
+    KDPexpires              = 0x0010,
 };
 
 struct IHThorKeyDiffArg : public IHThorArg
@@ -2713,6 +2721,8 @@ struct IHThorDictionaryResultWriteArg : public IHThorArg
 
 //------------------------- Other stuff -------------------------
 
+struct IRemoteConnection;
+
 struct IGlobalCodeContext
 {
     virtual ICodeContext * queryCodeContext() = 0;
@@ -2729,10 +2739,12 @@ struct IGlobalCodeContext
 
     virtual void selectCluster(const char * cluster) = 0;
     virtual void restoreCluster() = 0;
-    virtual void startPersist(const char * name) = 0;
-    virtual void finishPersist() = 0;
+
+    // These next 5 are not used from generated code, and should be remove in 5.0
+    virtual IRemoteConnection *startPersist(const char * name) = 0;
+    virtual void finishPersist(IRemoteConnection *) = 0;
     virtual void clearPersist(const char * logicalName) = 0;
-    virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) = 0;
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) = 0;
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) = 0;
 
     virtual void setWorkflowCondition(bool value) = 0;

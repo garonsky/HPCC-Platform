@@ -20,7 +20,6 @@ require([
     "dojo/_base/xhr",
     "dojo/data/ItemFileReadStore",
     "dojo/on",
-    "dojo/dom",
 
     "dijit/form/Select",
     "dijit/registry",
@@ -28,10 +27,10 @@ require([
     "hpcc/WsTopology",
     "hpcc/WsWorkunits",
     "hpcc/FileSpray"
-], function (declare, lang, arrayUtil, xhr, ItemFileReadStore, on, dom,
+], function (declare, lang, arrayUtil, xhr, ItemFileReadStore, on,
     Select, registry,
     WsTopology, WsWorkunits, FileSpray) {
-    return declare("TargetSelectWidget", Select, {
+    return declare("TargetSelectWidget", [Select], {
 
         loading: false,
         defaultValue: "",
@@ -80,6 +79,9 @@ require([
             if (target === null)
                 target = "";
             this.inherited(arguments);
+            if (this.callback) {
+                this.callback(this.value, this._getRowAttr());
+            }
         },
 
         _getValueAttr: function () {
@@ -87,6 +89,18 @@ require([
                 return this.defaultValue;
 
             return this.value;
+        },
+
+        _getRowAttr: function () {
+            var context = this;
+            var retVal = null;
+            arrayUtil.forEach(this.options, function (item, idx) {
+                if (context.value === item.value) {
+                    retVal = item;
+                    return false;
+                }
+            });
+            return retVal;
         },
 
         _postLoad: function () {
@@ -180,8 +194,8 @@ require([
                     }
 
                     if (!context.includeBlank && context._value == "") {
-                        if (response.TpLogicalClusterQueryResponse.default) {
-                            context._value = response.TpLogicalClusterQueryResponse.default.Name;
+                        if (response.TpLogicalClusterQueryResponse["default"]) {
+                            context._value = response.TpLogicalClusterQueryResponse["default"].Name;
                         } else {
                             context._value = context.options[0].value;
                         }

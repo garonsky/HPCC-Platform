@@ -15,8 +15,11 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/array",
     "dojo/_base/lang",
     "dojo/on",
+
+    "dijit/layout/ContentPane",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
@@ -26,15 +29,17 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
+    "hpcc/ESPRequest",
     "hpcc/ESPWorkunit",
     "hpcc/ResultWidget",
     "hpcc/LFDetailsWidget",
     "hpcc/SFDetailsWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, on,
+], function (declare, arrayUtil, lang, on,
+                ContentPane,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPWorkunit, ResultWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
+                GridDetailsWidget, ESPRequest, ESPWorkunit, ResultWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
     return declare("ResultsWidget", [GridDetailsWidget], {
         gridTitle: "Outputs",
         idProperty: "Sequence",
@@ -48,10 +53,17 @@ define([
             this.selectChild(tab);
         },
 
+        _onRowDblClickView: function (row, viewName) {
+            var tab = this.ensurePane(row, {
+                resultView: true,
+                viewName: viewName
+            });
+            this.selectChild(tab);
+        },
+
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
@@ -83,12 +95,26 @@ define([
                         }
                     },
                     FileName: {
-                        label: "FileName", sortable: true,
+                        label: "File Name", sortable: true,
                         formatter: function (FileName, idx) {
                             return "<a href='#' rowIndex=" + idx + " class='" + context.id + "FileClick'>" + FileName + "</a>";
                         }
                     },
-                    Value: { label: "Value", width: 360, sortable: true }
+                    Value: {
+                        label: "Value",
+                        width: 360,
+                        sortable: true
+                    },
+                    ResultViews: {
+                        label: "Views", sortable: true,
+                        formatter: function (ResultViews, idx) {
+                            var retVal = "";
+                            arrayUtil.forEach(ResultViews, function (item, idx) {
+                                retVal += "<a href='#' viewName=" + encodeURIComponent(item) + " class='" + context.id + "ViewClick'>" + item + "</a>&nbsp;";
+                            });
+                            return retVal;
+                        }
+                    }
                 }
             }, domID);
 
@@ -105,12 +131,20 @@ define([
                     context._onRowDblClickFile(row);
                 }
             });
+            on(document, "." + this.id + "ViewClick:click", function (evt) {
+                if (context._onRowDblClick) {
+                    var row = context.grid.row(evt).data;
+                    context._onRowDblClickView(row, evt.srcElement.getAttribute("viewName"));
+                }
+            });
             return retVal;
         },
 
         getDetailID: function (row, params) {
             if (row.FileName && params && params.logicalFile) {
                 return this.id + "_" + "File" + row[this.idProperty];
+            } else if (params && params.resultView && params.viewName) {
+                return this.id + "_" + params.viewName + row[this.idProperty];
             }
             return this.inherited(arguments);
         },
@@ -128,6 +162,24 @@ define([
                         }
                     }
                 });
+            } else if (params && params.resultView && params.viewName) {
+                return new ContentPane({
+                    id: id,
+                    title: row.Name + " [" + decodeURIComponent(params.viewName) + "]",
+                    closable: true,
+                    content: dojo.create("iframe", {
+                        src: ESPRequest.getBaseURL("WsWorkunits") + "/WUResultView?Wuid=" + row.Wuid + "&ResultName=" + row.Name + "&ViewName=" + params.viewName,
+                        style: "border: 0; width: 100%; height: 100%"
+                    }),
+                    hpcc: {
+                        type: "ContentPane",
+                        params: {
+                            Name: row.Name,
+                            viewName: params.viewName
+                        }
+                    },
+                    noRefresh: true
+                });
             } else {
                 return new ResultWidget({
                     id: id,
@@ -136,7 +188,10 @@ define([
                     style: "padding: 0px; overflow: hidden",
                     hpcc: {
                         type: "ResultWidget",
-                        params: row
+                        params: {
+                            Wuid: row.Wuid,
+                            Sequence: row.Sequence
+                        }
                     }
                 });
             }

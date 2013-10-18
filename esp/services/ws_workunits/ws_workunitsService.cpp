@@ -485,7 +485,10 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                 case ActionRestore:
                 {
                     SocketEndpoint ep;
-                    getSashaNode(ep);
+                    if (params->hasProp("sashaServerIP"))
+                        ep.set(params->queryProp("sashaServerIP"), params->getPropInt("sashaServerPort"));
+                    else
+                        getSashaNode(ep);
 
                     Owned<ISashaCommand> cmd = createSashaCommand();
                     cmd->setAction(SCA_RESTORE);
@@ -691,6 +694,14 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     awusCacheMinutes = AWUS_CACHE_MIN_DEFAULT;
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/AWUsCacheMinutes", process, service);
     cfg->getPropInt(xpath.str(), awusCacheMinutes);
+
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/serverForArchivedECLWU/@netAddress", process, service);
+    if (cfg->hasProp(xpath.str()))
+    {
+        sashaServerIp.set(cfg->queryProp(xpath.str()));
+        xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/serverForArchivedECLWU/@port", process, service);
+        sashaServerPort = cfg->getPropInt(xpath.str(), DEFAULT_SASHA_PORT);
+    }
 
     directories.set(cfg->queryPropTree("Software/Directories"));
 
@@ -979,6 +990,11 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
             params->setProp("Protect", streq(sAction.str(), "protect"));
         if (*action==ActionChangeState && streq(sAction.str(), "settofailed"))
             params->setProp("State",4);
+        if ((*action==ActionRestore) && !sashaServerIp.isEmpty())
+        {
+            params->setProp("sashaServerIP", sashaServerIp.get());
+            params->setProp("sashaServerPort", sashaServerPort);
+        }
 
         IArrayOf<IConstWUActionResult> results;
         if (doAction(context, req.getWuids(), *action, params, &results) && *action!=ActionDelete && checkRedirect(context))
@@ -1684,26 +1700,18 @@ bool getWsWuInfoFromSasha(IEspContext &context, SocketEndpoint &ep, const char* 
 
 #define     WUDETAILS_REFRESH_MINS 1
 
-void getArchivedWUInfo(IEspContext &context, const char *wuid, IEspWUInfoResponse &resp)
+void getArchivedWUInfo(IEspContext &context, const char* sashaServerIP, unsigned sashaServerPort, const char *wuid, IEspWUInfoResponse &resp)
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
-
-    Owned<IPropertyTree> root = &constEnv->getPTree();
-    if (!root)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment info");
-    Owned<IPropertyTreeIterator> instances = root->getElements("Software/SashaServerProcess/Instance");
-
-    ForEach(*instances)
+    SocketEndpoint ep;
+    if (sashaServerIP && *sashaServerIP)
+        ep.set(sashaServerIP, sashaServerPort);
+    else
+        getSashaNode(ep);
+    if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
     {
-        IPropertyTree &instance = instances->query();
-        SocketEndpoint ep(instance.queryProp("@netAddress"), instance.getPropInt("@port", 8877));
-        if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
-        {
-            resp.setAutoRefresh(WUDETAILS_REFRESH_MINS);
-            resp.setCanCompile(false);
-            return;
-        }
+        resp.setAutoRefresh(WUDETAILS_REFRESH_MINS);
+        resp.setCanCompile(false);
+        return;
     }
 
     throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot find workunit %s.", wuid);
@@ -1721,7 +1729,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
         checkAndTrimWorkunit("WUInfo", wuid);
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
-            getArchivedWUInfo(context, wuid.str(), resp);
+            getArchivedWUInfo(context, sashaServerIp.get(), sashaServerPort, wuid.str(), resp);
         else
         {
             try
@@ -1769,7 +1777,8 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             {
                 if (e->errorCode() != ECLWATCH_CANNOT_OPEN_WORKUNIT)
                     throw e;
-                getArchivedWUInfo(context, wuid.str(), resp);
+                getArchivedWUInfo(context, sashaServerIp.get(), sashaServerPort, wuid.str(), resp);
+                e->Release();
             }
 
             switch (resp.getWorkunit().getStateID())
@@ -2028,6 +2037,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             bDoubleCheckState = true;
     }
 
+    addWUQueryFilter(filters, filterCount, filterbuf, req.getWuid(), WUSFwildwuid);
     addWUQueryFilter(filters, filterCount, filterbuf, req.getCluster(), WUSFcluster);
     if(version > 1.07)
         addWUQueryFilter(filters, filterCount, filterbuf, req.getRoxieCluster(), WUSFroxiecluster);
@@ -2144,7 +2154,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     return;
 }
 
-void doWUQueryFromArchive(IEspContext &context, ArchivedWuCache &archivedWuCache, int cacheTime, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
+void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsigned sashaServerPort,
+       ArchivedWuCache &archivedWuCache, int cacheTime, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
 {
     SecAccessFlags accessOwn;
     SecAccessFlags accessOthers;
@@ -2159,7 +2170,10 @@ void doWUQueryFromArchive(IEspContext &context, ArchivedWuCache &archivedWuCache
     bool hasNextPage = true;
 
     SocketEndpoint ep;
-    getSashaNode(ep);
+    if (sashaServerIP && *sashaServerIP)
+        ep.set(sashaServerIP, sashaServerPort);
+    else
+        getSashaNode(ep);
 
     Owned<INode> sashaserver = createINode(ep);
 
@@ -2383,14 +2397,9 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
         const char* wuid = wuidStr.trim().str();
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
-            doWUQueryFromArchive(context, *archivedWuCache, awusCacheMinutes, req, resp);
-        else if(notEmpty(wuid))
-        {
-            if (!looksLikeAWuid(wuid))
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
-
+            doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
+        else if(notEmpty(wuid) && looksLikeAWuid(wuid))
             doWUQueryBySingleWuid(context, wuid, resp);
-        }
         else if (notEmpty(req.getECL()) || notEmpty(req.getApplicationName()) || notEmpty(req.getApplicationKey()) || notEmpty(req.getApplicationData()))
             doWUQueryByXPath(context, req, resp);
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
@@ -3879,6 +3888,214 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
             deploySharedObject(context, req, resp, queryDirectory.str());
         else
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "WUDeployWorkunit '%s' unkown object type.", type);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+void CWsWorkunitsEx::addProcess(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, MemoryBuffer &mb)
+{
+    IPropertyTreeIterator& proc = cwu->getProcesses(process, NULL);
+    ForEach (proc)
+    {
+        StringBuffer logName;
+        proc.query().getProp("@log",logName);
+        if (!logName.length())
+            continue;
+        StringBuffer pid;
+        pid.appendf("%d",proc.query().getPropInt("@pid"));
+        mb.clear();
+        if (0 == stricmp(process, "EclAgent"))
+            winfo.getWorkunitEclAgentLog(logName.str(), pid.str(), mb);
+        else if (0 == stricmp(process, "Thor"))
+            winfo.getWorkunitThorLog(logName.str(), mb);
+        else
+            return;
+
+        zipper->addContentToZIP(mb.length(), mb.bufferBase(), (char*)logName.str(), true);
+    }
+}
+
+
+bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest &req, IEspWUReportBugResponse &resp)
+{
+    try
+    {
+#ifndef _USE_ZLIB
+        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"The data cannot be compressed.");
+#else
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cwu = factory->openWorkUnit(req.getWUID(), false);
+        if(!cwu.get())
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit %s.", req.getWUID());
+
+        //Create output report file
+        StringBuffer zipFile;
+        StringBuffer userName;
+        if (context.queryUser())
+            userName.append(context.queryUser()->getName());
+        zipFile.append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".zip");
+        SCMStringBuffer temp;
+        StringBuffer sb;
+        sb.append("Workunit:     ").append(cwu->getWuid(temp)).append("\r\n");
+        sb.append("User:         ").append(cwu->getUser(temp).str()).append("\r\n");
+        sb.append("Build Version:").append(req.getBuildVersion()).append("\r\n");
+        sb.append("Cluster:      ").append(cwu->getClusterName(temp).str()).append("\r\n");
+        if (req.getESPIPAddress())
+            sb.append("ESP:          ").append(req.getESPIPAddress()).append("\r\n");
+        if (req.getThorIPAddress())
+            sb.append("Thor:         ").append(req.getThorIPAddress()).append("\r\n");
+        sb.append("Exceptions:   ");
+        if (0 == cwu->getExceptionCount())
+            sb.append("None\r\n");
+        else
+        {
+            sb.append("\r\n");
+            Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
+            ForEach(*exceptions)
+            {
+                sb.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+            }
+        }
+        sb.append("Problem:      ").append(req.getProblemDescription()).append("\r\n\r\n");
+        sb.append("What Changed: ").append(req.getWhatChanged()).append("\r\n\r\n");
+        sb.append("Timing:       ").append(req.getWhereSlow()).append("\r\n\r\n");
+
+        //Zip all files together
+        {
+            IZZIPor* zipper = createZZIPor();
+#ifdef _DEBUG
+            zipper->setTraceLevel(100);
+#endif
+            StringBuffer fs;
+            //add report file to ZIP
+            fs.append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".txt");
+            zipper->addContentToZIP(sb.length(), (void*)sb.str(), (char*)fs.str(), false);
+
+            //add ECL query/archive to zip
+            Owned<IConstWUQuery> query = cwu->getQuery();
+            StringBuffer ecl;//String buffers containing file contents must persist until ziptofile is called !
+            if(query)
+            {
+                query->getQueryText(temp);
+                if (temp.length())
+                {
+                    fs.clear().append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".");
+                    fs.append(isArchiveQuery(temp.str()) ? "archive" : "ecl");
+                    ecl.append(temp.str());
+                    zipper->addContentToZIP(ecl.length(), (void*)ecl.str(), (char*)fs.str(), true);
+                }
+            }
+
+            //Add logfiles to ZIP
+            WsWuInfo winfo(context, cwu);
+            MemoryBuffer eclagentLogMB;
+            MemoryBuffer thorLogMB;
+            addProcess(zipper, cwu, winfo, "EclAgent", eclagentLogMB);
+            addProcess(zipper, cwu, winfo, "Thor", thorLogMB);
+
+            //Write out ZIP file
+            zipper->zipToFile(zipFile.str());
+        }
+
+        //Download ZIP file to user
+        Owned<IFile> f = createIFile(zipFile.str());
+        Owned<IFileIO> io = f->open(IFOread);
+        MemoryBuffer mb;
+        void * data = mb.reserve((unsigned)io->size());
+        size32_t read = io->read(0, (unsigned)io->size(), data);
+        mb.setLength(read);
+        resp.setThefile(mb);
+        resp.setThefile_mimetype(HTTP_TYPE_OCTET_STREAM);
+        StringBuffer headerStr("attachment;filename=");
+        headerStr.append(zipFile.str());
+        context.addCustomerHeader("Content-disposition", headerStr.str());
+        io->close();
+        f->remove();
+#endif
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUGetBugReportInfo(IEspContext &context, IEspWUGetBugReportInfoRequest &req, IEspWUGetBugReportInfoResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid = req.getWUID();
+        checkAndTrimWorkunit("WUGetBugReportInfo", wuid);
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
+
+        StringBuffer EspIP, ThorIP;
+        resp.setWUID(wuid.str());
+        resp.setBuildVersion(getBuildVersion());
+        IpAddress ipaddr = queryHostIP();
+        ipaddr.getIpText(EspIP);
+        resp.setESPIPAddress(EspIP.str());
+
+        //Get Archive
+        Owned<IConstWUQuery> query = cw->getQuery();
+        if(query)
+        {
+            SCMStringBuffer queryText;
+            query->getQueryText(queryText);
+            if (queryText.length() && isArchiveQuery(queryText.str()))
+                resp.setArchive(queryText.str());
+        }
+
+        //Get Thor IP
+        BoolHash uniqueProcesses, uniqueThorIPs;
+        Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
+        ForEach (*thorInstances)
+        {
+            SCMStringBuffer processName;
+            thorInstances->str(processName);
+            if ((processName.length() < 1) || uniqueProcesses.getValue(processName.str()))
+                continue;
+
+            uniqueProcesses.setValue(processName.str(), true);
+            Owned<IStringIterator> thorLogs = cw->getLogs("Thor", processName.str());
+            ForEach (*thorLogs)
+            {
+                SCMStringBuffer logName;
+                thorLogs->str(logName);
+                if (!logName.length())
+                    continue;
+
+                const char* thorIPPtr = NULL;
+                const char* ptr = logName.str();
+                while (ptr)
+                {
+                    if (!thorIPPtr && (*ptr != '/'))
+                        thorIPPtr = ptr;
+                    else if (thorIPPtr && (*ptr == '/'))
+                        break;
+                    ptr++;
+                }
+                if (!thorIPPtr)
+                    continue;
+
+                //Found a thor IP
+                if (ThorIP.length())
+                    ThorIP.append(",");
+                if (!*ptr)
+                    ThorIP.append(thorIPPtr);
+                else
+                    ThorIP.append(ptr-thorIPPtr, thorIPPtr);
+            }
+        }
+        if (ThorIP.length())
+            resp.setThorIPAddress(ThorIP.str());
     }
     catch(IException* e)
     {

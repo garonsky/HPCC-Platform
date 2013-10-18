@@ -36,6 +36,10 @@
 #define eqEclCCServer       "EclCCServerProcess"
 #endif
 
+#ifndef eqEclServer
+#define eqEclServer       "EclServerProcess"
+#endif
+
 #ifndef eqEclAgent
 #define eqEclAgent          "EclAgentProcess"
 #endif
@@ -575,6 +579,7 @@ void Cws_machineEx::readSettingsForTargetClusters(IEspContext& context, StringAr
         }
 
         Owned<IPropertyTreeIterator> eclCCServerProcesses= pCluster->getElements(eqEclCCServer);
+        Owned<IPropertyTreeIterator> eclServerProcesses= pCluster->getElements(eqEclServer);
         Owned<IPropertyTreeIterator> eclAgentProcesses= pCluster->getElements(eqEclAgent);
         Owned<IPropertyTreeIterator> eclSchedulerProcesses= pCluster->getElements(eqEclScheduler);
 
@@ -590,6 +595,10 @@ void Cws_machineEx::readSettingsForTargetClusters(IEspContext& context, StringAr
         //Read eclCCServer process
         if (eclCCServerProcesses->first())
             readTargetClusterProcesses(eclCCServerProcesses->query(), eqEclCCServer, uniqueProcesses, machineInfoData, targetClusterOut);
+
+        //Read eclServer process
+        if (eclServerProcesses->first())
+            readTargetClusterProcesses(eclServerProcesses->query(), eqEclServer, uniqueProcesses, machineInfoData, targetClusterOut);
 
         //Read eclAgent process
         if (eclAgentProcesses->first())
@@ -639,7 +648,7 @@ void Cws_machineEx::readTargetClusterProcesses(IPropertyTree &processNode, const
         if (!pEnvironmentDirectories || !getConfigurationDirectory(pEnvironmentDirectories, "run", nodeType, process, dirStr))
             dirStr.clear().append(processNode.queryProp("@directory"));
 
-        getProcesses(constEnv, pEnvironmentSoftware, process, nodeType, dirStr.str(), machineInfoData, uniqueProcesses);
+        getProcesses(constEnv, pEnvironmentSoftware, process, nodeType, dirStr.str(), machineInfoData, false, uniqueProcesses);
         return;
     }
 
@@ -648,14 +657,14 @@ void Cws_machineEx::readTargetClusterProcesses(IPropertyTree &processNode, const
 
     if (strieq(nodeType, eqThorCluster))
     {
-        getProcesses(constEnv, pClusterProcess, process, eqThorMasterProcess, dirStr.str(), machineInfoData, uniqueProcesses);
+        getProcesses(constEnv, pClusterProcess, process, eqThorMasterProcess, dirStr.str(), machineInfoData, true, uniqueProcesses);
         getThorProcesses(constEnv, pClusterProcess, process, eqThorSlaveProcess, dirStr.str(), machineInfoData, uniqueProcesses);
         getThorProcesses(constEnv, pClusterProcess, process, eqThorSpareProcess, dirStr.str(), machineInfoData, uniqueProcesses);
     }
     else if (strieq(nodeType, eqRoxieCluster))
     {
         BoolHash uniqueRoxieProcesses;
-        getProcesses(constEnv, pClusterProcess, process, eqRoxieServerProcess, dirStr.str(), machineInfoData, uniqueProcesses, &uniqueRoxieProcesses);
+        getProcesses(constEnv, pClusterProcess, process, eqRoxieServerProcess, dirStr.str(), machineInfoData, true, uniqueProcesses, &uniqueRoxieProcesses);
     }
 }
 
@@ -725,7 +734,7 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
 
 void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* environment, const char* processName,
                                  const char* processType, const char* directory, CGetMachineInfoData& machineInfoData,
-                                 BoolHash& uniqueProcesses, BoolHash* uniqueRoxieProcesses)
+                                 bool isThorOrRoxieProcess, BoolHash& uniqueProcesses, BoolHash* uniqueRoxieProcesses)
 {
     Owned<IPropertyTreeIterator> processes= environment->getElements(processType);
     ForEach(*processes)
@@ -733,6 +742,14 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
         StringArray processInstances, directories;
 
         IPropertyTree &process = processes->query();
+        //Thor master and roxie server has been checked before this call.
+        if (!isThorOrRoxieProcess)
+        {
+            const char* name = process.queryProp("@name");
+            if (!name || !*name || !streq(name, processName))
+                continue;
+        }
+
         const char* computerName = process.queryProp("@computer");
         if (computerName && *computerName)
             appendProcessInstance(computerName, directory, NULL, processInstances, directories);
@@ -1036,6 +1053,7 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
         e->errorMessage(buf);
         response.append(buf.str());
         exitCode = e->errorCode();
+        e->Release();
     }
 #ifndef NO_CATCHALL
     catch(...)

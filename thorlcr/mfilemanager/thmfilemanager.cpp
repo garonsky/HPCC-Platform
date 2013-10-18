@@ -254,7 +254,7 @@ public:
         LOG(daliAuditLogCat,"%s",outs.str());
     }
 
-    IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary=false, bool optional=false, bool reportOptional=false)
+    IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary=false, bool optional=false, bool reportOptional=false, bool updateAccessed=true)
     {
         StringBuffer scopedName;
         bool paused = false;
@@ -299,6 +299,8 @@ public:
             }
             return NULL;
         }
+        if (updateAccessed)
+            file->setAccessed();
         return LINK(file);
     }
 
@@ -548,24 +550,18 @@ public:
             fileMap.replace(*new CIDistributeFileMapping(scopedName.str(), *LINK(file))); // cache takes ownership
             return;
         }
-        if (props.getPropBool("@persistent"))
-        {
-            // JCSMORE - is this right? - looks like it will set to *last* mod time - need to check..
-            //         - shouldn't it just be a call to updateAccessTime(job, *f) ?
-
-            CDateTime modTime;
-            if (file->getModificationTime(modTime))
-            {
-                StringBuffer modTimeStr;
-                modTime.getString(modTimeStr);
-                file->queryAttributes().setProp("@accessed", modTimeStr.str());
-            }
-        }
+        file->setAccessed();
         if (publishedFile)
             publishedFile->set(file);
         __int64 fs = file->getFileSize(false,false);
         if (fs!=-1)
             file->queryAttributes().setPropInt64("@size",fs);
+        if (file->isCompressed())
+        {
+            fs = file->getDiskSize(false,false);
+            if (fs!=-1)
+                file->queryAttributes().setPropInt64("@compressedSize",fs);
+        }
         file->attach(scopedName.str(), job.queryUserDescriptor());
         unsigned c=0;
         for (; c<fileDesc.numClusters(); c++)
@@ -605,16 +601,6 @@ public:
         Owned<IDistributedFilePart> part = file->getPart(partno);
         return part->queryAttributes().getPropInt64("@offset");;
     }
-
-    void updateAccessTime(CJobBase &job, const char *logicalName)
-    {
-        StringBuffer scoped;
-        addScope(job, logicalName, scoped);
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(scoped.str(), job.queryUserDescriptor());
-        if (f)
-            f->setAccessed();
-    }
-
     virtual bool scanLogicalFiles(CJobBase &job, const char *_pattern, StringArray &results)
     {
         if (strcspn(_pattern, "*?") == strlen(_pattern))

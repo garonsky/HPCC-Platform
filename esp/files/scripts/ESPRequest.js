@@ -37,7 +37,11 @@ define([
         },
 
         getParamFromURL: function (key) {
-            var value = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))[key];
+            var value = "";
+            if (dojo.doc.location.search) {
+                var searchStr = dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0));
+                value = searchStr ? dojo.queryToObject(searchStr)[key] : "";
+            }
 
             if (value)
                 return value;
@@ -111,25 +115,13 @@ define([
             var handleAs = params.handleAs ? params.handleAs : "json";
             return this._send(service, action, params).then(function (response) {
                 if (!params.suppressExceptionToaster && handleAs == "json") {
-                    var exceptionCode20080 = false; //  Deleted WU
+                    var deletedWorkunit = false; //  Deleted WU
                     if (lang.exists("Exceptions.Source", response)) {
-                        var message = "<h3>" + response.Exceptions.Source + "</h3>";
-                        if (lang.exists("Exceptions.Exception", response)) {
-                            exceptions = response.Exceptions.Exception;
-                            for (var i = 0; i < response.Exceptions.Exception.length; ++i) {
-                                if (service === "WsWorkunits" && action === "WUInfo" && response.Exceptions.Exception[i].Code === 20080) {
-                                    exceptionCode20080 = true;
-                                }
-                                message += "<p>" + response.Exceptions.Exception[i].Message + "</p>";
-                            }
-                        }
-                        if (!exceptionCode20080) {
-                            dojo.publish("hpcc/brToaster", {
-                                message: message,
-                                type: "error",
-                                duration: -1
-                            });
-                        }
+                        dojo.publish("hpcc/brToaster", {
+                            Severity: "Error",
+                            Source: service + "." + action,
+                            Exceptions: response.Exceptions
+                        });
                     }
                 }
                 dojo.publish("hpcc/standbyBackgroundHide");
@@ -145,9 +137,9 @@ define([
                 }
 
                 dojo.publish("hpcc/brToaster", {
-                    message: message,
-                    type: "error",
-                    duration: -1
+                    Severity: "Error",
+                    Source: service + "." + action,
+                    Exceptions: [{ Message: message }]
                 });
                 dojo.publish("hpcc/standbyBackgroundHide");
                 return error;
@@ -232,7 +224,7 @@ define([
                 delete target[arrayName];
                 var singularName = arrayName.substr(0, arrayName.length - 1);
                 var i = 0;
-                for (key in appData) {
+                for (var key in appData) {
                     target[arrayName + "." + singularName + "." + i + '.Application'] = "ESPRequest.js";
                     target[arrayName + "." + singularName + "." + i + '.Name'] = key;
                     target[arrayName + "." + singularName + "." + i + '.Value'] = appData[key];
@@ -254,6 +246,9 @@ define([
         },
 
         Store: declare(null, {
+            SortbyProperty: 'Sortby',
+            DescendingProperty: 'Descending',
+
             constructor: function (options) {
                 if (!this.service) {
                     throw new Error("service:  Undefined - Missing service name (eg 'WsWorkunts').");
@@ -324,10 +319,8 @@ define([
                     }
                 }
                 if (options !== undefined && options.sort !== undefined && options.sort[0].attribute !== undefined) {
-                    request['Sortby'] = options.sort[0].attribute;
-                    if (options.sort[0].descending) {
-                        request['Descending'] = options.sort[0].descending;
-                    }
+                    request[this.SortbyProperty] = options.sort[0].attribute;
+                    request[this.DescendingProperty] = options.sort[0].descending ? true : false;
                 }
                 if (this.preRequest) {
                     this.preRequest(request);
@@ -350,13 +343,16 @@ define([
                 Deferred.when(results, function (response) {
                     var items = [];
                     if (context._hasResponseContent(response)) {
+                        if (context.preProcessFullResponse) {
+                            context.preProcessFullResponse(response, request, query, options);
+                        }
                         if (context.preProcessResponse) {
                             var responseQualiferArray = context.responseQualifier.split(".");
-                            context.preProcessResponse(lang.getObject(responseQualiferArray[0], false, response), request);
+                            context.preProcessResponse(lang.getObject(responseQualiferArray[0], false, response), request, query, options);
                         }
                         arrayUtil.forEach(context._getResponseContent(response), function (item, index) {
                             if (context.preProcessRow) {
-                                context.preProcessRow(item);
+                                context.preProcessRow(item, request, query, options);
                             }
                             var storeItem = context.get(context.getIdentity(item), item);
                             context.update(context.getIdentity(item), item);

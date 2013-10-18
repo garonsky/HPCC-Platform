@@ -34,6 +34,9 @@
 #define DEFAULT_XREF_INTERVAL       48 // hours
 #define DEFAULT_EXPIRY_INTERVAL     24 // hours
 
+#define DEFAULT_EXPIRYDAYS 14
+#define DEFAULT_PERSISTEXPIRYDAYS 7
+
 
 #define LOGPFX "XREF: "
 #define LOGPFX2 "FILEEXPIRY: "
@@ -807,7 +810,7 @@ public:
             iswin = grp->ordinality()?(getDaliServixOs(grp->queryNode(0).endpoint())==DAFS_OSwindows):false;
             setBaseDirectory(ddir,0,iswin?DFD_OSwindows:DFD_OSunix);
             setBaseDirectory(rdir,1,iswin?DFD_OSwindows:DFD_OSunix);
-            rootdir.set(queryBaseDirectory(0,iswin?DFD_OSwindows:DFD_OSunix));
+            rootdir.set(queryBaseDirectory(grp_unknown, 0, iswin?DFD_OSwindows:DFD_OSunix));
         }
         else {
             rootdir.set(basedir);
@@ -1050,7 +1053,7 @@ public:
                     StringBuffer fn;
                     StringBuffer dir;
                     StringBuffer lastdir;
-                    cDirDesc *pdir;
+                    cDirDesc *pdir = NULL;
                     bool islost = false;
                     bool incluster = true;          
                     for (unsigned p=0;p<np;p++) {
@@ -1986,8 +1989,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
     bool stopped;
     Semaphore stopsem;
     Mutex runmutex;
-    Owned<IRemoteConnection> statusconn;
-    bool ignorelazylost;
+    bool ignorelazylost, suspendCoalescer;
 
     class cRunThread: public Thread
     {
@@ -2003,7 +2005,6 @@ class CSashaXRefServer: public ISashaServer, public Thread
             parent.runXRef(servers,false,false);
             return 0;
         }
-    
     }; 
 
 
@@ -2013,6 +2014,7 @@ public:
     CSashaXRefServer()
         : Thread("CSashaXRefServer")
     {
+        suspendCoalescer = true; // can be overridden by configuration setting
         stopped = false;
     }
 
@@ -2044,23 +2046,23 @@ public:
     {
         if (stopped||!clustcsl||!*clustcsl)
             return;
-        struct cSuspendResume
+        class CSuspendResume : public CSimpleInterface
         {
-            Owned<IRemoteConnection> &statusconn;
-            cSuspendResume(Owned<IRemoteConnection> &_statusconn) 
-                : statusconn(_statusconn)
+        public:
+            CSuspendResume()
             {
-                statusconn.clear();
                 PROGLOG(LOGPFX "suspending coalesce");
                 suspendCoalescingServer();
             }
-            ~cSuspendResume() 
+            ~CSuspendResume()
             {
-                statusconn.clear();
                 PROGLOG(LOGPFX "resuming coalesce");
                 resumeCoalescingServer();
             }
-        } suspendresume(statusconn);
+        };
+        Owned<CSimpleInterface> suspendresume;
+        if (suspendCoalescer)
+            suspendresume.setown(new CSuspendResume());
         synchronized block(runmutex);
         if (stopped)
             return;
@@ -2163,28 +2165,6 @@ public:
             conn->queryRoot()->setPropBool("@useSasha",on);
     }
 
-    void initStatus(const char *cluster)
-    {
-        StringBuffer xpath;
-        xpath.appendf("/DFU/XREF/Cluster[@name=\"%s\"]",cluster);
-        loop {
-            statusconn.setown(querySDS().connect(xpath.str(),myProcessSession(),RTM_NONE,INFINITE));
-            if (statusconn)
-                break;
-            Owned<IRemoteConnection> conn = querySDS().connect("/DFU/XREF",myProcessSession(),RTM_CREATE_QUERY|RTM_LOCK_WRITE ,INFINITE);
-            StringBuffer xpath2;
-            xpath2.appendf("Cluster[@name=\"%s\"]",cluster);
-            if (!conn->queryRoot()->hasProp(xpath2.str()))
-                conn->queryRoot()->addPropTree("Cluster",createPTree("Cluster"))->setProp("@name",cluster);
-        }
-    }
-
-    void setStatus(const char *string) 
-    {
-        statusconn->queryRoot()->setProp("@status",string);
-        statusconn->commit();
-    }
-
     int run()
     {
         Owned<IPropertyTree> props = serverConfig->getPropTree("DfuXRef");
@@ -2203,6 +2183,7 @@ public:
         if (!interval)
             stopped = !eclwatchprovider;
         setSubmittedOk(eclwatchprovider);
+        suspendCoalescer = props->getPropBool("@suspendCoalescerDuringXref", true);
         ignorelazylost = props->getPropBool("@ignoreLazyLost",true);
         PROGLOG(LOGPFX "min interval = %d hr", interval);
         unsigned initinterval = (interval-1)/2+1;  // wait a bit til dali has started
@@ -2271,10 +2252,6 @@ class CSashaExpiryServer: public ISashaServer, public Thread
     bool stopped;
     Semaphore stopsem;
     Mutex runmutex;
-    Owned<IRemoteConnection> statusconn;
-
-    
-
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -2315,25 +2292,42 @@ public:
         if (stopped)
             return;
         PROGLOG(LOGPFX2 "Started");
+        unsigned defaultExpireDays = serverConfig->getPropInt("DfuExpiry/@expiryDefault", DEFAULT_EXPIRYDAYS);
+        unsigned defaultPersistExpireDays = serverConfig->getPropInt("DfuExpiry/@persistExpiryDefault", DEFAULT_PERSISTEXPIRYDAYS);
         StringArray expirylist;
         Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",UNKNOWN_USER,true,false);//MORE:Pass IUserDescriptor
-        ForEach(*iter) {
+        ForEach(*iter)
+        {
             IPropertyTree &attr=iter->query();
-            const char * expires = attr.queryProp("@expires");
-            if (expires&&*expires) {
+            if (attr.hasProp("@expireDays"))
+            {
+                unsigned expireDays = attr.getPropInt("@expireDays");
                 const char * name = attr.queryProp("@name");
-                if (name&&*name) {
+                const char *lastAccessed = attr.queryProp("@accessed");
+                if (lastAccessed && name&&*name)
+                {
+                    if (0 == expireDays)
+                    {
+                        bool isPersist = attr.queryProp("@persist");
+                        expireDays = isPersist ? defaultPersistExpireDays : defaultExpireDays;
+                    }
                     CDateTime now;
                     now.setNow();
-                    CDateTime expwhen;
-                    try {
-                        expwhen.setString(expires);
-                        if (!expwhen.isNull()&&(now.compare(expwhen,false)>0)) {
+                    CDateTime expires;
+                    try
+                    {
+                        expires.setString(lastAccessed);
+                        expires.adjustTime(60*24*expireDays);
+                        if (now.compare(expires,false)>0)
+                        {
                             expirylist.append(name);
-                            PROGLOG(LOGPFX2 "%s expired on %s",name,expires);
+                            StringBuffer expiresStr;
+                            expires.getString(expiresStr);
+                            PROGLOG(LOGPFX2 "%s expired on %s", name, expiresStr.str());
                         }
                     }
-                    catch (IException *e) {
+                    catch (IException *e)
+                    {
                         StringBuffer s;
                         EXCLOG(e, LOGPFX2 "setdate");
                         e->Release();
@@ -2342,15 +2336,18 @@ public:
             }
         }
         iter.clear();
-        ForEachItemIn(i,expirylist) {
+        ForEachItemIn(i,expirylist)
+        {
             if (stopped)
                 break;
             const char *lfn = expirylist.item(i);
             PROGLOG(LOGPFX2 "Deleting %s",lfn);
-            try {
+            try
+            {
                 queryDistributedFileDirectory().removeEntry(lfn,UNKNOWN_USER);//MORE:Pass IUserDescriptor
             }
-            catch (IException *e) { // may want to just detach if fails
+            catch (IException *e) // may want to just detach if fails
+            {
                 StringBuffer s;
                 EXCLOG(e, LOGPFX2 "remove");
                 e->Release();

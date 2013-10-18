@@ -49,6 +49,11 @@ require([
             //  Known control properties  ---
             DOT_META_ATTR: "DOT_META_ATTR",
 
+            _onClickRefresh: function () {
+                this.setMessage("Performing Layout...");
+                this.startLayout("dot");
+            },
+
             _onClickZoomOrig: function (args) {
                 this.setScale(100);
                 this.centerOnItem(0);
@@ -98,6 +103,15 @@ require([
             },
 
             //  Plugin wrapper  ---
+            showToolbar: function (show) {
+                if (show) {
+                    domClass.remove(this.id + "Toolbar", "hidden");
+                } else {
+                    domClass.add(this.id + "Toolbar", "hidden");
+                }
+                this.resize();
+            },
+
             clear: function () {
                 if (this._plugin) {
                     this.xgmml = "";
@@ -136,12 +150,12 @@ require([
 
             load: function (dot, layout) {
                 this.registerEvents();
-                if (this._plugin && this.xgmml != xgmml) {
+                if (this._plugin && this.dot != dot) {
                     this.setMessage("Loading Data...");
                     this._plugin.loadDOT(dot);
                     this.setMessage("Performing Layout...");
                     this._plugin.startLayout(layout);
-                    this.xgmml = xgmml;
+                    this.dot = dot;
                 }
             },
 
@@ -162,6 +176,7 @@ require([
             },
 
             getVersion: function () {
+                this.registerEvents();
                 if (this._plugin) {
                     return this._plugin.version;
                 }
@@ -251,7 +266,7 @@ require([
                     var first = true;
                     var table = {};
                     var tr = {};
-                    for (key in props) {
+                    for (var key in props) {
                         if (key[0] == "_")
                             continue;
 
@@ -295,8 +310,7 @@ require([
                     if (this._isPluginInstalled) {
                         var pluginID = this.id + "Plugin";
                         if (has("ie")) {
-                            this.graphContentPane.domNode.innerHTML = '<object '
-                                                    + 'type="application/x-hpccsystemsgraphviewcontrol" '
+                            this.graphContentPane.domNode.innerHTML = '<object type="application/x-hpccsystemsgraphviewcontrol" '
                                                     + 'id="' + pluginID + '" '
                                                     + 'name="' + pluginID + '" '
                                                     + 'width="100%" '
@@ -477,44 +491,42 @@ require([
             },
 
             watchStyleChange: function () {
-                //  When chrome hides the plugin it destroys it.  To prevent this it is just made very small.  
-                if (has("chrome")) {
-                    var watchList = [];
-                    var context = this;
-                    var domNode = this.domNode;
+                //  Prevent control from being "hidden" as it gets destroyed on Chrome/FF/(Maybe IE11?)
+                var watchList = [];
+                var context = this;
+                var domNode = this.domNode;
 
-                    //  There are many places that may cause the plugin to be hidden, the possible places are calculated by walking the hierarchy upwards. 
-                    while (domNode) {
-                        if (domNode.id) {
-                            watchList[domNode.id] = false;
-                        }
-                        domNode = domNode.parentElement;
+                //  There are many places that may cause the plugin to be hidden, the possible places are calculated by walking the hierarchy upwards. 
+                while (domNode) {
+                    if (domNode.id) {
+                        watchList[domNode.id] = false;
                     }
-
-                    //  Hijack the dojo style class replacement call and monitor for elements in our watchList. 
-                    aspect.around(domClass, "replace", function (origFunc) {
-                        return function (node, addStyle, removeStyle) {
-                            if (node.firstChild && (node.firstChild.id in watchList)) {
-                                if (addStyle == "dijitHidden") {
-                                    watchList[node.firstChild.id] = true;
-                                    dojo.style(node, "width", "1px");
-                                    dojo.style(node, "height", "1px");
-                                    dojo.style(node.firstChild, "width", "1px");
-                                    dojo.style(node.firstChild, "height", "1px");
-                                    return;
-                                } else if (addStyle == "dijitVisible" && watchList[node.firstChild.id] == true) {
-                                    watchList[node.firstChild.id] = false;
-                                    dojo.style(node, "width", "100%");
-                                    dojo.style(node, "height", "100%");
-                                    dojo.style(node.firstChild, "width", "100%");
-                                    dojo.style(node.firstChild, "height", "100%");
-                                    return;
-                                }
-                            }
-                            return origFunc(node, addStyle, removeStyle);
-                        }
-                    });
+                    domNode = domNode.parentElement;
                 }
+
+                //  Hijack the dojo style class replacement call and monitor for elements in our watchList. 
+                aspect.around(domClass, "replace", function (origFunc) {
+                    return function (node, addStyle, removeStyle) {
+                        if (node.firstChild && (node.firstChild.id in watchList)) {
+                            if (addStyle == "dijitHidden") {
+                                watchList[node.firstChild.id] = true;
+                                dojo.style(node, "width", "1px");
+                                dojo.style(node, "height", "1px");
+                                dojo.style(node.firstChild, "width", "1px");
+                                dojo.style(node.firstChild, "height", "1px");
+                                return;
+                            } else if (addStyle == "dijitVisible" && watchList[node.firstChild.id] == true) {
+                                watchList[node.firstChild.id] = false;
+                                dojo.style(node, "width", "100%");
+                                dojo.style(node, "height", "100%");
+                                dojo.style(node.firstChild, "width", "100%");
+                                dojo.style(node.firstChild, "height", "100%");
+                                return;
+                            }
+                        }
+                        return origFunc(node, addStyle, removeStyle);
+                    }
+                });
             },
 
             getDotMetaAttributes: function () {
@@ -576,7 +588,6 @@ require([
                     this.eventsRegistered = true;
                     var context = this;
                     this.registerEvent("MouseDoubleClick", function (item) {
-                        context._plugin.centerOnItem(item, true);
                         context.onDoubleClick(context._plugin.getGlobalID(item));
                     });
                     this.registerEvent("LayoutFinished", function () {

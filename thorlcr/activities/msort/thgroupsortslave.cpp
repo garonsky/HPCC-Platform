@@ -57,10 +57,10 @@ public:
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        dataLinkStart(activityKindStr(queryContainer().getKind()), container.queryId());
+        dataLinkStart();
         input = inputs.item(0);
         unsigned spillPriority = container.queryGrouped() ? SPILL_PRIORITY_GROUPSORT : SPILL_PRIORITY_LARGESORT;
-        iLoader.setown(createThorRowLoader(*this, queryRowInterfaces(input), iCompare, !unstable, rc_mixed, spillPriority));
+        iLoader.setown(createThorRowLoader(*this, queryRowInterfaces(input), iCompare, unstable ? stableSort_none : stableSort_earlyAlloc, rc_mixed, spillPriority));
         startInput(input);
         eoi = false;
         if (container.queryGrouped())
@@ -137,7 +137,7 @@ public:
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        dataLinkStart("SORTED", container.queryId());
+        dataLinkStart();
         input = inputs.item(0);
         startInput(input);
         IInputSteppingMeta *stepMeta = input->querySteppingMeta();

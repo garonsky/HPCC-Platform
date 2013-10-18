@@ -56,6 +56,7 @@ class CMSortActivityMaster : public CMasterActivity
     IThorSorterMaster *imaster;
     mptag_t mpTagRPC, barrierMpTag;
     Owned<IBarrier> barrier;
+    Owned<IDistributedFile> coSortFile;
     
 public:
     CMSortActivityMaster(CMasterGraphElement *info)
@@ -137,11 +138,11 @@ protected:
         }
         StringBuffer cosortfilenames;
         OwnedRoxieString cosortlogname(helper->getSortedFilename());
-        if (cosortlogname&&*cosortlogname) {
-
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), cosortlogname);
-            Owned<IFileDescriptor> fileDesc = file->getFileDescriptor();
-            queryThorFileManager().noteFileRead(container.queryJob(), file);
+        if (cosortlogname&&*cosortlogname)
+        {
+            coSortFile.setown(queryThorFileManager().lookup(container.queryJob(), cosortlogname));
+            Owned<IFileDescriptor> fileDesc = coSortFile->getFileDescriptor();
+            queryThorFileManager().noteFileRead(container.queryJob(), coSortFile);
             unsigned o;
             for (o=0; o<fileDesc->numParts(); o++)
             {
@@ -156,9 +157,11 @@ protected:
 
         Owned<IRowInterfaces> rowif = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryActivityId(),queryCodeContext());
         Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryActivityId(),queryCodeContext());
-        try {   
+        try
+        {
             imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.toCharArray(),auxrowif);
-            if (barrier->wait(false)) { // local sort complete
+            if (barrier->wait(false)) // local sort complete
+            {
                 size32_t maxdeviance = getOptUInt(THOROPT_SORT_MAX_DEVIANCE, 10*1024*1024);
                 try
                 {
@@ -192,6 +195,8 @@ protected:
     {
         ActPrintLog("done");
         CMasterActivity::done();
+        if (coSortFile)
+            coSortFile->setAccessed();
         ActPrintLog("done exit");
     }
 };

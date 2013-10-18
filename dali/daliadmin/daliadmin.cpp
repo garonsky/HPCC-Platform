@@ -100,7 +100,7 @@ void usage(const char *exe)
   printf("  cleanscopes                     -- remove empty scopes\n");
   printf("\n");
   printf("Workunit commands:\n");
-  printf("  listworkunits <workunit-mask> [<prop>=<val> <lower> <upper>]\n");
+  printf("  listworkunits [<prop>=<val> [<lower> [<upper>]]] -- list workunits that match prop=val in workunit name range lower to upper\n");
   printf("  listmatches <connection xpath> [<match xpath>=<val> [<property xpath>]]\n");
   printf("  workunittimings <WUID>\n");
   printf("\n");
@@ -167,7 +167,11 @@ static const char *splitpath(const char *path,StringBuffer &head,StringBuffer &t
 static unsigned __int64 hextoll(const char *str, bool &error)
 {
     unsigned len = strlen(str);
-    if (!len) return 0;
+    if (!len)
+    {
+        error = true;
+        return 0;
+    }
 
     unsigned __int64 factor = 1;
     unsigned __int64 rolling = 0;
@@ -1296,11 +1300,25 @@ static void listexpires(const char * lfnmask, IUserDescriptor *user)
     IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnmask,user,true,false);
     ForEach(*iter) {
         IPropertyTree &attr=iter->query();
-        const char * expires = attr.queryProp("@expires");
-        if (expires&&*expires) {
-            const char * name = attr.queryProp("@name");
-            if (name&&*name) {
-                OUTLOG("%s expires on %s",name,expires);
+        if (attr.hasProp("@expireDays"))
+        {
+            unsigned expireDays = attr.getPropInt("@expireDays");
+            const char *name = attr.queryProp("@name");
+            const char *lastAccessed = attr.queryProp("@accessed");
+            if (lastAccessed && name&&*name) // NB: all files that have expireDays should have lastAccessed also
+            {
+                StringBuffer days;
+                if (0 == expireDays)
+                    days.append("the sasha default number of days");
+                else
+                {
+                    days.append(expireDays);
+                    if (expireDays>1)
+                        days.append(" days");
+                    else
+                        days.append(" day");
+                }
+                OUTLOG("%s, last accessed = %s, set to expire %s after last accessed", name, lastAccessed, days.str());
             }
         }
     }
@@ -1563,15 +1581,17 @@ static void cleanscopes(IUserDescriptor *user)
 
 //=============================================================================
 
-static void listworkunits(const char *test,const char *min, const char *max)
+static void listworkunits(const char *test, const char *min, const char *max)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), 0, daliConnectTimeoutMs);
     Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("WorkUnits/*");
-    ForEach(*iter) {
+    ForEach(*iter)
+    {
         IPropertyTree &e=iter->query();
         if (test&&*test) {
             const char *tval = strchr(test,'=');
-            if (!tval) {
+            if (!tval)
+            {
                 ERRLOG("missing '=' in %s",test);
                 return;
             }
@@ -2168,7 +2188,7 @@ static void dodalilocks(const char *pattern,const char *obj,Int64Array *conn,boo
                     while (*x)
                         curxpath.append(*(x++));
                     if (begins(ln,"/Files")) {
-                        while (*ln&&(begins(ln,"/Scope[@name=\"")||begins(ln,"/File[@name=\""))) {
+                        while (*ln&&(begins(ln,"/Scope[@name=\"")||begins(ln,"/File[@name=\"")||begins(ln,"/SuperFile[@name=\""))) {
                             if (curfile.length())
                                 curfile.append("::");
                             while (*ln&&(*ln!='"'))

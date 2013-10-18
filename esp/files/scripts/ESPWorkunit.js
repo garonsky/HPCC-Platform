@@ -18,6 +18,7 @@ define([
     "dojo/_base/array",
     "dojo/_base/lang",
     "dojo/_base/Deferred",
+    "dojo/promise/all",
     "dojo/data/ObjectStore",
     "dojo/store/util/QueryResults",
     "dojo/store/Observable",
@@ -27,7 +28,7 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
-], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable,
+], function (declare, arrayUtil, lang, Deferred, all, ObjectStore, QueryResults, Observable,
     WsWorkunits, WsTopology, ESPUtil, ESPRequest, ESPResult) {
 
     var _workunits = {};
@@ -42,6 +43,11 @@ define([
         countProperty: "Count",
 
         _watched: [],
+        preRequest: function (request) {
+            if (request.Sortby && request.Sortby === "TotalThorTime") {
+                request.Sortby = "ThorTime";
+            }
+        },
         create: function (id) {
             return new Workunit({
                 Wuid: id
@@ -86,13 +92,22 @@ define([
         _ResultsSetter: function (Results) {
             var results = [];
             var sequenceResults = [];
+            var namedResults = {};
             for (var i = 0; i < Results.ECLResult.length; ++i) {
-                var espResult = ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, Results.ECLResult[i]));
+                var espResult = ESPResult.Get(lang.mixin({
+                    wu: this.wu,
+                    Wuid: this.Wuid,
+                    ResultViews: lang.exists("ResultViews.View", Results) ? Results.ResultViews.View : []
+                }, Results.ECLResult[i]));
                 results.push(espResult);
                 sequenceResults[Results.ECLResult[i].Sequence] = espResult;
+                if (Results.ECLResult[i].Name) {
+                    namedResults[Results.ECLResult[i].Name] = espResult;
+                }
             }
             this.set("results", results);
             this.set("sequenceResults", sequenceResults);
+            this.set("namedResults", namedResults);
         },
         _SourceFilesSetter: function (SourceFiles) {
             var sourceFiles = [];
@@ -209,7 +224,7 @@ define([
             } else {
                 WsTopology.TpLogicalClusterQuery().then(function (response) {
                     if (lang.exists("TpLogicalClusterQueryResponse.default", response)) {
-                        deferred.resolve(response.TpLogicalClusterQueryResponse.default.Name);
+                        deferred.resolve(response.TpLogicalClusterQueryResponse["default"].Name);
                     }
                 });
             }
@@ -255,13 +270,14 @@ define([
         doDelete: function () {
             return this._action("Delete");
         },
-        publish: function (jobName) {
+        publish: function (jobName, remoteDali) {
             this._assertHasWuid();
             var context = this;
             WsWorkunits.WUPublishWorkunit({
                 request: {
                     Wuid: this.Wuid,
                     JobName: jobName,
+                    RemoteDali: remoteDali,
                     Activate: 1,
                     UpdateWorkUnitName: 1,
                     Wait: 5000
@@ -316,7 +332,7 @@ define([
                     IncludeGraphs: args.onGetGraphs ? true : false,
                     IncludeSourceFiles: args.onGetSourceFiles ? true : false,
                     IncludeResults: (args.onGetResults || args.onGetSequenceResults) ? true : false,
-                    IncludeResultsViewNames: false,
+                    IncludeResultsViewNames: (args.onGetResults || args.onGetSequenceResults) ? true : false,
                     IncludeVariables: args.onGetVariables ? true : false,
                     IncludeTimers: args.onGetTimers ? true : false,
                     IncludeDebugValues: false,
@@ -330,6 +346,11 @@ define([
                     if (!args.onGetText && lang.exists("WUInfoResponse.Workunit.Query", response)) {
                         //  A truncated version of ECL just causes issues  ---
                         delete response.WUInfoResponse.Workunit.Query;
+                    }
+                    if (lang.exists("WUInfoResponse.ResultViews", response) && lang.exists("WUInfoResponse.Workunit.Results", response)) {
+                        lang.mixin(response.WUInfoResponse.Workunit.Results, {
+                            ResultViews: response.WUInfoResponse.ResultViews
+                        });
                     }
                     context.updateData(response.WUInfoResponse.Workunit);
 
@@ -519,6 +540,24 @@ define([
             this.getInfo({
                 onGetResults: onFetchResults
             });
+        },
+        fetchNamedResults: function (resultNames) {
+            var deferred = new Deferred()
+            var context = this;
+            this.fetchResults(function (results) {
+                var resultContents = [];
+                arrayUtil.forEach(resultNames, function (item, idx) {
+                    resultContents.push(context.namedResults[item].fetchContent());
+                });
+                all(resultContents).then(function (resultContents) {
+                    var results = [];
+                    arrayUtil.forEach(resultContents, function (item, idx) {
+                        results[resultNames[idx]] = item;
+                    });
+                    deferred.resolve(results);
+                });
+            });
+            return deferred.promise;
         },
         fetchSequenceResults: function (onFetchSequenceResults) {
             if (this.sequenceResults && this.sequenceResults.length) {

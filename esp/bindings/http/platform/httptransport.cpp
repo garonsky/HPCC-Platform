@@ -86,44 +86,7 @@ bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuf
         {
             size32_t filesize = (size32_t)io->size();
             io->read(0, filesize, fileContents.reserveTruncate(filesize));
-            mimetype.clear();
-
-            const char *ext = strrchr(filepath, '.');
-            if (ext)
-            {
-                ext++;
-                if (!stricmp(ext, "html") || !stricmp(ext, "htm"))
-                    mimetype.append("text/html");
-                else if (!stricmp(ext, "js"))
-                   mimetype.append("text/javascript");
-                else if (!stricmp(ext, "jpeg") || !stricmp(ext, "jpg"))
-                   mimetype.append("image/gif");
-                else if (!stricmp(ext, "gif"))
-                   mimetype.append("image/gif");
-                else if (!stricmp(ext, "png"))
-                   mimetype.append("image/png");
-                else if (!stricmp(ext, "xml") || !stricmp(ext, "xsl") || !stricmp(ext, "xslt"))
-                   mimetype.append("application/xml");
-                else if (!stricmp(ext, "txt") || !stricmp(ext, "text"))
-                   mimetype.append("text/plain");
-                else if (!stricmp(ext, "zip"))
-                   mimetype.append("application/zip");
-                else if (!stricmp(ext, "pdf"))
-                   mimetype.append("application/pdf");
-                else if (!stricmp(ext, "pdf"))
-                   mimetype.append("application/pdf");
-                else if (!stricmp(ext, "xpi"))
-                   mimetype.append("application/x-xpinstall");
-                else if (!stricmp(ext, "exe") || !stricmp(ext, "class"))
-                   mimetype.append("application/octet-stream");
-                else if (!stricmp(ext, "css"))
-                   mimetype.append("text/css");
-                else if (!stricmp(ext, "svg"))
-                   mimetype.append("image/svg+xml");
-            }
-            
-            if (!mimetype.length())
-               mimetype.append("application/octet-stream");
+            mimetype.set(mimeTypeFromFileExt(strrchr(filepath, '.')));
             return true;
         }
     }
@@ -1499,6 +1462,8 @@ void CHttpRequest::parseEspPathInfo()
                     m_sstype=sub_serv_respsamplexml;
                 else if (m_queryparams && (m_queryparams->hasProp("soap_builder_")))
                     m_sstype=sub_serv_soap_builder;
+                else if (m_queryparams && (m_queryparams->hasProp("roxie_builder_")))
+                    m_sstype=sub_serv_roxie_builder;
                 else if (m_queryparams && m_queryparams->hasProp("config_"))
                     m_sstype=sub_serv_config;
                 else if (m_espServiceName.length()==0)
@@ -1924,6 +1889,48 @@ IFile* CHttpRequest::createUploadFile(StringBuffer netAddress, const char* fileP
     rfn.setPath(ep, tmpFileName.str());
 
     return createIFile(rfn);
+}
+
+void CHttpRequest::readUploadFileContent(StringArray& fileNames, StringArray& files)
+{
+    Owned<CMimeMultiPart> multipart = new CMimeMultiPart("1.0", m_content_type.get(), "", "", "");
+    multipart->parseContentType(m_content_type.get());
+
+    MemoryBuffer fileContent, moreContent;
+    __int64 bytesNotRead = m_content_length64;
+    while (1)
+    {
+        StringBuffer fileName, content;
+        if (!readUploadFileName(multipart, fileName, fileContent, bytesNotRead))
+        {
+            DBGLOG("No file name found for upload");
+            return;
+        }
+
+        bool foundAnotherFile = false;
+        while (1)
+        {
+            foundAnotherFile = multipart->separateMultiParts(fileContent, moreContent, bytesNotRead);
+            if (fileContent.length() > 0)
+                content.append(fileContent.length(), fileContent.toByteArray());
+
+            fileContent.clear();
+            if (moreContent.length() > 0)
+            {
+                fileContent.append(moreContent.length(), (void*) moreContent.toByteArray());
+                moreContent.clear();
+            }
+
+            if(foundAnotherFile || (bytesNotRead <= 0) || !readContentToBuffer(fileContent, bytesNotRead))
+                break;
+        }
+
+        fileNames.append(fileName);
+        files.append(content);
+        if (!foundAnotherFile)
+            break;
+    }
+    return;
 }
 
 int CHttpRequest::readContentToFiles(StringBuffer netAddress, StringBuffer path, StringArray& fileNames)

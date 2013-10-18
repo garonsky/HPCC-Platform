@@ -46,19 +46,14 @@ static IKeyManager *getKeyManager(IKeyIndex *keyIndex, IHThorIndexReadBaseArg *h
 
 static IKeyIndex *openKeyPart(CActivityBase *activity, const char *logicalFilename, IPartDescriptor &partDesc)
 {
-    unsigned location;
+    RemoteFilename rfn;
+    partDesc.getFilename(0, rfn);
     StringBuffer filePath;
-    OwnedIFile ifile;
-    if (!(globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(activity, partDesc, ifile, location, filePath):getBestFilePart(activity, partDesc, ifile, location, filePath, activity)))
-    {
-        StringBuffer locations;
-        IException *e = MakeActivityException(activity, TE_FileNotFound, "No physical file part for logical key file %s, found at given locations: %s (Error = %d)", logicalFilename, getFilePartLocations(partDesc, locations).str(), GetLastError());
-        EXCLOG(e, NULL);
-        throw e;
-    }
+    rfn.getPath(filePath);
     unsigned crc=0;
     partDesc.getCrc(crc);
-    return createKeyIndex(filePath.str(), crc, false, false);
+    Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*activity, partDesc);
+    return createKeyIndex(filePath.str(), crc, *lfile, false, false);
 }
 
 
@@ -662,7 +657,7 @@ public:
             keyedLimitCount = 0;            
         else
             eoi = true; // otherwise delayed until calc. in nextRow()
-        dataLinkStart("INDEXREAD", container.queryId());
+        dataLinkStart();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
@@ -816,7 +811,7 @@ public:
         localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
         localAggTable->start(queryRowAllocator());
         gathered = eoi = false;
-        dataLinkStart("INDEXGROUPAGGREGATE", container.queryId());
+        dataLinkStart();
     }
 // IRowStream
     virtual void stop()
@@ -921,7 +916,7 @@ public:
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
-        dataLinkStart("INDEXCOUNT", container.queryId());
+        dataLinkStart();
     }
 
 // IRowStream
@@ -1106,7 +1101,7 @@ public:
         }
         else
             eoi = true;
-        dataLinkStart("INDEXNORMALIZE", container.queryId());
+        dataLinkStart();
     }
 
 // IRowStream
@@ -1268,7 +1263,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         eoi = hadElement = false;
         partn = 0;
-        dataLinkStart("INDEXAGGREGATE", container.queryId());
+        dataLinkStart();
     }
 
 // IRowStream

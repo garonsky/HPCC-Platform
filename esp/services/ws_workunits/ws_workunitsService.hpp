@@ -21,6 +21,9 @@
 #include "ws_workunits_esp.ipp"
 #include "workunit.hpp"
 #include "ws_workunitsHelpers.hpp"
+#ifdef _USE_ZLIB
+#include "zcrypt.hpp"
+#endif
 
 class CWsWorkunitsEx : public CWsWorkunits
 {
@@ -41,7 +44,9 @@ public:
     void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml=NULL);
     void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
     void checkAndTrimWorkunit(const char* methodName, StringBuffer& input);
+    unsigned getGraphIdsByQueryId(const char *target, const char *queryId, StringArray& graphIds);
     bool getQueryFiles(const char* query, const char* target, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *superFiles);
+    void getGraphsByQueryId(const char *target, const char *queryId, const char *graphName, const char *subGraphId, IArrayOf<IEspECLGraphEx>& ECLGraphs);
 
     bool onWUQuery(IEspContext &context, IEspWUQueryRequest &req, IEspWUQueryResponse &resp);
     bool onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp);
@@ -90,6 +95,7 @@ public:
     bool onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckRequest &req, IEspWUSyntaxCheckResponse &resp);
     bool onWUCompileECL(IEspContext &context, IEspWUCompileECLRequest &req, IEspWUCompileECLResponse &resp);
     bool onWUJobList(IEspContext &context, IEspWUJobListRequest &req, IEspWUJobListResponse &resp);
+    bool onWUQueryGetGraph(IEspContext& context, IEspWUQueryGetGraphRequest& req, IEspWUQueryGetGraphResponse& resp);
     bool onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& req, IEspWUGetGraphResponse& resp);
     bool onWUGraphTiming(IEspContext& context, IEspWUGraphTimingRequest& req, IEspWUGraphTimingResponse& resp);
     bool onWUGetDependancyTrees(IEspContext& context, IEspWUGetDependancyTreesRequest& req, IEspWUGetDependancyTreesResponse& resp);
@@ -108,13 +114,19 @@ public:
     void setPort(unsigned short _port){port=_port;}
 
     bool isQuerySuspended(const char* query, IConstWUClusterInfo *clusterInfo, unsigned wait, StringBuffer& errorMessage);
-
+    bool onWUListQueries(IEspContext &context, IEspWUListQueriesRequest &req, IEspWUListQueriesResponse &resp);
+    bool onWUReportBug(IEspContext &context, IEspWUReportBugRequest &req, IEspWUReportBugResponse &resp);
+    bool onWUGetBugReportInfo(IEspContext &context, IEspWUGetBugReportInfoRequest &req, IEspWUGetBugReportInfoResponse &resp);
 private:
+    void addProcess(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, MemoryBuffer &mb);
+
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
     StringAttr daliServers;
     Owned<DataCache> dataCache;
     Owned<ArchivedWuCache> archivedWuCache;
+    StringAttr sashaServerIp;
+    unsigned short sashaServerPort;
     BoolHash validClusters;
     CriticalSection crit;
     WUSchedule m_sched;

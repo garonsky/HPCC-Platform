@@ -15,6 +15,8 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/on",
 
     "dijit/form/Button",
@@ -29,32 +31,59 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
     "hpcc/GraphPageWidget",
+    "hpcc/TimingTreeMapWidget",
     "hpcc/ESPUtil"
 
-], function (declare, on,
+], function (declare, lang, arrayUtil, on,
                 Button,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPWorkunit, GraphPageWidget, ESPUtil) {
+                GridDetailsWidget, ESPWorkunit, GraphPageWidget, TimingTreeMapWidget, ESPUtil) {
     return declare("GraphsWidget", [GridDetailsWidget], {
 
         gridTitle: "Graphs",
         idProperty: "Name",
 
         wu: null,
+        query: null,
+
+        postCreate: function (args) {
+            this.inherited(arguments);
+            this.timingTreeMap = new TimingTreeMapWidget({
+                id: this.id + "TimingTreeMap",
+                region: "right",
+                splitter: true,
+                style: "width: 33%",
+                minSize: 120
+            });
+            this.timingTreeMap.placeAt(this.gridTab, "last");
+        },
 
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
+            var context = this;
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
                 var monitorCount = 4;
-                var context = this;
                 this.wu.monitor(function () {
                     if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
                         context.refreshGrid();
                     }
+                });
+            }
+            else if (params.Query){
+                this.query = params.Query;
+                this.refreshGrid();
+            }
+
+            this.timingTreeMap.init(params);
+            this.timingTreeMap.onClick = function (value) {
+                context.syncSelectionFrom(context.timingTreeMap);
+            }
+            this.timingTreeMap.onDblClick = function (item) {
+                context._onOpen(item, {
+                    SubGraphId: item.SubGraphId
                 });
             }
             this._refreshActionState();
@@ -94,6 +123,10 @@ define([
             }, domID);
 
             var context = this;
+            retVal.on(".dgrid-row:click", function (evt) {
+                context.syncSelectionFrom(context.grid);
+            });
+
             on(document, "." + this.id + "GraphClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = retVal.row(evt).data;
@@ -104,9 +137,23 @@ define([
         },
 
         createDetail: function (id, row, params) {
-            var safeMode = false;
-            if (params && params.safeMode) {
-                var safeMode = true;
+            var localParams = {}
+            if (this.wu) {
+                localParams = {
+                    Wuid: this.wu.Wuid,
+                    GraphName: row.Name,
+                    GraphName: row.Name,
+                    SubGraphId: (params && params.SubGraphId) ? params.SubGraphId : null,
+                    SafeMode: (params && params.safeMode) ? true : false
+                }
+            } else if (this.query) {
+                localParams = {
+                    Target: this.query.QuerySet,
+                    QueryId: this.query.QueryId,
+                    GraphName: row.Name,
+                    SubGraphId: (params && params.SubGraphId) ? params.SubGraphId : null,
+                    SafeMode: (params && params.safeMode) ? true : false
+                }
             }
             return new GraphPageWidget({
                 id: id,
@@ -114,32 +161,81 @@ define([
                 closable: true,
                 hpcc: {
                     type: "graph",
-                    params: {
-                        Wuid: this.wu.Wuid,
-                        GraphName: row.Name,
-                        SafeMode: safeMode
-                    }
+                    params: localParams
                 }
             });
         },
 
         refreshGrid: function (args) {
-            var context = this;
-            this.wu.getInfo({
-                onGetTimers: function (timers) {
-                    //  Required to calculate Graphs Total Time  ---
-                },
-                onGetGraphs: function (graphs) {
-                    context.store.setData(graphs);
-                    context.grid.refresh();
+            if (this.wu) {
+                var context = this;
+                this.wu.getInfo({
+                    onGetTimers: function (timers) {
+                        //  Required to calculate Graphs Total Time  ---
+                    },
+                    onGetGraphs: function (graphs) {
+                        context.store.setData(graphs);
+                        context.grid.refresh();
+                    }
+                });
+            } else if (this.query) {
+                var graphs = [];
+                if (lang.exists("GraphIds.Item", this.query)) {
+                    arrayUtil.forEach(this.query.GraphIds.Item, function (item, idx) {
+                        var graph = {
+                            Name: item,
+                            Label: "",
+                            Completed: "",
+                            Time: 0,
+                            Type: ""
+                        };
+                        graphs.push(graph);
+                    });
                 }
-            });
+                this.store.setData(graphs);
+                this.grid.refresh();
+            }
         },
 
         refreshActionState: function (selection) {
             this.inherited(arguments);
 
             this.openSafeMode.set("disabled", !selection.length);
+        },
+
+        syncSelectionFrom: function (sourceControl) {
+            var graphItems = [];
+            var timingItems = [];
+
+            //  Get Selected Items  ---
+            if (sourceControl == this.grid) {
+                arrayUtil.forEach(sourceControl.getSelected(), function (item, idx) {
+                    timingItems.push(item);
+                });
+            }
+            if (sourceControl == this.timingTreeMap) {
+                arrayUtil.forEach(sourceControl.getSelected(), function (item, idx) {
+                    if (item.children) {
+                        if (item.children.length) {
+                            graphItems.push({
+                                Name: item.children[0].GraphName
+                            })
+                        }
+                    } else {
+                        graphItems.push({
+                            Name: item.GraphName
+                        })
+                    }
+                });
+            }
+
+            //  Set Selected Items  ---
+            if (sourceControl != this.grid) {
+                this.grid.setSelected(graphItems);
+            }
+            if (sourceControl != this.timingTreeMap) {
+                this.timingTreeMap.setSelectedGraphs(timingItems);
+            }
         }
     });
 });

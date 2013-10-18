@@ -82,13 +82,13 @@ public:
         input = inputs.item(0);
         stream.set(input);
         startInput(input);
-        dataLinkStart("GROUP", container.queryId());        
+        dataLinkStart();
 
         next.setown(getNext());
 
         if (rolloverEnabled && !firstNode())  // 1st node can have nothing to send
         {
-            Owned<IThorRowCollector> collector = createThorRowCollector(*this, NULL, false, rc_mixed, SPILL_PRIORITY_SPILLABLE_STREAM);
+            Owned<IThorRowCollector> collector = createThorRowCollector(*this, NULL, stableSort_none, rc_mixed, SPILL_PRIORITY_SPILLABLE_STREAM);
             Owned<IRowWriter> writer = collector->getWriter();
             if (next)
             {

@@ -133,12 +133,15 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/dropzonefile.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/hpccresourcelist.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dropzonefilelist.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/WUBugReportForm.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUCopyLogicalFiles.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUDeployWorkunit.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_accountpermissions.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_adduser.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_basedns.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_clearpermissionscache.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_enablescopescans.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_disablescopescans.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_filepermission.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_groupadd.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_groupdelete.xslt

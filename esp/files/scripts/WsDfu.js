@@ -21,9 +21,13 @@ define([
     "dojo/_base/array",
     "dojo/store/util/QueryResults",
 
+    "dojox/xml/parser",
+
+    "hpcc/ESPBase",
     "hpcc/ESPRequest"
 ], function (declare, lang, Deferred, arrayUtil, QueryResults,
-    ESPRequest) {
+    parser,
+    ESPBase, ESPRequest) {
 
     return {
         DFUArrayAction: function (logicalFiles, actionType, callback) {
@@ -41,9 +45,9 @@ define([
                 load: function (response) {
                     if (lang.exists("DFUArrayActionResponse.DFUArrayActionResult", response)) {
                         dojo.publish("hpcc/brToaster", {
-                            message: response.DFUArrayActionResponse.DFUArrayActionResult,
-                            type: "error",
-                            duration: -1
+                            Severity: "Error",
+                            Source: "WsDfu.DFUArrayAction",
+                            Exceptions: [{ Message: response.DFUArrayActionResponse.DFUArrayActionResult }]
                         });
                     }
 
@@ -73,9 +77,9 @@ define([
                 load: function (response) {
                     if (lang.exists("SuperfileActionResponse", response)) {
                         dojo.publish("hpcc/brToaster", {
-                            message: response.AddtoSuperfileResponse.Subfiles,
-                            type: "error",
-                            duration: -1
+                            Severity: "Error",
+                            Source: "WsDfu.SuperfileAction",
+                            Exceptions: [{ Message: response.AddtoSuperfileResponse.Subfiles }]
                         });
                     }
 
@@ -104,9 +108,9 @@ define([
                 load: function (response) {
                     if (lang.exists("AddtoSuperfileResponse.Subfiles", response)) {
                         dojo.publish("hpcc/brToaster", {
-                            message: response.AddtoSuperfileResponse.Subfiles,
-                            type: "error",
-                            duration: -1
+                            Severity: "Error",
+                            Source: "WsDfu.AddtoSuperfile",
+                            Exceptions: [{ Message: response.AddtoSuperfileResponse.Subfiles }]
                         });
                     }
 
@@ -134,7 +138,18 @@ define([
             lang.mixin(params, {
                 handleAs: "text"
             });
-            return ESPRequest.send("WsDfu", "DFUDefFile", params);
+            return ESPRequest.send("WsDfu", "DFUDefFile", params).then(function (response) {
+                var domXml = parser.parse(response);
+                var espBase = new ESPBase();
+                var exceptions = espBase.getValues(domXml, "Exception", ["Exception"]);
+                if (exceptions.length) {
+                    response = "";
+                    arrayUtil.forEach(exceptions, function (item, idx) {
+                        response += item.Message + "\n";
+                    });
+                }
+                return response;
+            });
         }
     };
 });
