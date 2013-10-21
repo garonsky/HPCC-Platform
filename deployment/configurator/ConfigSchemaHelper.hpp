@@ -6,6 +6,7 @@
 #include "jarray.hpp"
 #include "jhash.hpp"
 #include "SchemaAttributes.hpp"
+#include "SchemaAttributeGroup.hpp"
 #include "SchemaElement.hpp"
 #include "SchemaSchema.hpp"
 #include "SchemaExtension.hpp"
