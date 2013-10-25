@@ -62,6 +62,7 @@ void CAttributeGroup::dump(std::ostream &cout, unsigned int offset) const
     QUICK_OUT(cout, Ref,        offset);
     QUICK_OUT(cout, ID,         offset);
     QUICK_OUT(cout, XSDXPath,   offset);
+    QUICK_OUT(cout, EnvXPath,   offset);
 
     if (m_pRefAttributeGroup != NULL)
     {
@@ -149,6 +150,8 @@ CAttributeGroup* CAttributeGroup::load(CXSDNodeBase* pParentNode, IPropertyTree 
     assert(pParentNode->getNodeType() != XSD_ATTRIBUTE_GROUP);
     CAttributeGroup *pAttributeGroup = new CAttributeGroup(pParentNode);
 
+    pAttributeGroup->setXSDXPath(xpath);
+
     assert(pAttributeGroup);
 
     if (pAttributeGroup == NULL)
@@ -195,6 +198,9 @@ CAttributeGroup* CAttributeGroup::load(CXSDNodeBase* pParentNode, IPropertyTree 
         pAttributeGroup->setAttributeArray(pAttribArray);
     }
 
+    strXPath.setf("%s/%s",xpath, XSD_TAG_ANNOTATION);
+    pAttributeGroup->setAnnotation(CAnnotation::load(pAttributeGroup, pSchemaRoot, strXPath.str()));
+
     return pAttributeGroup;
 }
 
@@ -229,6 +235,8 @@ CAttributeGroupArray* CAttributeGroupArray::load(CXSDNodeBase* pParentNode, IPro
     }
 
     CAttributeGroupArray *pAttribGroupArray = new CAttributeGroupArray(pParentNode);
+
+    pAttribGroupArray->setXSDXPath(xpath);
 
     StringBuffer strXPathExt(xpath);
 

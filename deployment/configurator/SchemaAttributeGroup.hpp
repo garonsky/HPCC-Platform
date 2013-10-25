@@ -1,5 +1,5 @@
-#ifndef _SCHEMA_ATTRIBUTES_GROUP_HPP_
-#define _SCHEMA_ATTRIBUTES_GROUP_HPP_
+#ifndef _SCHEMA_ATTRIBUTE_GROUP_HPP_
+#define _SCHEMA_ATTRIBUTE_GROUP_HPP_
 
 #include "SchemaCommon.hpp"
 #include "SchemaAttributes.hpp"
@@ -46,13 +46,20 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    virtual void getQML(StringBuffer &strQML) const;
-
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
+   virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
 
     virtual void getDocumentation(StringBuffer &strDoc) const;
 
     virtual void getDojoJS(StringBuffer &strJS) const;
+
+    virtual void getQML(StringBuffer &strQML) const;
+
+    virtual CAnnotation* getAnnotation() const
+    {
+        return m_pAnnotation;
+    }
+
+    //virtual void loadXML();
 
     virtual void traverseAndProcessNodes() const;
 
@@ -60,12 +67,18 @@ public:
 
 protected:
 
-    CAttributeGroup(CXSDNodeBase* pParentNode = NULL, CAttributeArray *pAttribArray = NULL) : CXSDNode::CXSDNode(pParentNode, XSD_ATTRIBUTE_GROUP), m_pAttributeArray(pAttribArray), m_pRefAttributeGroup(NULL)
+   CAttributeGroup(CXSDNodeBase* pParentNode = NULL, CAttributeArray *pAttribArray = NULL, CAnnotation *pAnnotation = NULL) : CXSDNode::CXSDNode(pParentNode, XSD_ATTRIBUTE_GROUP), m_pAttributeArray(pAttribArray), m_pRefAttributeGroup(NULL), m_pAnnotation(pAnnotation)
     {
+    }
+
+    virtual void setAnnotation(CAnnotation *pAnnotation)
+    {
+        m_pAnnotation = pAnnotation;
     }
 
     CAttributeGroup *m_pRefAttributeGroup;
     CAttributeArray *m_pAttributeArray;
+    CAnnotation     *m_pAnnotation;
 
 private:
 
@@ -88,7 +101,7 @@ public:
 
     virtual void getDojoJS(StringBuffer &strJS) const;
 
-    void getQML(StringBuffer &strQML) const;
+   virtual void getQML(StringBuffer &strQML) const;
 
     virtual void traverseAndProcessNodes() const;
 
@@ -101,4 +114,4 @@ private:
 
 };
 
-#endif // _SCHEMA_ATTRIBUTES_GROUP_HPP_
+#endif // _SCHEMA_ATTRIBUTE_GROUP_HPP_

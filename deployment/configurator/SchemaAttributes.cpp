@@ -460,7 +460,31 @@ void CAttributeArray::getDocumentation(StringBuffer &strDoc) const
         DEBUG_MARK_STRDOC;
     }
 
+    const CComplexType *pParentComplexType = dynamic_cast<const CComplexType*>(this->getConstParentNode());
+    const CAttributeGroup *pParentAttributeGroup = dynamic_cast<const CAttributeGroup*>(this->getConstParentNode());
+    //assert (pParentComplexType);
+
     strDoc.append(DM_TABLE_BEGIN);
+    DEBUG_MARK_STRDOC;
+    strDoc.append(DM_TABLE_ID_BEGIN);
+    DEBUG_MARK_STRDOC;
+
+    if (pParentComplexType != NULL && pParentComplexType->getAnnotation() != NULL && pParentComplexType->getAnnotation()->getAppInfo() != NULL && pParentComplexType->getAnnotation()->getAppInfo()->getDocTableID() != NULL)
+    {
+        strDoc.append(pParentComplexType->getAnnotation()->getAppInfo()->getDocTableID());
+    }
+    else if  (pParentAttributeGroup != NULL && pParentAttributeGroup->getAnnotation() != NULL && pParentAttributeGroup->getAnnotation()->getAppInfo() != NULL && pParentAttributeGroup->getAnnotation()->getAppInfo()->getDocTableID() != NULL)
+    {
+        strDoc.append(pParentAttributeGroup->getAnnotation()->getAppInfo()->getDocTableID());
+    }
+    else
+    {
+        strDoc.append(DM_TABLE_ID_UNDEFINED);
+    }
+
+    strDoc.append(DM_TABLE_ID_END);
+    DEBUG_MARK_STRDOC;
+
     strDoc.append(DM_TGROUP4_BEGIN);
     strDoc.append(DM_COL_SPEC4);
     strDoc.append(DM_TBODY_BEGIN);

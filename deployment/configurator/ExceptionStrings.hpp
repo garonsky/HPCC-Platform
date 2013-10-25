@@ -27,7 +27,6 @@ enum eExceptionCodes
 };
 
 
-
 const char pExceptionStringArray[EX_STR_LAST_ENTRY][MAX_EXCEPTION_STRING_LENGTH] = { /*** ALWAYS AT TO THE END OF THE ARRAY!!! ***/
                                                                                      "can not open xsd file",
                                                                                      "simple type already defined",
@@ -42,7 +41,7 @@ const char pExceptionStringActionArray[EX_STR_LAST_ENTRY][MAX_EXCEPTION_STRING_L
                                                                                             "Multiple xs:complexType tags with the same name defined in xsd files. Try processing xsd files using -use parameter and only specify 1 xsd file for processing.",
                                                                                             "Multiple xs:attributeGroup tags with the same name defined in xsd files. Try processing xsd files using -use parameter and only specify 1 xsd file for processing."
                                                                                             /*** ADD CORRESPONDING ENTRY TO pExceptionStringActionArray ***/
-                                                                                         };
+                                                                                        };
 
 IException *MakeExceptionFromMap(int code, enum eExceptionCodes);
 IException *MakeExceptionFromMap(enum eExceptionCodes);
