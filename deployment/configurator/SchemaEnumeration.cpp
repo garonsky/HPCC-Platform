@@ -45,6 +45,7 @@ void CEnumeration::dump(std::ostream &cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_ENUMERATION_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath,  offset);
     QUICK_OUT(cout, Value, offset);
 
     QuickOutFooter(cout, XSD_ENUMERATION_STR, offset);

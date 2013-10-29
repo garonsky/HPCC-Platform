@@ -60,6 +60,7 @@ public:
     const char* printDocumentation(const char* comp);
     const char* printDojoJS(const char* comp);
     const char* printQML(const char* comp) const;
+    void printDump(const char* comp) const;
     void dumpStdOut() const;
 
     void setBuildSetArray(const StringArray &strArray);

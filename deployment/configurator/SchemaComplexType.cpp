@@ -20,6 +20,7 @@ void CComplexType::dump(std::ostream& cout, unsigned int offset) const
     QuickOutHeader(cout, XSD_COMPLEX_TYPE_STR, offset);
 
     QUICK_OUT_2(Name)
+    QUICK_OUT(cout, XSDXPath,   offset);
 
     if (m_pSequence != NULL)
     {
@@ -319,6 +320,7 @@ void CComplexTypeArray::dump(std::ostream& cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_COMPLEX_TYPE_ARRAY_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath,   offset);
     QUICK_OUT_ARRAY(cout, offset);
 
     QuickOutFooter(cout, XSD_COMPLEX_TYPE_ARRAY_STR, offset);

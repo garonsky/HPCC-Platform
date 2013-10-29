@@ -38,6 +38,8 @@ void CAnnotation::dump(std::ostream& cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_ANNOTATION_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath, offset);
+
     if (m_pAppInfo != NULL)
     {
         m_pAppInfo->dump(cout, offset);

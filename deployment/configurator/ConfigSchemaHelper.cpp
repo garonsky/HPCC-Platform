@@ -19,7 +19,11 @@ CConfigSchemaHelper* CConfigSchemaHelper::getInstance(const char* pDefaultDirOve
     {
         s_pCConfigSchemaHelper = new CConfigSchemaHelper();
 
-        if (s_pCConfigSchemaHelper != NULL && pDefaultDirOverride != NULL)
+        if (s_pCConfigSchemaHelper != NULL && pDefaultDirOverride == NULL)
+        {
+            s_pCConfigSchemaHelper->setBasePath(DEFAULT_SCHEMA_DIRECTORY);
+        }
+        else if (s_pCConfigSchemaHelper != NULL)
         {
             s_pCConfigSchemaHelper->setBasePath(pDefaultDirOverride);
         }
@@ -237,6 +241,31 @@ const char* CConfigSchemaHelper::printQML(const char* comp) const
     }
 
     return NULL;
+}
+
+void CConfigSchemaHelper::printDump(const char* comp) const
+{
+    if (comp == NULL)
+    {
+        return;
+    }
+
+    CSchema* pSchema = NULL;
+
+    LOOP_THRU_BUILD_SET
+    {
+        if (m_buildSetArray.item(idx).getSchema() != NULL && strcmp(comp, m_buildSetArray.item(idx).getSchema()) == 0)
+        {
+             pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+
+             assert(pSchema != NULL);
+
+             if (pSchema != NULL)
+             {
+                pSchema->dump(std::cout);
+            }
+        }
+    }
 }
 
 void CConfigSchemaHelper::dumpStdOut() const

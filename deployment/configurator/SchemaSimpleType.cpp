@@ -23,6 +23,7 @@ void CSimpleType::dump(std::ostream& cout, unsigned int offset) const
 
     QUICK_OUT_2(Name);
     QUICK_OUT_2(ID);
+    QUICK_OUT(cout, XSDXPath,   offset);
 
     if (m_pRestriction != NULL)
     {
@@ -157,6 +158,7 @@ void CSimpleTypeArray::dump(std::ostream& cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_SIMPLE_TYPE_ARRAY_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath, offset);
     QUICK_OUT_ARRAY(cout, offset);
 
     QuickOutFooter(cout, XSD_SIMPLE_TYPE_ARRAY_STR, offset);

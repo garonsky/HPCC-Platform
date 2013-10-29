@@ -46,6 +46,8 @@ void CComplexContent::dump(std::ostream& cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_COMPLEX_CONTENT_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath,  offset);
+
     if (m_pExtension != NULL)
     {
         m_pExtension->dump(cout, offset);

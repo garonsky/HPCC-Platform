@@ -37,10 +37,11 @@ void CAttribute::dump(std::ostream& cout, unsigned int offset) const
 
     QuickOutHeader(cout,XSD_ATTRIBUTE_STR, offset);
 
-    QUICK_OUT(cout,Name, offset);
-    QUICK_OUT(cout,Type, offset);
-    QUICK_OUT(cout,Default, offset);
-    QUICK_OUT(cout,Use, offset);
+    QUICK_OUT(cout, Name,   offset);
+    QUICK_OUT(cout, Type,   offset);
+    QUICK_OUT(cout, Default,offset);
+    QUICK_OUT(cout, Use,    offset);
+    QUICK_OUT(cout, XSDXPath,  offset);
 
     if (m_pAnnotation != NULL)
     {
@@ -435,6 +436,7 @@ void CAttributeArray::dump(std::ostream &cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_ATTRIBUTE_ARRAY_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath,  offset);
     QUICK_OUT_ARRAY(cout, offset);
 
     QuickOutFooter(cout, XSD_ATTRIBUTE_ARRAY_STR, offset);

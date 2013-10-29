@@ -135,10 +135,12 @@ void CElement::dump(std::ostream &cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_ELEMENT_STR, offset);
 
-    QUICK_OUT(cout,Name, offset);
-    QUICK_OUT(cout,Type, offset);
-    QUICK_OUT(cout,MinOccurs, offset);
-    QUICK_OUT(cout,MaxOccurs, offset);
+    QUICK_OUT(cout, Name, offset);
+    QUICK_OUT(cout, Type, offset);
+    QUICK_OUT(cout, MinOccurs, offset);
+    QUICK_OUT(cout, MaxOccurs, offset);
+    QUICK_OUT(cout, XSDXPath,  offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
 
     if (m_pAnnotation != NULL)
     {
@@ -508,6 +510,22 @@ void CElement::getQML(StringBuffer &strQML) const
     }
 }
 
+void CElement::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    strXPath.append("/").append(this->getName()).append("[").append(index).append("]");
+
+    if (m_pComplexTypeArray != NULL)
+    {
+        m_pComplexTypeArray->populateEnvXPath(strXPath);
+    }
+    if (m_pAttributeArray != NULL)
+    {
+        m_pAttributeArray->populateEnvXPath(strXPath);
+    }
+
+    this->setEnvXPath(strXPath);
+}
+
 void CElement::traverseAndProcessNodes() const
 {
     CXSDNodeBase::processEntryHandlers(this);
@@ -531,6 +549,8 @@ void CElementArray::dump(std::ostream &cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_ELEMENT_ARRAY_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath,  offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
     QUICK_OUT_ARRAY(cout, offset);
 
     QuickOutFooter(cout, XSD_ELEMENT_ARRAY_STR, offset);
@@ -549,6 +569,15 @@ void CElementArray::getDojoJS(StringBuffer &strDoc) const
 void CElementArray::getQML(StringBuffer &strQML) const
 {
     QUICK_QML_ARRAY(strQML);
+}
+
+void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    assert(index == 1);  // Only 1 array of elements per node
+
+    QUICK_ENV_XPATH(strXPath)
+
+    this->setEnvXPath(strXPath);
 }
 
 void CElementArray::traverseAndProcessNodes() const

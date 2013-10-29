@@ -9,6 +9,7 @@ void CDocumentation::dump(std::ostream& cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_DOCUMENTATION_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath,  offset);
     QUICK_OUT(cout,Documentation, offset);
 
     QuickOutFooter(cout, XSD_DOCUMENTATION_STR, offset);

@@ -129,6 +129,8 @@ void CAppInfo::dump(std::ostream &cout, unsigned int offset) const
     QUICK_OUT(cout, DocInclude, offset);
     QUICK_OUT(cout, ViewChildNodes, offset);
     QUICK_OUT(cout, XPath, offset);
+    QUICK_OUT(cout, DocInclude, offset);
+    QUICK_OUT(cout, XSDXPath, offset);
 
     QuickOutFooter(cout, XSD_APP_INFO_STR, offset);
 }

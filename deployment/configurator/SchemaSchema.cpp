@@ -71,6 +71,7 @@ CSchema* CSchema::load(const char* pSchemaLocation, IPropertyTree *pSchemaRoot, 
 
     return pSchema;
 }
+
 CSchema* CSchema::load(const char* pSchemaLocation, CXSDNodeBase* pParentNode)
 {
     if (pSchemaLocation == NULL)
@@ -98,7 +99,7 @@ CSchema* CSchema::load(const char* pSchemaLocation, CXSDNodeBase* pParentNode)
     catch (...)
     {
         // TODO: Hanlde exceptions
-        std::cout << "Can't open " << schemaPath.str();
+        std::cout << "Can't open " << schemaPath.str() << std::endl;
         exit(-1);
     }
 
@@ -118,6 +119,7 @@ void CSchema::dump(std::ostream& cout, unsigned int offset) const
     QUICK_OUT_2(XMLNS_XS);
     QUICK_OUT_2(ElementFormDefault);
     QUICK_OUT_2(AttributeFormDefault);
+    QUICK_OUT(cout, XSDXPath,  offset);
 
     if (m_pElementArray != NULL)
     {

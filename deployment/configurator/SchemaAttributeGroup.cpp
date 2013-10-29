@@ -58,9 +58,10 @@ void CAttributeGroup::dump(std::ostream &cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_ATTRIBUTE_GROUP_STR, offset);
 
-    QUICK_OUT(cout,Name, offset);
-    QUICK_OUT(cout,Ref, offset);
-    QUICK_OUT(cout,ID, offset);
+    QUICK_OUT(cout, Name,       offset);
+    QUICK_OUT(cout, Ref,        offset);
+    QUICK_OUT(cout, ID,         offset);
+    QUICK_OUT(cout, XSDXPath,   offset);
 
     if (m_pRefAttributeGroup != NULL)
     {
@@ -263,6 +264,7 @@ void CAttributeGroupArray::dump(std::ostream& cout, unsigned int offset) const
 
     QuickOutHeader(cout,XSD_ATTRIBUTE_GROUP_ARRAY_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath, offset);
     QUICK_OUT_ARRAY(cout, offset);
 
     QuickOutFooter(cout,XSD_ATTRIBUTE_GROUP_ARRAY_STR, offset);

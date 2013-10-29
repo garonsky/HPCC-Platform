@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 
     if (pBuildSetFile[0] == 0 && pOverrideSchema[0] == 0)
     {
-        pSchemaHelper = CConfigSchemaHelper::getInstance(pBasePath);
+        pSchemaHelper = CConfigSchemaHelper::getInstance();
     }
     else if (pBuildSetFile[0] == 0)
     {
@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
         pSchemaHelper->processExtensionArr();
         pSchemaHelper->processAttributeGroupArr();
     }
-    CATCH_EXCEPTION
+    CATCH_EXCEPTION_AND_EXIT
 
     if (bListXSDs == true)
     {
@@ -380,10 +380,8 @@ int main(int argc, char *argv[])
         }
     }
 
-
-    if (bDump == true)
+    for (int idx =  0; bDump == true && idx < arrXSDs.length(); idx++)
     {
-         std::cout << pSchemaHelper->printDocumentation(arrXSDs.item(idx));
+        pSchemaHelper->printDump(arrXSDs.item(idx));
     }
-
 }

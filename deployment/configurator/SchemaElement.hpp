@@ -37,6 +37,8 @@ public:
 
     virtual void getQML(StringBuffer &strQML) const;
 
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+
     virtual void traverseAndProcessNodes() const;
 
     const CAnnotation* getAnnotation() const
@@ -94,6 +96,8 @@ public:
     virtual void getDojoJS(StringBuffer &strJS) const;
 
     virtual void getQML(StringBuffer &strQML) const;
+
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
 
     virtual void traverseAndProcessNodes() const;
 

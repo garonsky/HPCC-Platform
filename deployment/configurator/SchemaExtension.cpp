@@ -14,6 +14,7 @@ void CExtension::dump(std::ostream& cout, unsigned int offset) const
     QuickOutHeader(cout, XSD_EXTENSION_STR, offset);
 
     QUICK_OUT(cout, Base, offset);
+    QUICK_OUT(cout, XSDXPath,  offset);
 
     if (this->getBaseNode() != NULL)
     {

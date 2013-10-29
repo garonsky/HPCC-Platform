@@ -44,6 +44,8 @@ void CSequence::dump(std::ostream& cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_SEQUENCE_STR, offset);
 
+    QUICK_OUT(cout, XSDXPath,  offset);
+
     if (p_mElementArray != NULL)
     {
         p_mElementArray->dump(cout, offset);

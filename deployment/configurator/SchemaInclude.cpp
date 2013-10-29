@@ -11,6 +11,7 @@ void CInclude::dump(std::ostream& cout, unsigned int offset) const
     QuickOutHeader(cout, XSD_INCLUDE_STR, offset);
 
     QUICK_OUT(cout, SchemaLocation, offset);
+    QUICK_OUT(cout, XSDXPath,  offset);
 
     if (this->getIncludeSchema() != NULL)
     {

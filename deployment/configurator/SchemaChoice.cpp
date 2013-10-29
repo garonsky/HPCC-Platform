@@ -43,7 +43,7 @@ CChoice* CChoice::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, co
 
     pChoice->setXSDXPath(xpath);
 
-    pElemArray->setParentNode(pChoice);
+    SETPARENTNODE(pElemArray, pChoice);
 
     return pChoice;
 }
@@ -67,9 +67,10 @@ void CChoice::dump(std::ostream &cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_CHOICE_STR, offset);
 
-    QUICK_OUT(cout,ID, offset);
-    QUICK_OUT(cout,MinOccurs, offset);
-    QUICK_OUT(cout,MaxOccurs, offset);
+    QUICK_OUT(cout, ID,         offset);
+    QUICK_OUT(cout ,MinOccurs,  offset);
+    QUICK_OUT(cout, MaxOccurs,  offset);
+    QUICK_OUT(cout, XSDXPath,   offset);
 
     if (m_pElementArray != NULL)
     {

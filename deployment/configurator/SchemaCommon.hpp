@@ -6,6 +6,7 @@
 #include "jiface.hpp"
 #include "jstring.hpp"
 #include "jlib.hpp"
+#include "ExceptionStrings.hpp"
 
 #define QUICK_OUT(X,Y,Z) QuickOut(X,#Y,get##Y(),Z);
 #define QUICK_OUT_2(Y) QuickOut(cout, #Y, get##Y(), offset);
@@ -30,6 +31,11 @@
                            {                                                            \
                                 (this->item(idx)).getQML(X);                            \
                            }
+
+#define QUICK_ENV_XPATH(X) for (int idx=0; idx < this->length(); idx++)                 \
+                            {                                                           \
+                                 (this->item(idx)).populateEnvXPath(X, idx+1);          \
+                            }
 
 #define QUICK_TRAVERSE_AND_PROCESS  for (int idx=0; idx < this->length(); idx++)        \
 {                                                                                       \
@@ -195,6 +201,10 @@ public:
 
     virtual ~CXSDNodeBase();
 
+    GETTERSETTER(XSDXPath)
+    GETTERSETTER(EnvXPath)
+
+
     void dumpStdOut() const;
 
     virtual CXSDNodeBase* getParentNode()
@@ -250,20 +260,11 @@ public:
     {
     }
 
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1)
+    {
+    }
+
     //virtual void loadXML();
-
-    virtual void setXSDXPath(const char* pXPath)
-    {
-        assert(pXPath != NULL);
-        assert(m_strXSDXPath.length() == 0);
-
-        m_strXSDXPath.append(pXPath);
-    }
-
-    virtual const char* getXSDXPath() const
-    {
-        return m_strXSDXPath.str();
-    }
 
     static void addEntryHandler(CXSDNodeHandler &Handler)
     {
@@ -283,7 +284,6 @@ protected:
 
     CXSDNodeBase*               m_pParentNode;
     StringBuffer                m_strXML;
-    StringBuffer                m_strXSDXPath;
     NODE_TYPES                  m_eNodeType;
     char                        m_pNodeType[1024];
     static CIArrayOf<CXSDNodeHandler>  s_callBackEntryHandlersArray;
@@ -303,7 +303,6 @@ public:
     CXSDNode(CXSDNodeBase *pParentNode, NODE_TYPES pNodeType = XSD_ERROR );
 
     virtual bool checkSelf(NODE_TYPES eNodeType, const char *pName, const char* pCompName) const;
-
 
     virtual const CXSDNodeBase* getParentNodeByType(NODE_TYPES eNodeType) const;
 

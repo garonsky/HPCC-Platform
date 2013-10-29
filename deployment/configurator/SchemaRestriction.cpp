@@ -16,6 +16,7 @@ void CRestriction::dump(std::ostream& cout, unsigned int offset) const
 
     QUICK_OUT_2(Base);
     QUICK_OUT_2(ID);
+    QUICK_OUT(cout, XSDXPath,  offset);
 
     // to do call base
     // base->dump(cout, offset);
