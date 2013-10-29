@@ -18,18 +18,20 @@ const char *pDefaultExt =  ".mod.xml";
 void usage()
 {
     std::cout << "configurator -use <xsd files>  -b <base dir path>" << std::endl;
-    std::cout << "Example Usage: ./configurator -use dali.xsd -use thor.xsd -u esp.xsd -b /opt/HPCCSystems/initfiles/componentfiles/configxml -t /tmp " << std::endl;
-    std::cout << "-f -file <build set file>         : buildset file name (required if base directory is specfied" << std::endl;
-    std::cout << "-p -path <base dir path>          : base directory path (required if buildset file name is specified)" << std::endl;
-    std::cout << "-b -base <base dir path>          : base directory path to use with -use option and for xs:include references in xsd files" << std::endl;
-    std::cout << "-x -xsd  <xsd file name>          : xsd file name (can be more than one)" << std::endl;
-    std::cout << "-l -list                          : list available xsd files" << std::endl;
+    std::cout << "Example Usage: ./configurator -use dali.xsd -b /opt/HPCCSystems/initfiles/componentfiles/configxml -t /tmp " << std::endl;
     std::cout << "-d -doc                           : generate docs" << std::endl;
+    std::cout << "-b -base <base dir path>          : base directory path to use with -use option and for xs:include references in xsd files" << std::endl;
     std::cout << "-e -extension <file extension>    : write docs to files with appended extension (default " <<  pDefaultExt << ")" << std::endl;
     std::cout << "-t -target <target directory>     : directory to which to docs will be written. If not specified, then output will go to std::out" << std::endl;
     std::cout << "-u -use <schema xsd>              : use specified xsd schema instead of buildset file" << std::endl;
-    std::cout << "-m -xml                           : generate XML configuration file" << std::endl;
     std::cout << "-h -help                          : prints out this usage" << std::endl;
+
+    std::cout << std::endl << "** Experimental **" << std::endl;
+    std::cout << "-f -file <build set file>         : buildset file name (required if base directory is specfied" << std::endl;
+    std::cout << "-p -path <base dir path>          : base directory path (required if buildset file name is specified)" << std::endl;
+    std::cout << "-x -xsd  <xsd file name>          : xsd file name (can be more than one) - For use with buildset file" << std::endl;
+    std::cout << "-l -list                          : list available xsd files" << std::endl;
+    std::cout << "-m -xml                           : generate XML configuration file" << std::endl;
     std::cout << "-j -dojo                          : prints dojo js" << std::endl;
     std::cout << "-q -qml                           : prints QML" << std::endl;
     std::cout << "-dump                             : dump out xsd internal structure [NOT IMPLEMENTED]" << std::endl;
