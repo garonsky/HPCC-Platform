@@ -124,6 +124,7 @@ void CSchema::dump(std::ostream& cout, unsigned int offset) const
     QUICK_OUT_2(ElementFormDefault);
     QUICK_OUT_2(AttributeFormDefault);
     QUICK_OUT(cout, XSDXPath,  offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
 
     if (m_pElementArray != NULL)
     {
@@ -226,6 +227,61 @@ void CSchema::getQML(StringBuffer &strQML) const
     if (m_pIncludeArray != NULL)
     {
         m_pIncludeArray->getQML(strQML);
+    }
+}
+
+void  CSchema::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    strXPath.append("./").append(XML_TAG_SOFTWARE);
+
+    if (m_pElementArray != NULL)
+    {
+        m_pElementArray->populateEnvXPath(strXPath);
+    }
+    if (m_pAttributeGroupArray != NULL)
+    {
+        m_pAttributeGroupArray->populateEnvXPath(strXPath);
+    }
+    if (m_pSimpleTypeArray != NULL)
+    {
+        m_pSimpleTypeArray->populateEnvXPath(strXPath);
+    }
+    if (m_pIncludeArray != NULL)
+    {
+        m_pIncludeArray->populateEnvXPath(strXPath);
+    }
+    if (m_pComplexTypeArray != NULL)
+    {
+        assert(m_pComplexTypeArray != 0);
+        m_pComplexTypeArray->populateEnvXPath(strXPath);
+    }
+
+    this->setEnvXPath(strXPath);
+}
+
+void CSchema::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    assert(pEnvTree != NULL);
+
+    if (m_pElementArray != NULL)
+    {
+        m_pElementArray->loadXMLFromEnvXml(pEnvTree);
+    }
+    if (m_pComplexTypeArray != NULL)
+    {
+        m_pComplexTypeArray->loadXMLFromEnvXml(pEnvTree);
+    }
+    if (m_pAttributeGroupArray != NULL)
+    {
+        m_pAttributeGroupArray->loadXMLFromEnvXml(pEnvTree);
+    }
+    if (m_pSimpleTypeArray != NULL)
+    {
+        m_pSimpleTypeArray->loadXMLFromEnvXml(pEnvTree);
+    }
+    if (m_pIncludeArray != NULL)
+    {
+        m_pIncludeArray->loadXMLFromEnvXml(pEnvTree);
     }
 }
 

@@ -84,9 +84,9 @@ void CAttributeGroup::getDocumentation(StringBuffer &strDoc) const
         strDoc.appendf("%s%s%s", DM_TITLE_BEGIN, m_pRefAttributeGroup->getName(), DM_TITLE_END);
         DEBUG_MARK_STRDOC;
 
-        if (m_pRefAttributeGroup->getAttributeArray() != NULL)
+        if (m_pRefAttributeGroup->getConstAttributeArray() != NULL)
         {
-            m_pRefAttributeGroup->getAttributeArray()->getDocumentation(strDoc);
+            m_pRefAttributeGroup->getConstAttributeArray()->getDocumentation(strDoc);
         }
     }
 }
@@ -95,9 +95,9 @@ void CAttributeGroup::getDojoJS(StringBuffer &strJS) const
 {
     if (this->getRef() != NULL && this->getRef()[0] != 0 && m_pRefAttributeGroup != NULL)
     {
-        if (m_pRefAttributeGroup->getAttributeArray() != NULL)
+        if (m_pRefAttributeGroup->getConstAttributeArray() != NULL)
         {
-            m_pRefAttributeGroup->getAttributeArray()->getDojoJS(strJS);
+            m_pRefAttributeGroup->getConstAttributeArray()->getDojoJS(strJS);
         }
     }
 }
@@ -106,11 +106,26 @@ void CAttributeGroup::getQML(StringBuffer &strQML) const
 {
     if (this->getRef() != NULL && this->getRef()[0] != 0 && m_pRefAttributeGroup != NULL)
     {
-        if (m_pRefAttributeGroup->getAttributeArray() != NULL)
+        if (m_pRefAttributeGroup->getConstAttributeArray() != NULL)
         {
-            m_pRefAttributeGroup->getAttributeArray()->getQML(strQML);
+            m_pRefAttributeGroup->getConstAttributeArray()->getQML(strQML);
         }
     }
+}
+
+void CAttributeGroup::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    strXPath.append("/").append(this->getRef());
+
+    if (this->getRef() != NULL && this->getRef()[0] != 0 && m_pRefAttributeGroup != NULL)
+    {
+        if (m_pRefAttributeGroup->getConstAttributeArray() != NULL)
+        {
+            m_pRefAttributeGroup->getAttributeArray()->populateEnvXPath(strXPath);
+        }
+    }
+
+    this->setEnvXPath(strXPath);
 }
 
 void CAttributeGroup::traverseAndProcessNodes() const
@@ -323,6 +338,15 @@ void CAttributeGroupArray::getQML(StringBuffer &strQML) const
     }
 
     QUICK_QML_ARRAY(strQML);
+}
+
+void CAttributeGroupArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    assert(index == 1);  // Only 1 array of elements per node
+
+    QUICK_ENV_XPATH(strXPath)
+
+    this->setEnvXPath(strXPath);
 }
 
 void CAttributeGroupArray::traverseAndProcessNodes() const

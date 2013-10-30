@@ -100,11 +100,24 @@ void CAnnotation::getQML(StringBuffer &strQML) const
 {
     if (m_pAppInfo != NULL)
     {
-        m_pAppInfo->getDojoQML(strQML);
+        m_pAppInfo->getQML(strQML);
     }
 
     if (m_pDocumentation != NULL)
     {
-        m_pDocumentation->getDojoQML(strQML);
+        m_pDocumentation->getQML(strQML);
+    }
+}
+
+void CAnnotation::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    if (m_pAppInfo != NULL)
+    {
+        m_pAppInfo->loadXMLFromEnvXml(pEnvTree);
+    }
+
+    if (m_pDocumentation != NULL)
+    {
+        m_pDocumentation->loadXMLFromEnvXml(pEnvTree);
     }
 }

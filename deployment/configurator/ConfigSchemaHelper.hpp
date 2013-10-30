@@ -54,6 +54,8 @@ public:
 
     void processExtensionArr();
     void processAttributeGroupArr();
+    void populateEnvXPath();
+    void loadEnvFromConfig(const char *pEnvFile);
 
     void traverseAndProcessArray(const char *pXSDName = NULL);
 

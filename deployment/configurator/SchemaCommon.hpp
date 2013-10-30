@@ -1,4 +1,4 @@
-#ifndef _SCHEMA_COMMON_HPP_
+﻿#ifndef _SCHEMA_COMMON_HPP_
 #define _SCHEMA_COMMON_HPP_
 
 
@@ -36,6 +36,12 @@
                             {                                                           \
                                  (this->item(idx)).populateEnvXPath(X, idx+1);          \
                             }
+
+#define QUICK_LOAD_ENV_XML(X)   assert(X != NULL);                                        \
+                                for (int idx=0; idx < this->length(); idx++)              \
+                                {                                                         \
+                                     (this->item(idx)).loadXMLFromEnvXml(X);              \
+                                }
 
 #define QUICK_TRAVERSE_AND_PROCESS  for (int idx=0; idx < this->length(); idx++)        \
 {                                                                                       \
@@ -203,6 +209,7 @@ public:
 
     GETTERSETTER(XSDXPath)
     GETTERSETTER(EnvXPath)
+    GETTERSETTER(EnvValueFromXML)
 
 
     void dumpStdOut() const;
@@ -256,7 +263,7 @@ public:
 
     virtual void getDojoJS(StringBuffer &strJS) const = 0;
 
-    virtual void getDojoQML(StringBuffer &strQML) const
+    virtual void getQML(StringBuffer &strQML) const
     {
     }
 
@@ -264,7 +271,9 @@ public:
     {
     }
 
-    //virtual void loadXML();
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+    {
+    }
 
     static void addEntryHandler(CXSDNodeHandler &Handler)
     {

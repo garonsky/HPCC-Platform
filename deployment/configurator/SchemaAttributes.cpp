@@ -42,6 +42,8 @@ void CAttribute::dump(std::ostream& cout, unsigned int offset) const
     QUICK_OUT(cout, Default,offset);
     QUICK_OUT(cout, Use,    offset);
     QUICK_OUT(cout, XSDXPath,  offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
+    QUICK_OUT(cout, EnvValueFromXML,  offset);
 
     if (m_pAnnotation != NULL)
     {
@@ -262,6 +264,31 @@ void CAttribute::getQML(StringBuffer &strQML) const
     }
 }
 
+void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    //strXPath.append("/").append("[@").append(this->getName()).append("]");
+
+    assert(this->getName() != NULL);
+
+    StringBuffer attribName("@");
+    attribName.append(this->getName());
+
+    this->setEnvXPath(attribName.str());
+}
+
+void CAttribute::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    assert(this->getEnvXPath() != NULL);
+    assert(this->getConstParentNode()->getEnvXPath() != NULL);
+
+    StringBuffer strXPath(this->getConstParentNode()->getEnvXPath());
+
+    if (pEnvTree->hasProp(strXPath.str())== true)
+    {
+        this->setEnvValueFromXML(pEnvTree->queryPropTree(strXPath.str())->queryProp(this->getEnvXPath()));
+    }
+}
+
 void CAttribute::traverseAndProcessNodes() const
 {
     CXSDNodeBase::processEntryHandlers(this);
@@ -437,6 +464,7 @@ void CAttributeArray::dump(std::ostream &cout, unsigned int offset) const
     QuickOutHeader(cout, XSD_ATTRIBUTE_ARRAY_STR, offset);
 
     QUICK_OUT(cout, XSDXPath,  offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
     QUICK_OUT_ARRAY(cout, offset);
 
     QuickOutFooter(cout, XSD_ATTRIBUTE_ARRAY_STR, offset);
@@ -677,6 +705,21 @@ void CAttributeArray::getQML(StringBuffer &strQML) const
         }
     }
 }
+
+void CAttributeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    assert(index == 1);  // Only 1 array of elements per node
+
+    QUICK_ENV_XPATH(strXPath)
+
+    this->setEnvXPath(strXPath);
+}
+
+void CAttributeArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    QUICK_LOAD_ENV_XML(pEnvTree)
+}
+
 
 void CAttributeArray::traverseAndProcessNodes() const
 {

@@ -14,6 +14,10 @@ public:
     {
     }
 
+    GETTERSETTER(XMLNS_XS)
+    GETTERSETTER(ElementFormDefault)
+    GETTERSETTER(AttributeFormDefault)
+
     virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
 
     virtual void getDocumentation(StringBuffer &strDoc) const;
@@ -22,13 +26,13 @@ public:
 
     virtual void getQML(StringBuffer &strQML) const;
 
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+
     virtual void traverseAndProcessNodes() const;
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    GETTERSETTER(XMLNS_XS)
-    GETTERSETTER(ElementFormDefault)
-    GETTERSETTER(AttributeFormDefault)
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
 
     CXSDNode* getExtensionType(const char* pExtensionTypeName) const;
 

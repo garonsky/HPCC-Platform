@@ -171,6 +171,74 @@ void CComplexType::getQML(StringBuffer &strQML) const
     }
 }
 
+void CComplexType::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    if (m_pSequence != NULL)
+    {
+        m_pSequence->populateEnvXPath(strXPath);
+    }
+
+    if (m_pComplexContent != NULL)
+    {
+        m_pComplexContent->populateEnvXPath(strXPath);
+    }
+
+    if (m_pAttributeArray != NULL)
+    {
+        m_pAttributeArray->populateEnvXPath(strXPath);
+    }
+
+    if (m_pChoice != NULL)
+    {
+        m_pChoice->populateEnvXPath(strXPath);
+    }
+
+    if (m_pElementArray != NULL)
+    {
+        m_pElementArray->populateEnvXPath(strXPath);
+    }
+
+    if (m_pAttributeGroupArray != NULL)
+    {
+        m_pAttributeGroupArray->populateEnvXPath(strXPath);
+    }
+
+    this->setEnvXPath(strXPath);
+}
+
+void CComplexType::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    if (m_pSequence != NULL)
+    {
+        m_pSequence->loadXMLFromEnvXml(pEnvTree);
+    }
+
+    if (m_pComplexContent != NULL)
+    {
+        m_pComplexContent->loadXMLFromEnvXml(pEnvTree);
+    }
+
+    if (m_pAttributeArray != NULL)
+    {
+        m_pAttributeArray->loadXMLFromEnvXml(pEnvTree);
+    }
+
+    if (m_pChoice != NULL)
+    {
+        m_pChoice->loadXMLFromEnvXml(pEnvTree);
+    }
+
+    if (m_pElementArray != NULL)
+    {
+        m_pElementArray->loadXMLFromEnvXml(pEnvTree);
+    }
+
+    if (m_pAttributeGroupArray != NULL)
+    {
+        m_pAttributeGroupArray->loadXMLFromEnvXml(pEnvTree);
+    }
+}
+
 void CComplexType::traverseAndProcessNodes() const
 {
     CComplexType::processEntryHandlers(this);
@@ -378,6 +446,21 @@ const char* CComplexTypeArray::getXML(const char* /*pComponent*/)
     }
 
     return m_strXML.str();
+}
+
+void CComplexTypeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    assert(index == 1);  // Only 1 array of elements per node
+
+    QUICK_ENV_XPATH(strXPath)
+
+    this->setEnvXPath(strXPath);
+}
+
+
+void CComplexTypeArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    QUICK_LOAD_ENV_XML(pEnvTree);
 }
 
 CComplexTypeArray* CComplexTypeArray::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)

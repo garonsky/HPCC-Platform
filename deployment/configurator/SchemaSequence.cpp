@@ -78,6 +78,24 @@ void CSequence::getQML(StringBuffer &strQML) const
     }
 }
 
+void CSequence::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    if (p_mElementArray != NULL)
+    {
+        p_mElementArray->populateEnvXPath(strXPath);
+    }
+
+    this->setEnvXPath(strXPath);
+}
+
+void CSequence::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    if (p_mElementArray != NULL)
+    {
+        p_mElementArray->loadXMLFromEnvXml(pEnvTree);
+    }
+}
+
 void CSequence::traverseAndProcessNodes() const
 {
     CXSDNodeBase::processEntryHandlers(this);

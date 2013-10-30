@@ -32,6 +32,8 @@ public:
 
     virtual void getDojoJS(StringBuffer &strJS) const;
 
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+
     virtual void traverseAndProcessNodes() const;
 
     static CAppInfo* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);

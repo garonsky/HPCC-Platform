@@ -51,7 +51,9 @@ public:
 
     virtual void getQML(StringBuffer &strQML) const;
 
-    //virtual void loadXML();
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
 
     virtual void traverseAndProcessNodes() const;
 
@@ -112,7 +114,9 @@ public:
 
     virtual void getQML(StringBuffer &strQML) const;
 
-    //virtual void loadXML();
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
 
     virtual void traverseAndProcessNodes() const;
 

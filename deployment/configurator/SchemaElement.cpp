@@ -141,6 +141,7 @@ void CElement::dump(std::ostream &cout, unsigned int offset) const
     QUICK_OUT(cout, MaxOccurs, offset);
     QUICK_OUT(cout, XSDXPath,  offset);
     QUICK_OUT(cout, EnvXPath,  offset);
+    QUICK_OUT(cout, EnvValueFromXML,  offset);
 
     if (m_pAnnotation != NULL)
     {
@@ -522,8 +523,28 @@ void CElement::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     {
         m_pAttributeArray->populateEnvXPath(strXPath);
     }
+    if (m_pAnnotation != NULL)
+    {
+        m_pAnnotation->populateEnvXPath(strXPath);
+    }
 
     this->setEnvXPath(strXPath);
+}
+
+void CElement::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    if (m_pComplexTypeArray != NULL)
+    {
+        m_pComplexTypeArray->loadXMLFromEnvXml(pEnvTree);
+    }
+    if (m_pAttributeArray != NULL)
+    {
+        m_pAttributeArray->loadXMLFromEnvXml(pEnvTree);
+    }
+    if (m_pAnnotation != NULL)
+    {
+        m_pAnnotation->loadXMLFromEnvXml(pEnvTree);
+    }
 }
 
 void CElement::traverseAndProcessNodes() const
@@ -605,6 +626,11 @@ const char* CElementArray::getXML(const char* /*pComponent*/)
     }
 
     return m_strXML.str();
+}
+
+void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    QUICK_LOAD_ENV_XML(pEnvTree)
 }
 
 CElementArray* CElementArray::load(const char* pSchemaFile)

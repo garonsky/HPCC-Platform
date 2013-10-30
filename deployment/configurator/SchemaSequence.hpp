@@ -26,6 +26,10 @@ public:
 
     virtual void getQML(StringBuffer &strQML) const;
 
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+
     virtual void traverseAndProcessNodes() const;
 
     static CSequence* load(CXSDNodeBase* pRootNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);

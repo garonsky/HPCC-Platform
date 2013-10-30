@@ -542,6 +542,50 @@ void CConfigSchemaHelper::processAttributeGroupArr()
     }
 }
 
+void CConfigSchemaHelper::populateEnvXPath()
+{
+    CSchema* pSchema = NULL;
+    StringBuffer strXPath;
+
+    LOOP_THRU_BUILD_SET
+    {
+        pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+
+        if (pSchema != NULL)
+        {
+            pSchema->populateEnvXPath(strXPath);
+        }
+    }
+}
+
+void CConfigSchemaHelper::loadEnvFromConfig(const char *pEnvFile)
+{
+    assert(pEnvFile != NULL);
+
+    Linked<IPropertyTree> pEnvXMLRoot;
+
+    try
+    {
+        pEnvXMLRoot.setown(createPTreeFromXMLFile(pEnvFile));
+    }
+    catch (...)
+    {
+        MakeExceptionFromMap(EX_STR_CAN_NOT_PROCESS_ENV_XML);
+    }
+
+    CSchema* pSchema = NULL;
+
+    LOOP_THRU_BUILD_SET
+    {
+        pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+
+        if (pSchema != NULL)
+        {
+            pSchema->loadXMLFromEnvXml(pEnvXMLRoot);
+        }
+    }
+}
+
 void CConfigSchemaHelper::traverseAndProcessArray(const char *pXSDName)
 {
     const char *pComponent = NULL;

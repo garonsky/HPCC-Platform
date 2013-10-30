@@ -34,7 +34,8 @@ void usage()
     std::cout << "-m -xml                           : generate XML configuration file" << std::endl;
     std::cout << "-j -dojo                          : prints dojo js" << std::endl;
     std::cout << "-q -qml                           : prints QML" << std::endl;
-    std::cout << "-dump                             : dump out xsd internal structure [NOT IMPLEMENTED]" << std::endl;
+    std::cout << "-c -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << std::endl;
+    std::cout << "-dump                             : dump out xsd internal structure and values" << std::endl;
 }
 
 
@@ -55,6 +56,7 @@ int main(int argc, char *argv[])
     char pTargetDocExt[BUFF_SIZE];
     char pOverrideSchema[BUFF_SIZE];
     char pBasePath[BUFF_SIZE];
+    char pEnvXMLPath[BUFF_SIZE];
 
     memset(pBuildSetFile, 0, sizeof(pBuildSetFile));
     memset(pBuildSetFileDir, 0, sizeof(pBuildSetFileDir));
@@ -69,6 +71,7 @@ int main(int argc, char *argv[])
     bool bGenDojoJS = false;
     bool bGenQML    = false;
     bool bDump      = false;
+    bool bLoadEnvXML= false;
 
     StringArray arrXSDs;
 
@@ -88,6 +91,20 @@ int main(int argc, char *argv[])
         if (stricmp(argv[idx], "-dump") == 0)
         {
             bDump = true;
+        }
+        if (stricmp(argv[idx], "-config") == 0 || stricmp(argv[idx], "-c") == 0)
+        {
+            idx++;
+
+            bLoadEnvXML = true;
+
+            if (argv[idx] == NULL)
+            {
+                std::cout << "Missing env xml file parameter!" << std::endl;
+                return 0;
+            }
+
+            strncpy(pEnvXMLPath, argv[idx], BUFF_SIZE);
         }
         else if (stricmp(argv[idx], "-file") == 0 || stricmp(argv[idx], "-f") == 0)
         {
@@ -234,6 +251,12 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+/*    if (bDump == false && bLoadEnvXML ==true)
+    {
+        puts("Parameter -dump is not active.  Nothing to do.");
+        return 0;
+    }*/
+
     if (bGenDocs == true && bGenDojoJS == true)
     {
         puts("Can not generate docs and dojo java script at the same time! (Coming...)");
@@ -269,6 +292,7 @@ int main(int argc, char *argv[])
         pSchemaHelper->populateSchema();
         pSchemaHelper->processExtensionArr();
         pSchemaHelper->processAttributeGroupArr();
+        pSchemaHelper->populateEnvXPath();
     }
     CATCH_EXCEPTION_AND_EXIT
 
@@ -382,6 +406,10 @@ int main(int argc, char *argv[])
 
     for (int idx =  0; bDump == true && idx < arrXSDs.length(); idx++)
     {
+        if (bLoadEnvXML == true)
+        {
+            pSchemaHelper->loadEnvFromConfig(pEnvXMLPath);
+        }
         pSchemaHelper->printDump(arrXSDs.item(idx));
     }
 }

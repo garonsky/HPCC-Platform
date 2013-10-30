@@ -17,7 +17,7 @@ public:
     virtual const CXSDNodeBase* getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const;
     virtual const CXSDNodeBase* getNodeByTypeAndNameDescending(NODE_TYPES eNodeType, const char *pName) const;
 
-    const CAttributeArray* getAttributeArray() const
+    const CAttributeArray* getConstAttributeArray() const
     {
         return m_pAttributeArray;
     }
@@ -46,7 +46,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-   virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
+    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
 
     virtual void getDocumentation(StringBuffer &strDoc) const;
 
@@ -60,6 +60,7 @@ public:
     }
 
     //virtual void loadXML();
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
 
     virtual void traverseAndProcessNodes() const;
 
@@ -74,6 +75,12 @@ protected:
     virtual void setAnnotation(CAnnotation *pAnnotation)
     {
         m_pAnnotation = pAnnotation;
+    }
+
+
+    CAttributeArray* getAttributeArray() const
+    {
+        return m_pAttributeArray;
     }
 
     CAttributeGroup *m_pRefAttributeGroup;
@@ -102,6 +109,8 @@ public:
     virtual void getDojoJS(StringBuffer &strJS) const;
 
    virtual void getQML(StringBuffer &strQML) const;
+
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
 
     virtual void traverseAndProcessNodes() const;
 

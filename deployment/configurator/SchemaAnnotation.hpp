@@ -30,6 +30,8 @@ public:
 
     virtual void getQML(StringBuffer &strQML) const;
 
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+
     const CAppInfo* getAppInfo() const
     {
         return m_pAppInfo;

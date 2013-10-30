@@ -39,6 +39,8 @@ public:
 
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
 
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+
     virtual void traverseAndProcessNodes() const;
 
     const CAnnotation* getAnnotation() const
@@ -98,6 +100,8 @@ public:
     virtual void getQML(StringBuffer &strQML) const;
 
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
 
     virtual void traverseAndProcessNodes() const;
 

@@ -147,3 +147,7 @@ void CAppInfo::getDocumentation(StringBuffer &strDoc) const
 void CAppInfo::getDojoJS(StringBuffer &strJS) const
 {
 }
+
+void CAppInfo::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+}
