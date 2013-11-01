@@ -134,10 +134,6 @@ void CSchema::dump(std::ostream& cout, unsigned int offset) const
     {
         m_pComplexTypeArray->dump(cout, offset);
     }
-    if (m_pAttributeGroupArray != NULL)
-    {
-        m_pAttributeGroupArray->dump(cout, offset);
-    }
     if (m_pSimpleTypeArray != NULL)
     {
         m_pSimpleTypeArray->dump(cout, offset);
@@ -149,6 +145,10 @@ void CSchema::dump(std::ostream& cout, unsigned int offset) const
     if (m_pAnnotation != NULL)
     {
         m_pAnnotation->dump(cout, offset);
+    }
+    if (m_pAttributeGroupArray != NULL)
+    {
+        m_pAttributeGroupArray->dump(cout, offset);
     }
 
     QuickOutFooter(cout, XSD_SCHEMA_STR, offset);
@@ -282,6 +282,10 @@ void CSchema::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
     if (m_pIncludeArray != NULL)
     {
         m_pIncludeArray->loadXMLFromEnvXml(pEnvTree);
+    }
+    if (m_pAttributeGroupArray != NULL)
+    {
+        m_pAttributeGroupArray->loadXMLFromEnvXml(pEnvTree);
     }
 }
 

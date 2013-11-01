@@ -117,6 +117,9 @@ static const char* XSD_ENUMERATION_ARRAY_STR("EnumerationArray");
 
 static const char* DEFAULT_SCHEMA_DIRECTORY("/opt/HPCCSystems/componentfiles/configxml/");
 
+static const char* XML_ENV_VALUE_OPTIONAL("optional");
+static const char* XML_ENV_VALUE_REQUIRED("required");
+
 static unsigned int STANDARD_OFFSET_1 = 3;
 static unsigned int STANDARD_OFFSET_2 = 6;
 

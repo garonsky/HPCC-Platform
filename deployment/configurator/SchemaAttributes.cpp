@@ -267,14 +267,10 @@ void CAttribute::getQML(StringBuffer &strQML) const
 
 void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
-    //strXPath.append("/").append("[@").append(this->getName()).append("]");
-
     assert(this->getName() != NULL);
 
-    StringBuffer attribName("@");
-    attribName.append(this->getName());
-
-    this->setEnvXPath(attribName.str());
+    strXPath.append("/").append("[@").append(this->getName()).append("]");
+    this->setEnvXPath(strXPath.str());
 }
 
 void CAttribute::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
@@ -286,7 +282,17 @@ void CAttribute::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 
     if (pEnvTree->hasProp(strXPath.str()) == true)
     {
-        this->setEnvValueFromXML(pEnvTree->queryPropTree(strXPath.str())->queryProp(this->getEnvXPath()));
+        //this->setEnvValueFromXML(pEnvTree->queryPropTree(strXPath.str())->queryProp(this->getEnvXPath()));
+
+        //this->setEnvValueFromXML(pEnvTree->queryProp(this->getEnvXPath()));
+        StringBuffer strAttribName("@");
+        strAttribName.append(this->getName());
+        this->setEnvValueFromXML(pEnvTree->queryPropTree(strXPath.str())->queryProp(strAttribName.str()));
+    }
+    else if (stricmp(this->getUse(), XML_ENV_VALUE_REQUIRED) == 0) // check if this a required attribute
+    {
+        assert(false);  // required value missing
+        throw MakeExceptionFromMap(EX_STR_MISSING_REQUIRED_ATTRIBUTE);
     }
 }
 
@@ -726,10 +732,19 @@ void CAttributeArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
     }
     else
     {
-        QUICK_LOAD_ENV_XML(pEnvTree)
+        try
+        {
+            QUICK_LOAD_ENV_XML(pEnvTree)
+        }
+        catch (IException *e)
+        {
+            if (e->errorCode() == EX_STR_MISSING_REQUIRED_ATTRIBUTE)
+            {
+                throw e;
+            }
+        }
     }
 }
-
 
 void CAttributeArray::traverseAndProcessNodes() const
 {

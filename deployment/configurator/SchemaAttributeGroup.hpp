@@ -62,6 +62,8 @@ public:
     //virtual void loadXML();
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
 
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+
     virtual void traverseAndProcessNodes() const;
 
     static CAttributeGroup* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
@@ -108,9 +110,11 @@ public:
 
     virtual void getDojoJS(StringBuffer &strJS) const;
 
-   virtual void getQML(StringBuffer &strQML) const;
+    virtual void getQML(StringBuffer &strQML) const;
 
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
 
     virtual void traverseAndProcessNodes() const;
 

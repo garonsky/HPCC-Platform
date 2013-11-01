@@ -64,10 +64,10 @@ void CAttributeGroup::dump(std::ostream &cout, unsigned int offset) const
     QUICK_OUT(cout, XSDXPath,   offset);
     QUICK_OUT(cout, EnvXPath,   offset);
 
-    if (m_pRefAttributeGroup != NULL)
+    /*if (m_pRefAttributeGroup != NULL)
     {
         m_pRefAttributeGroup->dump(cout, offset);
-    }
+    }*/
 
     if (m_pAttributeArray != NULL)
     {
@@ -115,7 +115,7 @@ void CAttributeGroup::getQML(StringBuffer &strQML) const
 
 void CAttributeGroup::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
-    strXPath.append("/").append(this->getRef());
+    //strXPath.append("/").append(this->getRef());
 
     if (this->getRef() != NULL && this->getRef()[0] != 0 && m_pRefAttributeGroup != NULL)
     {
@@ -126,6 +126,45 @@ void CAttributeGroup::populateEnvXPath(StringBuffer strXPath, unsigned int index
     }
 
     this->setEnvXPath(strXPath);
+}
+
+void CAttributeGroup::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    assert(pEnvTree != NULL);
+
+    if (m_pAttributeArray != NULL)
+    {
+        try
+        {
+            m_pAttributeArray->loadXMLFromEnvXml(pEnvTree);
+        }
+        catch (...)
+        {
+            // validation check needed here
+        }
+    }
+    if (m_pAnnotation != NULL)
+    {
+        try
+        {
+            m_pAnnotation->loadXMLFromEnvXml(pEnvTree);
+        }
+        catch (...)
+        {
+            // validation check needed here
+        }
+    }
+    if (m_pRefAttributeGroup != NULL)
+    {
+        try
+        {
+            m_pRefAttributeGroup->loadXMLFromEnvXml(pEnvTree);
+        }
+        catch (...)
+        {
+            // validation check needed here
+        }
+    }
 }
 
 void CAttributeGroup::traverseAndProcessNodes() const
@@ -288,6 +327,7 @@ void CAttributeGroupArray::dump(std::ostream& cout, unsigned int offset) const
     QuickOutHeader(cout,XSD_ATTRIBUTE_GROUP_ARRAY_STR, offset);
 
     QUICK_OUT(cout, XSDXPath, offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
     QUICK_OUT_ARRAY(cout, offset);
 
     QuickOutFooter(cout,XSD_ATTRIBUTE_GROUP_ARRAY_STR, offset);
@@ -347,6 +387,12 @@ void CAttributeGroupArray::populateEnvXPath(StringBuffer strXPath, unsigned int 
     QUICK_ENV_XPATH(strXPath)
 
     this->setEnvXPath(strXPath);
+}
+
+
+void CAttributeGroupArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    QUICK_LOAD_ENV_XML(pEnvTree)
 }
 
 void CAttributeGroupArray::traverseAndProcessNodes() const

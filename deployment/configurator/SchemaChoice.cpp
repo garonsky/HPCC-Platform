@@ -104,6 +104,35 @@ void CChoice::getQML(StringBuffer &strQML) const
     }
 }
 
+
+void CChoice::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    this->setEnvXPath(strXPath);
+
+    if (m_pElementArray != NULL)
+    {
+        m_pElementArray->populateEnvXPath(strXPath);
+    }
+}
+
+void CChoice::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    assert (pEnvTree != NULL);
+
+    if (m_pElementArray != NULL)
+    {
+        try
+        {
+            m_pElementArray->loadXMLFromEnvXml(pEnvTree);
+        }
+        catch (...)
+        {
+
+        }
+    }
+}
+
+
 void CChoice::traverseAndProcessNodes() const
 {
     CXSDNodeBase::processEntryHandlers(this);

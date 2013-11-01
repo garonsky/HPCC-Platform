@@ -31,9 +31,6 @@ CElement* CElement::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchema
 
     pElement->setXSDXPath(xpath);
 
-    pSchemaRoot->Link();
-    pElement->setSchemaRoot(pSchemaRoot);
-
     IPropertyTree *pTree = pSchemaRoot->queryPropTree(xpath);
 
     if (pElement != NULL && pTree != NULL)
@@ -73,16 +70,20 @@ CElement* CElement::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchema
     pElement->m_pAnnotation = CAnnotation::load(pElement, pSchemaRoot, strXPathExt.str());
 
     strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_COMPLEX_TYPE);
-    CComplexTypeArray *pComplexTypeArray = CComplexTypeArray::load(pElement, pSchemaRoot, strXPathExt.str());
-    pElement->m_arrComplexTypeArray.append(pComplexTypeArray);
+    pElement->m_pComplexTypeArray = CComplexTypeArray::load(pElement, pSchemaRoot, strXPathExt.str());
 
     strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_ATTRIBUTE);
-    CAttributeArray *pAttributeArray = CAttributeArray::load(pElement, pSchemaRoot, strXPathExt.str());
-    pElement->m_arrAttributeArray.append(pAttributeArray);
+    pElement->m_pAttributeArray = CAttributeArray::load(pElement, pSchemaRoot, strXPathExt.str());
 
     if (pElement->m_pAnnotation != NULL && pElement->m_pAnnotation->getAppInfo() != NULL && strlen(pElement->m_pAnnotation->getAppInfo()->getTitle()) > 0)
     {
-        pElement->setName(pElement->m_pAnnotation->getAppInfo()->getTitle());
+        /****  MUST FIX TO HAVE CORRECT UI TAB LABELS (but getName is expected to return the XPATH name *****/
+        //pElement->setName(pElement->m_pAnnotation->getAppInfo()->getTitle());
+        pElement->setTitle(pElement->m_pAnnotation->getAppInfo()->getTitle());
+    }
+    else
+    {
+        pElement->setTitle(pElement->getName());
     }
 
     SETPARENTNODE(pElement, pParentNode);
@@ -119,13 +120,13 @@ const char* CElement::getXML(const char* /*pComponent*/)
         {
             m_strXML.append(m_pAnnotation->getXML(NULL));
         }
-        if (m_arrComplexTypeArray.item(0) != NULL)
+        if (m_pComplexTypeArray != NULL)
         {
-            m_strXML.append((static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0)))->getXML(NULL));
+            m_strXML.append(m_pComplexTypeArray->getXML(NULL));
         }
-        if ((m_arrAttributeArray.item(0)) != NULL)
+        if (m_pAttributeArray != NULL)
         {
-            m_strXML.append(static_cast<CAttributeArray*>((m_arrAttributeArray.item(0)))->getXML(NULL));
+            m_strXML.append(m_pAttributeArray->getXML(NULL));
         }
 
 //        m_strXML.append("/>\n");
@@ -144,6 +145,7 @@ void CElement::dump(std::ostream &cout, unsigned int offset) const
     QUICK_OUT(cout, Type, offset);
     QUICK_OUT(cout, MinOccurs, offset);
     QUICK_OUT(cout, MaxOccurs, offset);
+    QUICK_OUT(cout, Title,  offset);
     QUICK_OUT(cout, XSDXPath,  offset);
     QUICK_OUT(cout, EnvXPath,  offset);
     QUICK_OUT(cout, EnvValueFromXML,  offset);
@@ -153,15 +155,16 @@ void CElement::dump(std::ostream &cout, unsigned int offset) const
         m_pAnnotation->dump(cout, offset);
     }
 
-    for (int idx = 0; m_arrComplexTypeArray.item(idx) != NULL; idx++)
+    if (m_pComplexTypeArray != NULL)
     {
-        static_cast<CComplexTypeArray*>((m_arrComplexTypeArray.item(idx)))->dump(cout, offset);
+        m_pComplexTypeArray->dump(cout, offset);
     }
 
-    for (int idx = 0; m_arrAttributeArray.item(idx) != NULL; idx++)
+    if (m_pAttributeArray != NULL)
     {
-         static_cast<CComplexTypeArray*>((m_arrAttributeArray.item(idx)))->dump(cout, offset);
+        m_pAttributeArray->dump(cout, offset);
     }
+
     QuickOutFooter(cout, XSD_ELEMENT_STR, offset);
 }
 
@@ -210,15 +213,15 @@ void CElement::getDocumentation(StringBuffer &strDoc) const
         DEBUG_MARK_STRDOC;
         strDoc.append(DM_TITLE_BEGIN).append(DM_TITLE_END);
 
-        if (m_arrComplexTypeArray.item(0) != NULL)
+        if (m_pComplexTypeArray != NULL)
         {
-            static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->getDocumentation(strDoc);
+            m_pComplexTypeArray->getDocumentation(strDoc);
         }
 
         strDoc.append(DM_SECT3_END);
         return;
     }
-    else if ((m_arrComplexTypeArray.item(0)) != NULL)
+    else if (m_pComplexTypeArray != NULL)
     {
         if (m_pAnnotation!= NULL)
         {
@@ -237,9 +240,9 @@ void CElement::getDocumentation(StringBuffer &strDoc) const
 
         DEBUG_MARK_STRDOC;
 
-        static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->getDocumentation(strDoc);
+        m_pComplexTypeArray->getDocumentation(strDoc);
     }
-    else if ((m_arrComplexTypeArray.item(0)) == NULL)
+    else if (m_pComplexTypeArray == NULL)
     {
         if (m_pAnnotation!= NULL)
         {
@@ -256,9 +259,9 @@ void CElement::getDocumentation(StringBuffer &strDoc) const
             DEBUG_MARK_STRDOC;
         }
 
-        if ((m_arrAttributeArray.item(0)) != NULL)
+        if (m_pAttributeArray != NULL)
         {
-            static_cast<CAttributeArray*>(m_arrAttributeArray.item(0))->getDocumentation(strDoc);
+            m_pAttributeArray->getDocumentation(strDoc);
         }
     }
 }
@@ -305,9 +308,9 @@ void CElement::getDojoJS(StringBuffer &strJS) const
             m_pAnnotation->getDojoJS(strJS);
         }
 
-        if ((m_arrComplexTypeArray.item(0)) != NULL)
+        if (m_pComplexTypeArray != NULL)
         {
-            static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->getDojoJS(strJS);
+            m_pComplexTypeArray->getDojoJS(strJS);
         }
 
         strJS.append(CConfigSchemaHelper::getInstance()->getToolTipJS());
@@ -322,20 +325,20 @@ void CElement::getDojoJS(StringBuffer &strJS) const
 
         if (m_pAnnotation != NULL && m_pAnnotation->getAppInfo() != NULL && stricmp(m_pAnnotation->getAppInfo()->getViewType(), "list") == 0)
         {
-            strJS.append(DJ_DIV_HEADING_BEGIN).append(this->getName()).append(DJ_DIV_HEADING_END);
+            strJS.append(DJ_DIV_HEADING_BEGIN).append(this->getTitle()).append(DJ_DIV_HEADING_END);
             DEBUG_MARK_STRJS;
         }
 
-        if ((m_arrComplexTypeArray.item(0)) != NULL)
+        if (m_pComplexTypeArray != NULL)
         {
-            static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->getDojoJS(strJS);
+            m_pComplexTypeArray->getDojoJS(strJS);
         }
 
         if (this->getConstAncestorNode(2)->getNodeType() == XSD_SEQUENCE)
         {
             strJS.append(DJ_LAYOUT_CONCAT_BEGIN);
             DEBUG_MARK_STRJS;
-            strJS.append(createDojoColumnLayout(this->getName(), getRandomID()));
+            strJS.append(createDojoColumnLayout(this->getTitle(), getRandomID()));
             DEBUG_MARK_STRJS;
             strJS.append(DJ_LAYOUT_CONCAT_END);
             DEBUG_MARK_STRJS;
@@ -344,7 +347,7 @@ void CElement::getDojoJS(StringBuffer &strJS) const
         strJS.append(DJ_LAYOUT_END);
         DEBUG_MARK_STRJS;
     }
-    else if ((m_arrComplexTypeArray.item(0)) != NULL)
+    else if (m_pComplexTypeArray != NULL)
     {
         if (m_pAnnotation!= NULL)
         {
@@ -361,12 +364,12 @@ void CElement::getDojoJS(StringBuffer &strJS) const
 
         }
 
-        static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->getDojoJS(strJS);
+        m_pComplexTypeArray->getDojoJS(strJS);
 
         //strJS.append(DJ_LAYOUT_END);
         //DEBUG_MARK_STRJS;
     }
-    else if ((m_arrComplexTypeArray.item(0)) == NULL)
+    else if (m_pComplexTypeArray == NULL)
     {
         if (m_pAnnotation!= NULL)
         {
@@ -375,7 +378,7 @@ void CElement::getDojoJS(StringBuffer &strJS) const
 
         if (CDojoHelper::IsElementATab(this) == true)
         {
-            genTabDojoJS(strJS, this->getName());
+            genTabDojoJS(strJS, this->getTitle());
         }
 
         if (m_pAnnotation != NULL && m_pAnnotation->getDocumentation() != NULL)
@@ -383,9 +386,9 @@ void CElement::getDojoJS(StringBuffer &strJS) const
             m_pAnnotation->getDojoJS(strJS);
         }
 
-        if ((m_arrAttributeArray.item(0)) != NULL)
+        if (m_pAttributeArray != NULL)
         {
-            static_cast<CAttributeArray*>(m_arrAttributeArray.item(0))->getDojoJS(strJS);
+            m_pAttributeArray->getDojoJS(strJS);
         }
 
         strJS.append(DJ_TABLE_PART_2);
@@ -417,7 +420,7 @@ void CElement::getQML(StringBuffer &strQML) const
         }
     }
 
-    assert(strlen(this->getName()) > 0);
+    assert(strlen(this->getTitle()) > 0);
 
     if (pGrandParentNode->getNodeType() == XSD_SCHEMA)
     {
@@ -431,9 +434,9 @@ void CElement::getQML(StringBuffer &strQML) const
             m_pAnnotation->getQML(strQML);
         }
 
-        if ((m_arrComplexTypeArray.item(0)) != NULL)
+        if (m_pComplexTypeArray != NULL)
         {
-            static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->getQML(strQML);
+            m_pComplexTypeArray->getQML(strQML);
         }
 
         strQML.append(QML_TAB_VIEW_STYLE);
@@ -449,9 +452,9 @@ void CElement::getQML(StringBuffer &strQML) const
     }
     else if (CDojoHelper::IsElementATab(this) == false)
     {
-        if ((m_arrComplexTypeArray.item(0)) != NULL)
+        if (m_pComplexTypeArray != NULL)
         {
-            static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->getQML(strQML);
+            m_pComplexTypeArray->getQML(strQML);
         }
 
         if (this->getConstAncestorNode(2)->getNodeType() == XSD_SEQUENCE)
@@ -460,20 +463,20 @@ void CElement::getQML(StringBuffer &strQML) const
             //DEBUG_MARK_QML;
         }
     }
-    else if ((m_arrComplexTypeArray.item(0)) != NULL)
+    else if (m_pComplexTypeArray != NULL)
     {
         if (m_pAnnotation != NULL)
         {
             m_pAnnotation->getQML(strQML);
         }
 
-        CQMLMarkupHelper::getTabQML(strQML, this->getName());
+        CQMLMarkupHelper::getTabQML(strQML, this->getTitle());
         DEBUG_MARK_QML;
 
         strQML.append(QML_GRID_LAYOUT_BEGIN_1);
         DEBUG_MARK_QML;
 
-        static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->getQML(strQML);
+        m_pComplexTypeArray->getQML(strQML);
 
         strQML.append(QML_GRID_LAYOUT_END);
         DEBUG_MARK_QML;
@@ -482,7 +485,7 @@ void CElement::getQML(StringBuffer &strQML) const
         DEBUG_MARK_QML;
 
     }
-    else if ((m_arrComplexTypeArray.item(0)) == NULL)
+    else if (m_pComplexTypeArray == NULL)
     {
         if (m_pAnnotation!= NULL)
         {
@@ -497,16 +500,16 @@ void CElement::getQML(StringBuffer &strQML) const
 
         if (CDojoHelper::IsElementATab(this) == true)
         {
-            CQMLMarkupHelper::getTabQML(strQML, this->getName());
+            CQMLMarkupHelper::getTabQML(strQML, this->getTitle());
             DEBUG_MARK_QML;
 
             strQML.append(QML_GRID_LAYOUT_BEGIN);
             DEBUG_MARK_QML;
         }
 
-        if ((m_arrAttributeArray.item(0)) != NULL)
+        if (m_pAttributeArray != NULL)
         {
-            static_cast<CAttributeArray*>(m_arrAttributeArray.item(0))->getQML(strQML);
+            m_pAttributeArray->getQML(strQML);
         }
 
         if (CDojoHelper::IsElementATab(this) == true)
@@ -524,95 +527,55 @@ void CElement::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     strXPath.append("/").append(this->getName()).append("[").append(index).append("]");
 
-    if ((m_arrComplexTypeArray.item(0)) != NULL)
+    this->setEnvXPath(strXPath);
+
+    if (m_pComplexTypeArray != NULL)
     {
-        static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->populateEnvXPath(strXPath);
+        m_pComplexTypeArray->populateEnvXPath(strXPath);
     }
-    if ((m_arrAttributeArray.item(0)) != NULL)
+    if (m_pAttributeArray != NULL)
     {
-         static_cast<CAttributeArray*>(m_arrAttributeArray.item(0))->populateEnvXPath(strXPath);
+        m_pAttributeArray->populateEnvXPath(strXPath);
     }
     if (m_pAnnotation != NULL)
     {
         m_pAnnotation->populateEnvXPath(strXPath);
     }
-
-    this->setEnvXPath(strXPath);
 }
 
 void CElement::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
-    assert(this->getMaxOccurs() != NULL);
-
-    StringBuffer strXPathExt;
-
-    if (m_arrComplexTypeArray.item(0) != NULL)
+    if (m_pComplexTypeArray != NULL)
     {
-        int idx = 0;
-        bool bContinue = stricmp(this->getMaxOccurs(), "unbounded") == 0;
-
-        strXPathExt.clear().append(this->getXSDXPath()).append("/").append(XSD_TAG_COMPLEX_TYPE);
-
-        do
+        try
         {
-            CComplexTypeArray *pComplexTypeArray = CComplexTypeArray::load(this, this->getSchemaRoot(), strXPathExt.str());
-
-            if (pComplexTypeArray != NULL)
-            {
-                pComplexTypeArray->populateEnvXPath(this->getXSDXPath(), idx+1);
-
-                try
-                {
-                    static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(idx))->loadXMLFromEnvXml(pEnvTree);
-                }
-                catch (...)
-                {
-                    bContinue = false;
-                }
-
-                idx++;
-            }
-            else
-            {
-                bContinue = false;
-            }
-        } while (bContinue == true);
+            m_pComplexTypeArray->loadXMLFromEnvXml(pEnvTree);
+        }
+        catch (...)
+        {
+            // node described in XSD doesn't exist in XML
+            // time to do validation?
+        }
     }
-    if (m_arrAttributeArray.item(0) != NULL)
+    if (m_pAttributeArray != NULL)
     {
-        int idx = 0;
-        bool bContinue = stricmp(this->getMaxOccurs(), "unbounded") == 0;
-
-        strXPathExt.clear().append(this->getXSDXPath()).append("/").append(XSD_TAG_ATTRIBUTE);
-
-        do
+        try
         {
-            CAttributeArray *pAttributeArray = CAttributeArray::load(this, this->getSchemaRoot(), strXPathExt.str());
-
-            if (pAttributeArray != NULL)
-            {
-                pAttributeArray->populateEnvXPath(this->getXSDXPath(), idx+1);
-
-                try
-                {
-                    static_cast<CAttributeArray*>(m_arrAttributeArray.item(idx))->loadXMLFromEnvXml(pEnvTree);
-                }
-                catch (...)
-                {
-                    bContinue = false;
-                }
-
-                idx++;
-            }
-            else
-            {
-                bContinue = false;
-            }
-        } while (bContinue == true);
+            m_pAttributeArray->loadXMLFromEnvXml(pEnvTree);
+        }
+        catch (...)
+        {
+        }
     }
     if (m_pAnnotation != NULL)
     {
-        m_pAnnotation->loadXMLFromEnvXml(pEnvTree);
+        try
+        {
+            m_pAnnotation->loadXMLFromEnvXml(pEnvTree);
+        }
+        catch (...)
+        {
+        }
     }
 }
 
@@ -625,14 +588,9 @@ void CElement::traverseAndProcessNodes() const
         m_pAnnotation->traverseAndProcessNodes();
     }
 
-    if ((m_arrComplexTypeArray.item(0)) != NULL)
+    if (m_pComplexTypeArray != NULL)
     {
-        static_cast<CComplexTypeArray*>(m_arrComplexTypeArray.item(0))->traverseAndProcessNodes();
-    }
-
-    if ((m_arrAttributeArray.item(0)) != NULL)
-    {
-        static_cast<CAttributeArray*>(m_arrAttributeArray.item(0))->traverseAndProcessNodes();
+        m_pComplexTypeArray->traverseAndProcessNodes();
     }
 
     CXSDNodeBase::processExitHandlers(this);
@@ -668,9 +626,12 @@ void CElementArray::getQML(StringBuffer &strQML) const
 
 void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
-    assert(index == 1);  // Only 1 array of elements per node level
+    assert(index == 1);  // Only 1 array of elements per node
 
-    QUICK_ENV_XPATH(strXPath)
+    for (int idx=0; idx < this->length(); idx++)
+    {
+        (this->item(idx)).populateEnvXPath(strXPath, 1);
+    }
 
     this->setEnvXPath(strXPath);
 }
@@ -704,7 +665,31 @@ const char* CElementArray::getXML(const char* /*pComponent*/)
 
 void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
-    QUICK_LOAD_ENV_XML(pEnvTree)
+    QUICK_LOAD_ENV_XML(pEnvTree);
+
+    int idx = 2;
+    while (1)
+    {
+        StringBuffer xpath(this->getEnvXPath());
+        xpath.append("/").append(item(0).getName()).append("[").append(idx).append("]");
+
+        if (pEnvTree->hasProp(xpath.str()) == false)
+        {
+            break;
+        }
+        else
+        {
+            CElement *pElement = CElement::load(this, this->getSchemaRoot(), this->item(0).getXSDXPath());
+
+            assert(pElement != NULL);
+
+            pElement->populateEnvXPath(this->getEnvXPath(), idx);
+            pElement->loadXMLFromEnvXml(pEnvTree);
+
+            this->append(*pElement);
+        }
+        idx++;
+    }
 }
 
 CElementArray* CElementArray::load(const char* pSchemaFile)
@@ -737,6 +722,11 @@ CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const IPropertyTre
     }
 
     CElementArray *pElemArray = new CElementArray(pParentNode);
+
+    assert(pElemArray != NULL);
+
+    pSchemaRoot->Link();
+    pElemArray->setSchemaRoot(pSchemaRoot);
 
     pElemArray->setXSDXPath(xpath);
 
