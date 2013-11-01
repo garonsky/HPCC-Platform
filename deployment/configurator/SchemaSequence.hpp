@@ -32,7 +32,7 @@ public:
 
     virtual void traverseAndProcessNodes() const;
 
-    static CSequence* load(CXSDNodeBase* pRootNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CSequence* load(CXSDNodeBase* pRootNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 

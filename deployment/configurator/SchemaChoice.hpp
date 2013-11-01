@@ -30,7 +30,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CChoice* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CChoice* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 

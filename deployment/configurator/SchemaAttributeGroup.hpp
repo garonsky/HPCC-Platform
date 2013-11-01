@@ -64,7 +64,7 @@ public:
 
     virtual void traverseAndProcessNodes() const;
 
-    static CAttributeGroup* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CAttributeGroup* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
@@ -115,7 +115,7 @@ public:
     virtual void traverseAndProcessNodes() const;
 
     static CAttributeGroupArray* load(const char* pSchemaFile);
-    static CAttributeGroupArray* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CAttributeGroupArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 

@@ -6,7 +6,7 @@
 #include "DojoJSMarkup.hpp"
 #include "QMLMarkup.hpp"
 
-CEnumeration* CEnumeration::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CEnumeration* CEnumeration::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 
@@ -117,7 +117,7 @@ const char* CEnumerationArray::getXML(const char* /*pComponent*/)
     assert(false); // NOT IMPLEMENTED
 }
 
-CEnumerationArray* CEnumerationArray::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CEnumerationArray* CEnumerationArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 

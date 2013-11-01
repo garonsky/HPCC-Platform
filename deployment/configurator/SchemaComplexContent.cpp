@@ -4,7 +4,7 @@
 #include "SchemaExtension.hpp"
 
 
-CComplexContent* CComplexContent::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CComplexContent* CComplexContent::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot);
 

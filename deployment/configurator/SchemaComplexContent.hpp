@@ -26,7 +26,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CComplexContent* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CComplexContent* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 

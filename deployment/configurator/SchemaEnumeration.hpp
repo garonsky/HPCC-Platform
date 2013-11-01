@@ -25,7 +25,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CEnumeration* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CEnumeration* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
@@ -64,7 +64,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CEnumerationArray* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CEnumerationArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 

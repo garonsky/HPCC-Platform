@@ -28,7 +28,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CRestriction* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CRestriction* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 

@@ -57,7 +57,7 @@ public:
 
     virtual void traverseAndProcessNodes() const;
 
-    static CAttribute* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CAttribute* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 
@@ -123,7 +123,7 @@ public:
     virtual const char* getXML(const char* /*pComponent*/);
 
     static CAttributeArray* load(const char* pSchemaFile);
-    static CAttributeArray* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CAttributeArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 

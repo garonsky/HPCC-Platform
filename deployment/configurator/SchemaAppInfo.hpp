@@ -36,7 +36,7 @@ public:
 
     virtual void traverseAndProcessNodes() const;
 
-    static CAppInfo* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CAppInfo* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 

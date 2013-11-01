@@ -44,7 +44,7 @@ public:
         m_pXSDNode = pCXSDNode;
     }
 
-    static CExtension* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CExtension* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 

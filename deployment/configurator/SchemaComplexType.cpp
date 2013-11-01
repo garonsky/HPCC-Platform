@@ -12,6 +12,7 @@
 #include "SchemaSchema.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "DocumentationMarkup.hpp"
+#include "ExceptionStrings.hpp"
 
 void CComplexType::dump(std::ostream& cout, unsigned int offset) const
 {
@@ -301,7 +302,7 @@ const char* CComplexType::getXML(const char* /*pComponent*/)
     return m_strXML.str();
 }
 
-CComplexType* CComplexType::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CComplexType* CComplexType::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 
@@ -329,44 +330,27 @@ CComplexType* CComplexType::load(CXSDNodeBase* pParentNode, IPropertyTree *pSche
 
     Owned<IPropertyTreeIterator> iter = pSchemaRoot->getElements(strXPathExt2.str());
 
-//    ForEach(*iter)
-//    {
-//        if (strcmp(XSD_TAG_SEQUENCE, iter->get().queryName()) == 0)
-//        {
-            strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_SEQUENCE);
-            pSequence = CSequence::load(NULL, pSchemaRoot, strXPathExt.str());
-//        }
-//        else if (strcmp(XSD_TAG_ANNOTATION, iter->get().queryName()) == 0)
-//        {
-            strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_ANNOTATION);
-            pAnnotation = CAnnotation::load(NULL, pSchemaRoot, strXPathExt.str());
-//        }
-//        else if (strcmp(XSD_TAG_COMPLEX_CONTENT, iter->get().queryName()) == 0)
-//        {
-            strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_COMPLEX_CONTENT);
-            pComplexContent = CComplexContent::load(NULL, pSchemaRoot, strXPathExt.str());
-//        }
-//        else if (strcmp(XSD_TAG_ATTRIBUTE, iter->get().queryName()) == 0)
-//        {
-            strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_ATTRIBUTE);
-            pAttributeArray = CAttributeArray::load(NULL, pSchemaRoot, strXPathExt.str());
-//        }
-//        else if (strcmp(XSD_TAG_CHOICE, iter->get().queryName()) == 0)
-//        {
-            strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_CHOICE);
-            pChoice = CChoice::load(NULL, pSchemaRoot, strXPathExt.str());
-//        }
-//        else if (strcmp(XSD_TAG_ELEMENT, iter->get().queryName()) == 0)
-//        {
-            strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_ELEMENT);
-            pElementArray = CElementArray::load(NULL, pSchemaRoot, strXPathExt.str());
-//        }
-//        else if (strcmp(XSD_TAG_ATTRIBUTE_GROUP, iter->get().queryName()) == 0)
-//        {
-            strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_ATTRIBUTE_GROUP);
-            pAttributeGroupArray = CAttributeGroupArray::load(NULL, pSchemaRoot, strXPathExt.str());
-//        }
-//    }
+
+    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_SEQUENCE);
+    pSequence = CSequence::load(NULL, pSchemaRoot, strXPathExt.str());
+
+    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_ANNOTATION);
+    pAnnotation = CAnnotation::load(NULL, pSchemaRoot, strXPathExt.str());
+
+    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_COMPLEX_CONTENT);
+    pComplexContent = CComplexContent::load(NULL, pSchemaRoot, strXPathExt.str());
+
+    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_ATTRIBUTE);
+    pAttributeArray = CAttributeArray::load(NULL, pSchemaRoot, strXPathExt.str());
+
+    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_CHOICE);
+    pChoice = CChoice::load(NULL, pSchemaRoot, strXPathExt.str());
+
+    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_ELEMENT);
+    pElementArray = CElementArray::load(NULL, pSchemaRoot, strXPathExt.str());
+
+    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_ATTRIBUTE_GROUP);
+    pAttributeGroupArray = CAttributeGroupArray::load(NULL, pSchemaRoot, strXPathExt.str());
 
     CComplexType *pComplexType = new CComplexType(pParentNode, pName, pSequence, pComplexContent, pAttributeArray, pChoice, pElementArray, pAttributeGroupArray, pAnnotation);
 
@@ -460,10 +444,19 @@ void CComplexTypeArray::populateEnvXPath(StringBuffer strXPath, unsigned int ind
 
 void CComplexTypeArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
-    QUICK_LOAD_ENV_XML(pEnvTree);
+    assert(pEnvTree != NULL);
+
+    if (pEnvTree->hasProp(this->getEnvXPath()) == false)
+    {
+        throw MakeExceptionFromMap(EX_STR_XPATH_DOES_NOT_EXIST_IN_TREE);
+    }
+    else
+    {
+        QUICK_LOAD_ENV_XML(pEnvTree);
+    }
 }
 
-CComplexTypeArray* CComplexTypeArray::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CComplexTypeArray* CComplexTypeArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 

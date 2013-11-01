@@ -22,6 +22,7 @@ enum eExceptionCodes
     EX_STR_COMPLEX_TYPE_ALREADY_DEFINED,
     EX_STR_ATTRIBUTE_GROUP_ALREADY_DEFINED,
     EX_STR_CAN_NOT_PROCESS_ENV_XML,
+    EX_STR_XPATH_DOES_NOT_EXIST_IN_TREE,
     EX_STR_UNKNOWN,
 
     EX_STR_LAST_ENTRY
@@ -33,7 +34,8 @@ const char pExceptionStringArray[EX_STR_LAST_ENTRY][MAX_EXCEPTION_STRING_LENGTH]
                                                                                      "simple type already defined",
                                                                                      "complex type already defined",
                                                                                      "attribute group already defined",
-                                                                                     "can not open/parse environment xml configuration"
+                                                                                     "can not open/parse environment xml configuration",
+                                                                                     "xpath does not exist in supplied tree"
                                                                                      /*** ADD CORRESPONDING ENTRY TO pExceptionStringActionArray ***/
                                                                                     };
 
@@ -42,7 +44,8 @@ const char pExceptionStringActionArray[EX_STR_LAST_ENTRY][MAX_EXCEPTION_STRING_L
                                                                                             "Multiple xs:simpleType tags with the same name defined in xsd files. Try processing xsd files using -use parameter and only specify 1 xsd file for processing." ,
                                                                                             "Multiple xs:complexType tags with the same name defined in xsd files. Try processing xsd files using -use parameter and only specify 1 xsd file for processing.",
                                                                                             "Multiple xs:attributeGroup tags with the same name defined in xsd files. Try processing xsd files using -use parameter and only specify 1 xsd file for processing.",
-                                                                                            "Failed to open/parss specified configuration file.  Verify file exits, permissions are set properly, and the file is valid."
+                                                                                            "Failed to open/parss specified configuration file.  Verify file exits, permissions are set properly, and the file is valid.",
+                                                                                            "The XML file may have errors."
                                                                                             /*** ADD CORRESPONDING ENTRY TO pExceptionStringActionArray ***/
                                                                                         };
 

@@ -5,7 +5,7 @@
 #include "SchemaElement.hpp"
 #include "QMLMarkup.hpp"
 
-CSequence* CSequence::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CSequence* CSequence::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 

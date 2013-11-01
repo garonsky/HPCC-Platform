@@ -21,7 +21,7 @@ void CDocumentation::traverseAndProcessNodes() const
     CXSDNodeBase::processExitHandlers(this);
 }
 
-CDocumentation* CDocumentation::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CDocumentation* CDocumentation::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     if (pSchemaRoot == NULL)
     {

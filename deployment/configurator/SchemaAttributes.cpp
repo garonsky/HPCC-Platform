@@ -8,6 +8,7 @@
 #include "ConfigSchemaHelper.hpp"
 #include "DojoHelper.hpp"
 #include "QMLMarkup.hpp"
+#include "ExceptionStrings.hpp"
 
 const char* CAttribute::getTitle() const
 {
@@ -283,7 +284,7 @@ void CAttribute::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 
     StringBuffer strXPath(this->getConstParentNode()->getEnvXPath());
 
-    if (pEnvTree->hasProp(strXPath.str())== true)
+    if (pEnvTree->hasProp(strXPath.str()) == true)
     {
         this->setEnvValueFromXML(pEnvTree->queryPropTree(strXPath.str())->queryProp(this->getEnvXPath()));
     }
@@ -306,7 +307,7 @@ void CAttribute::traverseAndProcessNodes() const
     CXSDNodeBase::processExitHandlers(this);
 }
 
-CAttribute* CAttribute::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CAttribute* CAttribute::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 
@@ -417,7 +418,7 @@ CAttributeArray* CAttributeArray::load(const char* pSchemaFile)
     return CAttributeArray::load(NULL, pSchemaRoot, strXPathExt.str());
 }
 
-CAttributeArray* CAttributeArray::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CAttributeArray* CAttributeArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 
@@ -717,7 +718,16 @@ void CAttributeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index
 
 void CAttributeArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
-    QUICK_LOAD_ENV_XML(pEnvTree)
+    assert(pEnvTree != NULL);
+
+    if (pEnvTree->hasProp(this->getEnvXPath()) == false)
+    {
+        throw MakeExceptionFromMap(EX_STR_XPATH_DOES_NOT_EXIST_IN_TREE);
+    }
+    else
+    {
+        QUICK_LOAD_ENV_XML(pEnvTree)
+    }
 }
 
 

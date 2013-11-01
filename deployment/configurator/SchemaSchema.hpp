@@ -51,7 +51,7 @@ public:
         return m_pAnnotation;
     }
 
-    static CSchema* load(const char* pSchemaLocation, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CSchema* load(const char* pSchemaLocation, const IPropertyTree *pSchemaRoot, const char* xpath);
     static CSchema* load(const char* pSchemaLocation, CXSDNodeBase* pParentNode);
 
 protected:

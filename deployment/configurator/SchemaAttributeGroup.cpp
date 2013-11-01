@@ -153,7 +153,7 @@ const char* CAttributeGroup::getXML(const char* /*pComponent*/)
     return m_strXML.str();
 }
 
-CAttributeGroup* CAttributeGroup::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CAttributeGroup* CAttributeGroup::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 
@@ -240,7 +240,7 @@ CAttributeGroupArray* CAttributeGroupArray::load(const char* pSchemaFile)
     return CAttributeGroupArray::load(NULL, pSchemaRoot, XSD_TAG_ATTRIBUTE_GROUP);
 }
 
-CAttributeGroupArray* CAttributeGroupArray::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CAttributeGroupArray* CAttributeGroupArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 

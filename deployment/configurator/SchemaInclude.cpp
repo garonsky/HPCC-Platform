@@ -59,7 +59,7 @@ const char* CInclude::getXML(const char* /*pComponent*/)
     return m_strXML.str();
 }
 
-CInclude* CInclude::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CInclude* CInclude::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     if (pParentNode == NULL || pSchemaRoot == NULL || xpath == NULL)
     {
@@ -95,7 +95,7 @@ CInclude* CInclude::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, 
     return pInclude;
 }
 
-CIncludeArray* CIncludeArray::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char *xpath)
+CIncludeArray* CIncludeArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char *xpath)
 {
     if (pSchemaRoot == NULL)
     {

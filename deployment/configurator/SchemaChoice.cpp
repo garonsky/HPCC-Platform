@@ -5,7 +5,7 @@
 #include "DocumentationMarkup.hpp"
 
 
-CChoice* CChoice::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CChoice* CChoice::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 

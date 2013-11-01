@@ -34,7 +34,7 @@ void usage()
     std::cout << "-m -xml                           : generate XML configuration file" << std::endl;
     std::cout << "-j -dojo                          : prints dojo js" << std::endl;
     std::cout << "-q -qml                           : prints QML" << std::endl;
-    std::cout << "-c -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << std::endl;
+    std::cout << "-c -env -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << std::endl;
     std::cout << "-dump                             : dump out xsd internal structure and values" << std::endl;
 }
 
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
         {
             bDump = true;
         }
-        if (stricmp(argv[idx], "-config") == 0 || stricmp(argv[idx], "-c") == 0)
+        if (stricmp(argv[idx], "-config") == 0 || stricmp(argv[idx], "-c") == 0 || stricmp(argv[idx], "-env") == 0)
         {
             idx++;
 

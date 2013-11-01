@@ -58,7 +58,7 @@ void CExtension::initExtension()
     }
 }
 
-CExtension* CExtension::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CExtension* CExtension::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 

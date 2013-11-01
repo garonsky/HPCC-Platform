@@ -3,7 +3,7 @@
 #include "SchemaAppInfo.hpp"
 #include "DocumentationMarkup.hpp"
 
-CAppInfo* CAppInfo::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CAppInfo* CAppInfo::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     if (pSchemaRoot == NULL)
     {

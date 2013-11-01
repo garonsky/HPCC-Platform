@@ -55,7 +55,7 @@ public:
         return m_pAnnotation;
     }
 
-    static CComplexType* load(CXSDNodeBase* pRootNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CComplexType* load(CXSDNodeBase* pRootNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 
@@ -107,7 +107,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CComplexTypeArray* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CComplexTypeArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
     static CComplexTypeArray* load(CXSDNodeBase* pParentNode, const char* pSchemaFile);
 
 protected:

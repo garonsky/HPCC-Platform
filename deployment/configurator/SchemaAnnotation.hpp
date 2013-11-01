@@ -37,7 +37,7 @@ public:
         return m_pAppInfo;
     }
 
-    static CAnnotation* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CAnnotation* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 

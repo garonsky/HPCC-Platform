@@ -4,7 +4,7 @@
 #include "ConfigSchemaHelper.hpp"
 #include "DocumentationMarkup.hpp"
 
-CSchema* CSchema::load(const char* pSchemaLocation, IPropertyTree *pSchemaRoot, const char* xpath)
+CSchema* CSchema::load(const char* pSchemaLocation, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 

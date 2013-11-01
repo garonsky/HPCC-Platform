@@ -28,7 +28,7 @@ public:
 
     virtual void traverseAndProcessNodes() const;
 
-    static CDocumentation* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CDocumentation* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 

@@ -69,7 +69,7 @@ void CSimpleType::traverseAndProcessNodes() const
     CSimpleType::processExitHandlers(this);
 }
 
-CSimpleType* CSimpleType::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CSimpleType* CSimpleType::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
     assert(pParentNode != NULL);
@@ -169,7 +169,7 @@ void CSimpleTypeArray::traverseAndProcessNodes() const
     QUICK_TRAVERSE_AND_PROCESS;
 }
 
-CSimpleTypeArray* CSimpleTypeArray::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CSimpleTypeArray* CSimpleTypeArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pParentNode != NULL);
     assert(pSchemaRoot != NULL);

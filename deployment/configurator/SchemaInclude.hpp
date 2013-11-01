@@ -34,7 +34,7 @@ public:
         return m_pIncludedSchema;
     }
 
-    static CInclude* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CInclude* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 
@@ -81,7 +81,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CIncludeArray* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CIncludeArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 

@@ -5,7 +5,7 @@
 #include "SchemaDocumentation.hpp"
 #include "SchemaAppInfo.hpp"
 
-CAnnotation* CAnnotation::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CAnnotation* CAnnotation::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
 

@@ -31,7 +31,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CSimpleType* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CSimpleType* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTER(Name)
     GETTERSETTER(ID)
@@ -89,7 +89,7 @@ public:
 
     virtual void traverseAndProcessNodes() const;
 
-    static CSimpleTypeArray* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
+    static CSimpleTypeArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 

@@ -110,7 +110,7 @@ void CRestriction::getQML(StringBuffer &strQML) const
     }
 }
 
-CRestriction* CRestriction::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
+CRestriction* CRestriction::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     if (pParentNode == NULL || pSchemaRoot == NULL)
     {
