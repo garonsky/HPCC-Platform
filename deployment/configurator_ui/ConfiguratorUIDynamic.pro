@@ -1,0 +1,9 @@
+TEMPLATE =lib
+QT += qml quick
+QMAKE_CXXFLAGS += -fPIC
+CONFIG += debug
+CONFIG += dll
+CONFIG += plugin
+HEADERS += configuratorui.hpp
+SOURCES += ConfiguratorUI.cpp
+TARGET = ConfiguratorUI
