@@ -13,7 +13,8 @@
 CIArrayOf<CXSDNodeHandler>  CXSDNodeBase::s_callBackEntryHandlersArray;
 CIArrayOf<CXSDNodeHandler>  CXSDNodeBase::s_callBackExitHandlersArray;
 
-const char *pDefaultExt =  ".mod.xml";
+const char *pDefaultDocExt =  ".mod.xml";
+const char *pDefaultQMLExt =  ".qml";
 
 
 void usage()
@@ -22,12 +23,15 @@ void usage()
     std::cout << "Example Usage: ./configurator -use dali.xsd -b /opt/HPCCSystems/initfiles/componentfiles/configxml -t /tmp " << std::endl;
     std::cout << "-d -doc                           : generate docs" << std::endl;
     std::cout << "-b -base <base dir path>          : base directory path to use with -use option and for xs:include references in xsd files" << std::endl;
-    std::cout << "-e -extension <file extension>    : write docs to files with appended extension (default " <<  pDefaultExt << ")" << std::endl;
+    std::cout << "-e -extension <file extension>    : write docs or qml to files with appended extension (default " <<  pDefaultDocExt << ")" << std::endl;
     std::cout << "-t -target <target directory>     : directory to which to docs will be written. If not specified, then output will go to std::out" << std::endl;
     std::cout << "-u -use <schema xsd>              : use specified xsd schema instead of buildset file" << std::endl;
     std::cout << "-h -help                          : prints out this usage" << std::endl;
 
+    std::cout << std::endl;
+
     std::cout << std::endl << "** Experimental **" << std::endl;
+    std::cout <<"Example Usage: ./configurator -use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/  -qml -t ./ -e qml -s ./esp.xsd.qml -env /etc/HPCCSystems/source/environment.xml" << std::endl;
     std::cout << "-f -file <build set file>         : buildset file name (required if base directory is specfied" << std::endl;
     std::cout << "-p -path <base dir path>          : base directory path (required if buildset file name is specified)" << std::endl;
     std::cout << "-x -xsd  <xsd file name>          : xsd file name (can be more than one) - For use with buildset file" << std::endl;
@@ -36,6 +40,7 @@ void usage()
     std::cout << "-j -dojo                          : prints dojo js" << std::endl;
     std::cout << "-q -qml                           : prints QML" << std::endl;
     std::cout << "-c -env -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << std::endl;
+    std::cout << "-s -server <qml file>             : run server using qml file" << std::endl;
     std::cout << "-dump                             : dump out xsd internal structure and values" << std::endl;
 }
 
@@ -46,7 +51,6 @@ void usage()
 int main(int argc, char *argv[])
 {
     InitModuleObjects();
-    StartQMLUI();
 
     int idx = 1;
 
@@ -59,13 +63,15 @@ int main(int argc, char *argv[])
     char pOverrideSchema[BUFF_SIZE];
     char pBasePath[BUFF_SIZE];
     char pEnvXMLPath[BUFF_SIZE];
+    char pQMLFile[BUFF_SIZE];
 
     memset(pBuildSetFile, 0, sizeof(pBuildSetFile));
     memset(pBuildSetFileDir, 0, sizeof(pBuildSetFileDir));
     memset(pTargetDocDir, 0, sizeof(pTargetDocDir));
     memset(pOverrideSchema, 0, sizeof(pOverrideSchema));
+    memset(pQMLFile,0, sizeof(pQMLFile));
 
-    strncpy(pTargetDocExt, pDefaultExt, sizeof(pTargetDocExt));
+    strncpy(pTargetDocExt, pDefaultDocExt, sizeof(pTargetDocExt));
 
 
     bool bListXSDs  = false;
@@ -74,6 +80,7 @@ int main(int argc, char *argv[])
     bool bGenQML    = false;
     bool bDump      = false;
     bool bLoadEnvXML= false;
+    bool bQMLServer = false;
 
     StringArray arrXSDs;
 
@@ -163,6 +170,19 @@ int main(int argc, char *argv[])
             }
 
             arrXSDs.append(argv[idx]);
+        }
+        else if (stricmp(argv[idx], "-s") == 0 || stricmp(argv[idx], "-server") == 0)
+        {
+            idx++;
+
+            if (argv[idx] == NULL)
+            {
+                std::cout << "Missing qml file!" << std::endl;
+                return 0;
+            }
+
+            strncpy(pQMLFile, argv[idx], BUFF_SIZE);
+            bQMLServer = true;
         }
         else if (stricmp(argv[idx], "-list") == 0 || stricmp(argv[idx], "-l") == 0)
         {
@@ -390,7 +410,7 @@ int main(int argc, char *argv[])
 
             const char *pXSDFile = strrchr(arrXSDs.item(idx), '/') == NULL ? arrXSDs.item(idx) : strrchr(arrXSDs.item(idx),'/');
 
-            strTargetPath.append(pTargetDocDir).append("/").append(pXSDFile).append(pTargetDocExt);
+            strTargetPath.append(pTargetDocDir).append("/").append(pXSDFile).append(pDefaultQMLExt);
 
             pFile.setown(createIFile(strTargetPath.str()));
             pFileIO.setown(pFile->open(IFOcreaterw));
@@ -406,12 +426,20 @@ int main(int argc, char *argv[])
         }
     }
 
-    for (int idx =  0; bDump == true && idx < arrXSDs.length(); idx++)
+    for (int idx =  0; (bDump == true || bLoadEnvXML == true) && idx < arrXSDs.length(); idx++)
     {
         if (bLoadEnvXML == true)
         {
             pSchemaHelper->loadEnvFromConfig(pEnvXMLPath);
         }
-        pSchemaHelper->printDump(arrXSDs.item(idx));
+        if (bDump == true)
+        {
+            pSchemaHelper->printDump(arrXSDs.item(idx));
+        }
+    }
+
+    if (bQMLServer == true)
+    {
+        StartQMLUI(pQMLFile);
     }
 }

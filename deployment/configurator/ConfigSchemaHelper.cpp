@@ -61,6 +61,24 @@ CConfigSchemaHelper::~CConfigSchemaHelper()
 {
 }
 
+bool CConfigSchemaHelper::getValue(const char *pXPath, char *pValue)
+{
+    static int counter = 0;
+    itoa(counter, pValue, 10);
+    counter++;
+
+    CAttribute **pAttribute = m_attributePtrsMap.getValue(pXPath);
+
+    if ((**pAttribute).isInstanceValueValid() == true)
+    {
+        strcpy(pValue, (**pAttribute).getEnvValueFromXML());
+    }
+    else
+    {
+        pValue = NULL;
+    }
+    return true;
+}
 
 void CConfigSchemaHelper::getBuildSetComponents(StringArray& buildSetArray) const
 {
@@ -654,4 +672,26 @@ const char* CConfigSchemaHelper::getToolTipJS() const
     }
 
     return strJS.str();
+}
+
+void CConfigSchemaHelper::addMapOfAttributeToXPath(const char*pXPath, CAttribute *pAttribute)
+{
+    assert (pAttribute != NULL);
+    assert(pXPath != NULL && *pXPath != 0);
+
+    // TODO:: throw exception if problems here
+
+    assert(m_attributePtrsMap.find(pXPath) == NULL);
+
+    // should I remove automatically?
+
+    m_attributePtrsMap.setValue(pXPath, pAttribute);
+
+}
+
+void CConfigSchemaHelper::removeMapOfAttributeToXPath(const char*pXPath)
+{
+    assert (m_attributePtrsMap.find(pXPath) != NULL);
+
+    m_attributePtrsMap.remove(pXPath);
 }

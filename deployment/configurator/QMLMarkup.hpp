@@ -155,15 +155,15 @@ static const char* QML_TEXT_BEGIN_2("\
                  height: 25\n\
                  verticalAlignment: Text.AlignVCenter\n\
                  horizontalAlignment: Text.AlignHCenter\n\
-                 text: \"");
+                 text: ");
 
-static const char* QML_TEXT_END_2("\"\n\
+static const char* QML_TEXT_END_2("\n\
            }\n");
 
 static const char* QML_TEXT_FIELD_PLACE_HOLDER_TEXT_BEGIN("\n\
-        placeholderText: \"");
+        placeholderText: ");
 
-static const char* QML_TEXT_FIELD_PLACE_HOLDER_TEXT_END("\"\n");
+static const char* QML_TEXT_FIELD_PLACE_HOLDER_TEXT_END("\n");
 
 static const char* QML_TEXT_FIELD_BEGIN("\
         TextField {\n\
@@ -179,7 +179,7 @@ static const char* QML_TEXT_FIELD_BEGIN("\
         }\n\
         horizontalAlignment: Text.AlignLeft\n\
         implicitWidth: 250\n\
-        text:\"\"");
+        text: ");
 
 static const char* QML_TEXT_FIELD_ID_BEGIN("\
         id: ");
@@ -191,6 +191,7 @@ static const char* QML_TEXT_FIELD_END("\n\
 static const char* QML_LIST_MODEL_BEGIN("\
               model: ListModel {\n");
 
+
 static const char* QML_LIST_MODEL_END("\
                 }\n");
 
@@ -198,6 +199,9 @@ static const char* QML_COMBO_BOX_BEGIN("\
     ComboBox {\n\
         implicitWidth: 250\n\
 ");
+
+static const char* QML_COMBO_BOX_CURRENT_INDEX("\
+           currentIndex: ");
 
 static const char* QML_COMBO_BOX_END("\
               }\n");

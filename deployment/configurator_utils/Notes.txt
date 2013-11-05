@@ -1,0 +1,8 @@
+To build makefile for dynamic linking of QT to HPCC Platform:
+
+qmake -o makeFileDynamic ConfiguratorUIDynamic.pro
+make -f makeFileDynamic
+
+To create a QT UI using QML and xsd file and an environment.xml file:
+
+./configurator -use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/  -qml -t ./ -e qml -s ./esp.xsd.qml -env /etc/HPCCSystems/source/environment.xml

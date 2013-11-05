@@ -6,24 +6,7 @@
 #include <QObject>
 #include <QtQuick/QQuickView>
 #include <QGuiApplication>
-#include <QDateTime>
-//#include "./moc_configuratorui.moc"
-/*ConfiguratorUI::ConfiguratorUI(QObject *parent) :
-    QObject(parent)
-{
-}*/
-
-
-class ApplicationData : public QObject
-{
-    Q_OBJECT
-public:
-    Q_INVOKABLE QDateTime getCurrentDateTime() const {
-        return QDateTime::currentDateTime();
-    }
-    //ApplicationData(){}
-    //virtual ~ApplicationData(){}
-};
+#include "appdata.hpp"
 
 int main2(int argc, char *argv[])
 {
@@ -33,16 +16,17 @@ int main2(int argc, char *argv[])
 
     ApplicationData data;
 
-    //qmlRegisterType<ApplicationData>("");
+
     view.rootContext()->setContextProperty("ApplicationData", &data);
-    //view.rootContext()->set
     view.setResizeMode(QQuickView::SizeRootObjectToView);
-    view.setSource(QUrl::fromLocalFile("MyItem.qml"));
+    view.setSource(QUrl::fromLocalFile(*argv));
     view.show();
+
+
     return app.exec();
 }
 
-extern "C" void StartQMLUI()
+extern "C" void StartQMLUI(char* pQMLFile)
 {
-    main2(0,NULL);
+    main2(1,&pQMLFile);
 }

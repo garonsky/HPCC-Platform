@@ -80,6 +80,18 @@ const char* CEnumeration::getXML(const char* /*pComponent*/)
     return NULL;
 }
 
+void CEnumeration::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    //assert(this->getName() != NULL);
+
+    //strXPath.append("/").append("[@").append(this->getName()).append("]");
+    //this->setEnvXPath(strXPath.str());
+}
+
+void CEnumeration::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+}
+
 void CEnumerationArray::dump(std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
@@ -115,6 +127,20 @@ void CEnumerationArray::traverseAndProcessNodes() const
 const char* CEnumerationArray::getXML(const char* /*pComponent*/)
 {
     assert(false); // NOT IMPLEMENTED
+}
+
+void CEnumerationArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    assert(index == 1);  // Only 1 array of elements per node
+
+    QUICK_ENV_XPATH(strXPath)
+
+    this->setEnvXPath(strXPath);
+}
+
+void CEnumerationArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+
 }
 
 CEnumerationArray* CEnumerationArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)

@@ -16,17 +16,15 @@ class CAttribute : public CXSDNode
 {
 public:
 
-    CAttribute(CXSDNodeBase* pParentNode, const char* pName = NULL) : CXSDNode::CXSDNode(pParentNode, XSD_ATTRIBUTE), m_strName(pName), m_pAnnotation(NULL)
+    CAttribute(CXSDNodeBase* pParentNode, const char* pName = NULL) : CXSDNode::CXSDNode(pParentNode, XSD_ATTRIBUTE), m_strName(pName), m_pAnnotation(NULL), m_bInstanceValueValid(false)
     {
     }
 
-    CAttribute(CXSDNodeBase* pParentNode, const char* pName, const char* pType, const char* pDefault, const char* pUse) : CXSDNode::CXSDNode(pParentNode, XSD_ATTRIBUTE), m_strName(pName), m_strType(pType), m_strDefault(pDefault), m_strUse(pUse), m_pAnnotation(NULL), m_pSimpleTypeArray(NULL)
+    CAttribute(CXSDNodeBase* pParentNode, const char* pName, const char* pType, const char* pDefault, const char* pUse) : CXSDNode::CXSDNode(pParentNode, XSD_ATTRIBUTE), m_strName(pName), m_strType(pType), m_strDefault(pDefault), m_strUse(pUse), m_pAnnotation(NULL), m_pSimpleTypeArray(NULL), m_bInstanceValueValid(false)
     {
     }
 
-    virtual ~CAttribute()
-    {
-    }
+    virtual ~CAttribute();
 
     GETTERSETTER(Name)
     GETTERSETTER(Type)
@@ -59,6 +57,11 @@ public:
 
     static CAttribute* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
+    bool isInstanceValueValid()
+    {
+        return m_bInstanceValueValid;
+    }
+
 protected:
 
     void setAnnotation(CAnnotation *pAnnotation)
@@ -88,6 +91,7 @@ protected:
 
     CAnnotation *m_pAnnotation;
     CSimpleTypeArray *m_pSimpleTypeArray;
+    bool m_bInstanceValueValid;
 
 private:
 

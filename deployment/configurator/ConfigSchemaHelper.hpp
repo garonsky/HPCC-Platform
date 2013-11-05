@@ -76,6 +76,12 @@ public:
         return m_pBasePath;
     }
 
+    void addMapOfAttributeToXPath(const char*pXPath, CAttribute *pAttribute);
+
+    void removeMapOfAttributeToXPath(const char*pXPath);
+
+    bool getValue(const char *pXPath, char *pValue);
+
 protected:
 
     CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = NULL);
@@ -86,6 +92,7 @@ protected:
     MapStringTo<CSimpleType*> m_simpleTypePtrMap;
     MapStringTo<CComplexType*> m_complexTypePtrsMap;
     MapStringTo<CAttributeGroup*> m_attributeGroupTypePtrsMap;
+    MapStringTo<CAttribute*> m_attributePtrsMap;
     CIArrayOf<CExtension> m_extensionArr;
     CIArrayOf<CAttributeGroup> m_attributeGroupArr;
     StringBuffer m_buildSetPath;

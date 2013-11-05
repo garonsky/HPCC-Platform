@@ -89,7 +89,7 @@ void CRestriction::getQML(StringBuffer &strQML) const
         strQML.append(QML_RECTANGLE_LIGHT_STEEEL_BLUE_BEGIN);
         DEBUG_MARK_QML;
 
-        strQML.append(QML_TEXT_BEGIN_2).append(pAttrib->getName()).append(QML_TEXT_END_2);
+        strQML.append(QML_TEXT_BEGIN_2).append("\"").append(pAttrib->getName()).append("\"").append(QML_TEXT_END_2);
 
         strQML.append(QML_RECTANGLE_LIGHT_STEEEL_BLUE_END);
 
@@ -99,6 +99,10 @@ void CRestriction::getQML(StringBuffer &strQML) const
         DEBUG_MARK_QML;
 
         m_pEnumerationArray->getQML(strQML);
+        DEBUG_MARK_QML;
+
+        //int index = this->getEnvValueFromXML()
+        strQML.append(QML_COMBO_BOX_CURRENT_INDEX);
         DEBUG_MARK_QML;
 
         strQML.append(QML_LIST_MODEL_END);
