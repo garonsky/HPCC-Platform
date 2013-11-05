@@ -11,10 +11,21 @@ include_directories (
          ./../../system/include
          ./../../system/jlib
          ./../deploy/
+        /opt/Qt5.1.0/5.1.0/gcc_64/mkspecs/linux-g++
+        /opt/Qt5.1.0/5.1.0/gcc_64/include
+        /opt/Qt5.1.0/5.1.0/gcc_64/include/QtQuick
+        /opt/Qt5.1.0/5.1.0/gcc_64/include/QtQml
+        /opt/Qt5.1.0/5.1.0/gcc_64/include/QtNetwork
+        /opt/Qt5.1.0/5.1.0/gcc_64/include/QtGui
+        /opt/Qt5.1.0/5.1.0/gcc_64/include/QtCore
+        ./../configurator_ui
+
 )
 
 ADD_DEFINITIONS ( -D_CONSOLE )
 
+link_directories(/home/gleb/HPCC2/HPCC-Platform/deployment/configurator_ui /opt/Qt5.1.0/5.1.0/gcc_64/lib/)
+
 HPCC_ADD_EXECUTABLE ( configurator  ${SRCS} )
 install ( TARGETS configurator DESTINATION sbin )
-target_link_libraries ( configurator jlib )
+target_link_libraries ( configurator jlib ConfiguratorUI )

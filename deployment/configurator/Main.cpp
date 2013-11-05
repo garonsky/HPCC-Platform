@@ -6,6 +6,7 @@
 #include "ExceptionStrings.hpp"
 #include <iostream>
 #include "jfile.hpp"
+#include "../configurator_ui/configuratorui.hpp"
 
 #define BUFF_SIZE 1024
 
@@ -39,12 +40,13 @@ void usage()
 }
 
 
-extern "C" void StartQMLUI();
+//extern "C" void StartQMLUI();
 
 
 int main(int argc, char *argv[])
 {
     InitModuleObjects();
+    StartQMLUI();
 
     int idx = 1;
 

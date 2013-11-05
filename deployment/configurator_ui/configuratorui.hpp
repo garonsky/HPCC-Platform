@@ -1,10 +1,10 @@
 #ifndef CONFIGURATORUI_HPP
 #define CONFIGURATORUI_HPP
 
-#include <QObject>
+/*#include <QObject>
 #include <QtQuick/QQuickView>
 #include <QGuiApplication>
-#include <QDateTime>
+#include <QDateTime>*/
 
 /*class ConfiguratorUI : public QObject
 {
@@ -21,16 +21,16 @@ public slots:
 
 };*/
 
+extern "C" void StartQMLUI();
 
-
-class ApplicationData : public QObject
+/*class ApplicationData : public QObject
 {
     Q_OBJECT
 public:
     Q_INVOKABLE QDateTime getCurrentDateTime() const {
         return QDateTime::currentDateTime();
     }
-};
+};*/
 
 #endif // CONFIGURATORUI_HPP
 #ifndef CONFIGURATORUI_HPP
