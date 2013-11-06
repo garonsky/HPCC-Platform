@@ -20,4 +20,13 @@ public:
             return pValue;
         }
     }
+
+    Q_INVOKABLE int getIndex(QString XPath)
+    {
+        char pValue[1024];
+
+        CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
+
+        return pSchemaHelper->getIndex(XPath.toStdString().c_str());
+    }
 };
