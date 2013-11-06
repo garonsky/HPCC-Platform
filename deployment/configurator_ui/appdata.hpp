@@ -21,6 +21,14 @@ public:
         }
     }
 
+    Q_INVOKABLE void setValue(QString XPath, QString qstrNewValue)
+    {
+
+        CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
+
+        pSchemaHelper->setValue(XPath.toStdString().c_str(), qstrNewValue.toStdString().c_str());
+    }
+
     Q_INVOKABLE int getIndex(QString XPath)
     {
         char pValue[1024];

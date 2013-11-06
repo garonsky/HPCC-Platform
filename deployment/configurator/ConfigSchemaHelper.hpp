@@ -76,11 +76,17 @@ public:
         return m_pBasePath;
     }
 
-    void addMapOfAttributeToXPath(const char*pXPath, CAttribute *pAttribute);
+    void setEnvTreeProp(const char *pXPath, const char* pValue);
 
+    void addMapOfAttributeToXPath(const char*pXPath, CAttribute *pAttribute);
     void removeMapOfAttributeToXPath(const char*pXPath);
 
+    void addMapOfRestrictionToXPath(const char*pXPath, CRestriction *pRestriction);
+    void removeMapOfRestrictionToXPath(const char*pXPath);
+
     bool getValue(const char *pXPath, char *pValue);
+    void setValue(const char *pXPath, const char *pValue);
+    int getIndex(const char *pXPath);
 
 protected:
 
@@ -93,15 +99,42 @@ protected:
     MapStringTo<CComplexType*> m_complexTypePtrsMap;
     MapStringTo<CAttributeGroup*> m_attributeGroupTypePtrsMap;
     MapStringTo<CAttribute*> m_attributePtrsMap;
+    MapStringTo<CRestriction*> m_restrictionPtrsMap;
     CIArrayOf<CExtension> m_extensionArr;
     CIArrayOf<CAttributeGroup> m_attributeGroupArr;
     StringBuffer m_buildSetPath;
     StringArray m_strToolTipsJS;
 
+    IPropertyTree* getEnvPropertyTree()
+    {
+        return m_pEnvPropertyTree;
+    }
+
+    void setEnvPropertyTree(IPropertyTree *pEnvTree)
+    {
+        m_pEnvPropertyTree =  pEnvTree;
+    }
+
+    void setEnvFilePath(const char* pEnvFilePath)
+    {
+        assert(pEnvFilePath != NULL);
+
+        m_strEnvFilePath.set(pEnvFilePath);
+    }
+
+    const char* getEnvFilePath() const
+    {
+        return m_strEnvFilePath.str();
+    }
+
 private:
 
     static CConfigSchemaHelper* s_pCConfigSchemaHelper;
     const char *m_pBasePath;
+
+    StringBuffer m_strEnvFilePath;
+
+    IPropertyTree *m_pEnvPropertyTree;
 
     void setBasePath(const char* pBasePath)
     {

@@ -22,7 +22,7 @@ void CQMLMarkupHelper::getComboBoxListElement(const char* pLabel, StringBuffer &
     strBuf.append(QML_LIST_ELEMENT_BEGIN).append(pLabel);
 }
 
-void CQMLMarkupHelper::getToolTipQML(StringBuffer &strQML, const char *pToolTip)
+void CQMLMarkupHelper::getToolTipQML(StringBuffer &strQML, const char *pToolTip, const char* pTextAreaID)
 {
     assert(pToolTip != NULL);
 
@@ -30,7 +30,7 @@ void CQMLMarkupHelper::getToolTipQML(StringBuffer &strQML, const char *pToolTip)
     StringBuffer strTimer2("timer2");
     StringBuffer strMouseArea("mousearea");
     StringBuffer strRectangle("rectangle");
-    StringBuffer strTextArea("textarea");
+    StringBuffer strTextArea(pTextAreaID);
     StringBuffer strToolTip(pToolTip);
 
     strToolTip.replace('\"','\'');
@@ -39,7 +39,7 @@ void CQMLMarkupHelper::getToolTipQML(StringBuffer &strQML, const char *pToolTip)
     CQMLMarkupHelper::getRandomID(&strTimer2);
     CQMLMarkupHelper::getRandomID(&strMouseArea);
     CQMLMarkupHelper::getRandomID(&strRectangle);
-    CQMLMarkupHelper::getRandomID(&strTextArea);
+    //CQMLMarkupHelper::getRandomID(&strTextArea);
 
     CQMLMarkupHelper::getToolTipRectangle(strQML, strToolTip.str(), strRectangle.str());
     DEBUG_MARK_QML;
@@ -48,8 +48,8 @@ void CQMLMarkupHelper::getToolTipQML(StringBuffer &strQML, const char *pToolTip)
     CQMLMarkupHelper::getToolMouseArea(strQML, strToolTip.str(), strRectangle.str(), strTimer1.str(), strTimer2.str(), strMouseArea.str(), strTextArea.str());
     DEBUG_MARK_QML;
 
-    strQML.append(QML_TEXT_FIELD_ID_BEGIN).append(strTextArea).append(QML_TEXT_FIELD_ID_END);
-    DEBUG_MARK_QML;
+    //strQML.append(QML_TEXT_FIELD_ID_BEGIN).append(strTextArea).append(QML_TEXT_FIELD_ID_END);
+    //DEBUG_MARK_QML;
 }
 
 void CQMLMarkupHelper::getToolTipTimer(StringBuffer &strQML, const char *pToolTip, const char *pRectangleID, const char* pTimerID_1, const char* pTimerID_2, const char *pMouseAreaID)

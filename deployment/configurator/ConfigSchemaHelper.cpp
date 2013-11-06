@@ -1,10 +1,12 @@
 #include "ConfigSchemaHelper.hpp"
 #include "SchemaAttributes.hpp"
 #include "SchemaElement.hpp"
+#include "SchemaEnumeration.hpp"
 #include "jptree.hpp"
 #include "XMLTags.h"
 #include "ExceptionStrings.hpp"
 #include <cstring>
+#include "jfile.hpp"
 
 #define LOOP_THRU_BUILD_SET for (int idx = 0; idx < m_buildSetArray.length(); idx++)
 
@@ -46,7 +48,7 @@ CConfigSchemaHelper* CConfigSchemaHelper::getInstance(const char* pBuildSetFileN
 
 }
 
-CConfigSchemaHelper::CConfigSchemaHelper(const char* pBuildSetFile, const char* pBuildSetDir, const char* pDefaultDirOverride)
+CConfigSchemaHelper::CConfigSchemaHelper(const char* pBuildSetFile, const char* pBuildSetDir, const char* pDefaultDirOverride) : m_pEnvPropertyTree(NULL)
 {
     assert(pBuildSetFile != NULL);
     assert(pBuildSetDir != NULL);
@@ -78,6 +80,31 @@ bool CConfigSchemaHelper::getValue(const char *pXPath, char *pValue)
         pValue = NULL;
     }
     return true;
+}
+
+void CConfigSchemaHelper::setValue(const char *pXPath, const char *pValue)
+{
+    assert(pXPath != NULL && pXPath[0] != 0);
+    assert(pValue != NULL);
+
+    CAttribute **pAttribute = m_attributePtrsMap.getValue(pXPath);
+
+    assert(pAttribute != NULL && *pAttribute != NULL);
+
+    (*pAttribute)->setEnvValueFromXML(pValue);
+    (*pAttribute)->setInstanceAsValid();
+
+    setEnvTreeProp(pXPath, pValue);
+}
+
+int CConfigSchemaHelper::getIndex(const char *pXPath)
+{
+    CRestriction *pRestriction = *(this->m_restrictionPtrsMap.getValue(pXPath));
+
+    assert(pRestriction != NULL);
+    assert(pRestriction->getEnumerationArray() != NULL);
+
+    return pRestriction->getEnumerationArray()->getEnvValueNodeIndex();
 }
 
 void CConfigSchemaHelper::getBuildSetComponents(StringArray& buildSetArray) const
@@ -593,6 +620,9 @@ void CConfigSchemaHelper::loadEnvFromConfig(const char *pEnvFile)
 
     CSchema* pSchema = NULL;
 
+    this->setEnvPropertyTree(pEnvXMLRoot.getLink());
+    this->setEnvFilePath(pEnvFile);
+
     LOOP_THRU_BUILD_SET
     {
         pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
@@ -686,7 +716,6 @@ void CConfigSchemaHelper::addMapOfAttributeToXPath(const char*pXPath, CAttribute
     // should I remove automatically?
 
     m_attributePtrsMap.setValue(pXPath, pAttribute);
-
 }
 
 void CConfigSchemaHelper::removeMapOfAttributeToXPath(const char*pXPath)
@@ -694,4 +723,48 @@ void CConfigSchemaHelper::removeMapOfAttributeToXPath(const char*pXPath)
     assert (m_attributePtrsMap.find(pXPath) != NULL);
 
     m_attributePtrsMap.remove(pXPath);
+}
+
+
+void CConfigSchemaHelper::addMapOfRestrictionToXPath(const char*pXPath, CRestriction *pRestriction)
+{
+    assert (pRestriction != NULL);
+    assert(pXPath != NULL && *pXPath != 0);
+    assert(m_restrictionPtrsMap.find(pXPath) == NULL);
+
+    m_restrictionPtrsMap.setValue(pXPath, pRestriction);
+}
+
+void CConfigSchemaHelper::removeMapOfRestrictionToXPath(const char*pXPath)
+{
+    assert(pXPath != NULL && *pXPath != 0);
+
+    m_restrictionPtrsMap.remove(pXPath);
+}
+
+void CConfigSchemaHelper::setEnvTreeProp(const char *pXPath, const char* pValue)
+{
+    assert(pXPath != NULL && pXPath[0] != 0);
+
+    CAttribute *pAttribute = *(m_attributePtrsMap.getValue(pXPath));
+
+    assert(pAttribute != NULL);
+
+    StringBuffer strPropName("@");
+    strPropName.append(pAttribute->getName());
+
+    this->getEnvPropertyTree()->queryPropTree(pAttribute->getConstAncestorNode(1)->getEnvXPath())->setProp(strPropName.str(), pValue);
+
+    StringBuffer strXML;
+
+    strXML.appendf("<"XML_HEADER">\n<!-- Edited with THE CONFIGURATOR -->\n");
+    toXML(this->getEnvPropertyTree(), strXML, 0, XML_SortTags | XML_Format);
+
+    Owned<IFile>   pFile;
+    Owned<IFileIO> pFileIO;
+
+    pFile.setown(createIFile(getEnvFilePath()));
+    pFileIO.setown(pFile->open(IFOcreaterw));
+
+    pFileIO->write(0, strXML.length(), strXML.str());
 }

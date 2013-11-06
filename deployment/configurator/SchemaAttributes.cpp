@@ -230,27 +230,34 @@ void CAttribute::getQML(StringBuffer &strQML) const
             strQML.append(QML_ROW_BEGIN).append(QML_RECTANGLE_LIGHT_STEEEL_BLUE_BEGIN);
             DEBUG_MARK_QML;
 
-            //strQML.append(QML_TEXT_BEGIN_2).append(this->getTitle()).append(QML_TEXT_END_2);
             strQML.append(QML_TEXT_BEGIN_2).append("\"").append(this->getTitle()).append("\"").append(QML_TEXT_END_2);
-            //strQML.append(QML_TEXT_BEGIN_2).append("ApplicationData.getValue(\"").append(this->getEnvXPath()).append("\")").append(QML_TEXT_END_2);
             DEBUG_MARK_QML;
 
             strQML.append(QML_RECTANGLE_LIGHT_STEEEL_BLUE_END);
             DEBUG_MARK_QML;
 
             strQML.append(QML_TEXT_FIELD_BEGIN);
-            strQML.append("ApplicationData.getValue(\"").append(this->getEnvXPath()).append("\")");
+            DEBUG_MARK_QML;
+
+            StringBuffer strTextArea("textarea");
+            CQMLMarkupHelper::getRandomID(&strTextArea);
+
+            //strQML.append("ApplicationData.getValue(\"").append(this->getEnvXPath()).append("\")");
+            strQML.append(APP_DATA_GET_VALUE_BEGIN).append(this->getEnvXPath()).append(APP_DATA_GET_VALUE_END);
+            strQML.append("\nonAccepted: ApplicationData.setValue(\"").append(this->getEnvXPath()).append("\", ").append(strTextArea.str()).append(".text)\n");
+
+
+            strQML.append(QML_TEXT_FIELD_ID_BEGIN).append(strTextArea).append(QML_TEXT_FIELD_ID_END);
+            DEBUG_MARK_QML;
 
             strQML.append(QML_TEXT_FIELD_PLACE_HOLDER_TEXT_BEGIN);
-            //strQMLappend(this->getDefault());
             strQML.append("\"").append(this->getDefault()).append("\"");
-            //strQML.append("ApplicationData.getValue(\"").append(this->getEnvXPath()).append("\")");
             strQML.append(QML_TEXT_FIELD_PLACE_HOLDER_TEXT_END);
             DEBUG_MARK_QML;
 
             if (this->getAnnotation()->getAppInfo() != NULL) // check for tooltip
             {
-                CQMLMarkupHelper::getToolTipQML(strQML, this->getAnnotation()->getAppInfo()->getToolTip());
+                CQMLMarkupHelper::getToolTipQML(strQML, this->getAnnotation()->getAppInfo()->getToolTip(), strTextArea.str());
             }
 
             strQML.append(QML_TEXT_FIELD_END);
@@ -283,6 +290,11 @@ void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     this->setEnvXPath(strXPath.str());
 
     CConfigSchemaHelper::getInstance()->addMapOfAttributeToXPath(this->getEnvXPath(), this);
+
+    if (this->m_pSimpleTypeArray != NULL)
+    {
+        m_pSimpleTypeArray->populateEnvXPath(strXPath);
+    }
 }
 
 void CAttribute::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
@@ -302,6 +314,11 @@ void CAttribute::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         this->setEnvValueFromXML(pEnvTree->queryPropTree(strXPath.str())->queryProp(strAttribName.str()));
 
         m_bInstanceValueValid = true;
+
+        if (this->m_pSimpleTypeArray != NULL)
+        {
+            m_pSimpleTypeArray->loadXMLFromEnvXml(pEnvTree);
+        }
     }
     else if (stricmp(this->getUse(), XML_ENV_VALUE_REQUIRED) == 0) // check if this a required attribute
     {

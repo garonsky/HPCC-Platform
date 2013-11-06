@@ -1,4 +1,5 @@
 #include "SchemaCommon.hpp"
+#include "SchemaAttributes.hpp"
 #include "SchemaEnumeration.hpp"
 #include "XMLTags.h"
 #include "jptree.hpp"
@@ -45,8 +46,10 @@ void CEnumeration::dump(std::ostream &cout, unsigned int offset) const
 
     QuickOutHeader(cout, XSD_ENUMERATION_STR, offset);
 
-    QUICK_OUT(cout, XSDXPath,  offset);
     QUICK_OUT(cout, Value, offset);
+    QUICK_OUT(cout, XSDXPath,  offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
+    QUICK_OUT(cout, EnvValueFromXML,  offset);
 
     QuickOutFooter(cout, XSD_ENUMERATION_STR, offset);
 }
@@ -82,14 +85,35 @@ const char* CEnumeration::getXML(const char* /*pComponent*/)
 
 void CEnumeration::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
-    //assert(this->getName() != NULL);
+    assert(this->getValue() != NULL);
 
-    //strXPath.append("/").append("[@").append(this->getName()).append("]");
-    //this->setEnvXPath(strXPath.str());
+    const CAttribute *pAttribute = dynamic_cast<const CAttribute*>(this->getParentNodeByType(XSD_ATTRIBUTE));
+
+    assert(pAttribute != NULL);
+
+    this->setEnvXPath(strXPath.str());
 }
 
 void CEnumeration::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
+    assert(this->getEnvXPath() != NULL);
+
+    const CAttribute *pAttribute = dynamic_cast<const CAttribute*>(this->getParentNodeByType(XSD_ATTRIBUTE) );
+
+    assert(pAttribute != NULL);
+
+    StringBuffer strXPath(this->getEnvXPath());
+
+    strXPath.append("[@").append(pAttribute->getName()).append("=\"").append(this->getValue()).append("\"]");
+
+    if (pEnvTree->hasProp(strXPath.str()) == true)
+    {
+        this->setInstanceValueValid(true);
+    }
+    else
+    {
+        this->setInstanceValueValid(false);
+    }
 }
 
 void CEnumerationArray::dump(std::ostream &cout, unsigned int offset) const
@@ -99,6 +123,8 @@ void CEnumerationArray::dump(std::ostream &cout, unsigned int offset) const
     QuickOutHeader(cout, XSD_ENUMERATION_ARRAY_STR, offset);
 
     QUICK_OUT_ARRAY(cout, offset);
+    QUICK_OUT(cout, XSDXPath,  offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
 
     QuickOutFooter(cout, XSD_ENUMERATION_ARRAY_STR, offset);
 }
@@ -140,7 +166,33 @@ void CEnumerationArray::populateEnvXPath(StringBuffer strXPath, unsigned int ind
 
 void CEnumerationArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
+    assert(pEnvTree != NULL);
 
+    if (pEnvTree->hasProp(this->getEnvXPath()) == false)
+    {
+        throw MakeExceptionFromMap(EX_STR_XPATH_DOES_NOT_EXIST_IN_TREE);
+    }
+    else
+    {
+        QUICK_LOAD_ENV_XML(pEnvTree)
+    }
+
+}
+
+int CEnumerationArray::getEnvValueNodeIndex() const
+{
+    int len = this->length();
+
+    for (int idx = 0; idx < len; idx++)
+    {
+        if (this->item(idx).isInstanceValueValid() == true)
+        {
+            return idx;
+        }
+    }
+
+    assert(false); // should never get here
+    //return 1;
 }
 
 CEnumerationArray* CEnumerationArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)

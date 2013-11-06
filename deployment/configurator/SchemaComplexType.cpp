@@ -174,6 +174,8 @@ void CComplexType::getQML(StringBuffer &strQML) const
 
 void CComplexType::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
+    this->setEnvXPath(strXPath);
+
     if (m_pSequence != NULL)
     {
         m_pSequence->populateEnvXPath(strXPath);
@@ -203,8 +205,6 @@ void CComplexType::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     {
         m_pAttributeGroupArray->populateEnvXPath(strXPath);
     }
-
-    this->setEnvXPath(strXPath);
 }
 
 void CComplexType::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)

@@ -24,6 +24,8 @@ void CSimpleType::dump(std::ostream& cout, unsigned int offset) const
     QUICK_OUT_2(Name);
     QUICK_OUT_2(ID);
     QUICK_OUT(cout, XSDXPath,   offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
+    QUICK_OUT(cout, EnvValueFromXML,  offset);
 
     if (m_pRestriction != NULL)
     {
@@ -54,6 +56,26 @@ void CSimpleType::getQML(StringBuffer &strQML) const
     if (m_pRestriction != NULL)
     {
         m_pRestriction->getQML(strQML);
+    }
+}
+
+void CSimpleType::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    this->setEnvXPath(strXPath);
+
+    if (this->m_pRestriction != NULL)
+    {
+        this->m_pRestriction->populateEnvXPath(strXPath);
+    }
+}
+
+void CSimpleType::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    assert(pEnvTree != NULL);
+
+    if (this->m_pRestriction != NULL)
+    {
+        this->m_pRestriction->loadXMLFromEnvXml(pEnvTree);
     }
 }
 
@@ -159,6 +181,8 @@ void CSimpleTypeArray::dump(std::ostream& cout, unsigned int offset) const
     QuickOutHeader(cout, XSD_SIMPLE_TYPE_ARRAY_STR, offset);
 
     QUICK_OUT(cout, XSDXPath, offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
+    QUICK_OUT(cout, EnvValueFromXML,  offset);
     QUICK_OUT_ARRAY(cout, offset);
 
     QuickOutFooter(cout, XSD_SIMPLE_TYPE_ARRAY_STR, offset);
@@ -217,4 +241,20 @@ void CSimpleTypeArray::getDojoJS(StringBuffer &strJS) const
 void CSimpleTypeArray::getQML(StringBuffer &strQML) const
 {
     QUICK_QML_ARRAY(strQML);
+}
+
+void CSimpleTypeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    assert(index == 1);  // Only 1 array of elements per node
+
+    this->setEnvXPath(strXPath);
+
+    QUICK_ENV_XPATH(strXPath)
+}
+
+void CSimpleTypeArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    assert(pEnvTree != NULL);
+
+    QUICK_LOAD_ENV_XML(pEnvTree)
 }

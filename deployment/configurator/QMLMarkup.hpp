@@ -4,6 +4,11 @@
 class StringBuffer;
 class CAttribute;
 
+
+//static const char* APP_DATA("ApplicationData");
+static const char* APP_DATA_GET_VALUE_BEGIN("ApplicationData.getValue(\"");
+static const char* APP_DATA_GET_VALUE_END("\")");
+
 static const char* QML_START("\
  import QtQuick 2.1\n\
  import QtQuick.Controls 1.0\n\
@@ -376,7 +381,7 @@ public:
 
     static void getComboBoxListElement(const char* pLabel, StringBuffer &strID, const char* pDefault = "");
 
-    static void getToolTipQML(StringBuffer &strQML, const char *pToolTip);
+    static void getToolTipQML(StringBuffer &strQML, const char *pToolTip, const char* pTextAreaID);
 
     static void getToolTipRectangle(StringBuffer &strQML, const char *pToolTip, const char *pRectangleID);
 

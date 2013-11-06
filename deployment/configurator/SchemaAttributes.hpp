@@ -62,6 +62,11 @@ public:
         return m_bInstanceValueValid;
     }
 
+    void setInstanceAsValid(bool bValid = true)
+    {
+        m_bInstanceValueValid = bValid;
+    }
+
 protected:
 
     void setAnnotation(CAnnotation *pAnnotation)

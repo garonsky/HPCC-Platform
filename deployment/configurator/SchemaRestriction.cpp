@@ -8,6 +8,12 @@
 #include "QMLMarkup.hpp"
 #include "DocumentationMarkup.hpp"
 
+
+CRestriction::~CRestriction()
+{
+    CConfigSchemaHelper::getInstance()->removeMapOfRestrictionToXPath(this->getEnvXPath());
+}
+
 void CRestriction::dump(std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
@@ -17,9 +23,8 @@ void CRestriction::dump(std::ostream& cout, unsigned int offset) const
     QUICK_OUT_2(Base);
     QUICK_OUT_2(ID);
     QUICK_OUT(cout, XSDXPath,  offset);
-
-    // to do call base
-    // base->dump(cout, offset);
+    QUICK_OUT(cout, EnvXPath,  offset);
+    QUICK_OUT(cout, EnvValueFromXML,  offset);
 
     if (m_pEnumerationArray != NULL)
     {
@@ -101,11 +106,11 @@ void CRestriction::getQML(StringBuffer &strQML) const
         m_pEnumerationArray->getQML(strQML);
         DEBUG_MARK_QML;
 
-        //int index = this->getEnvValueFromXML()
-        strQML.append(QML_COMBO_BOX_CURRENT_INDEX);
-        DEBUG_MARK_QML;
-
         strQML.append(QML_LIST_MODEL_END);
+
+        //strQML.append(QML_COMBO_BOX_CURRENT_INDEX).append(1).append(";");
+        strQML.append(QML_COMBO_BOX_CURRENT_INDEX).append("ApplicationData.getIndex(\"").append(this->getEnvXPath()).append("\")");
+        DEBUG_MARK_QML;
 
         strQML.append(QML_COMBO_BOX_END);
 
@@ -113,6 +118,27 @@ void CRestriction::getQML(StringBuffer &strQML) const
         DEBUG_MARK_QML;
     }
 }
+
+void CRestriction::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+{
+    this->setEnvXPath(strXPath);
+
+    CConfigSchemaHelper::getInstance()->addMapOfRestrictionToXPath(this->getEnvXPath(), this);
+
+    if (this->m_pEnumerationArray != NULL)
+    {
+        this->m_pEnumerationArray->populateEnvXPath(strXPath);
+    }
+}
+
+void CRestriction::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+{
+    if (m_pEnumerationArray != NULL)
+    {
+        m_pEnumerationArray->loadXMLFromEnvXml(pEnvTree);
+    }
+}
+
 
 CRestriction* CRestriction::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {

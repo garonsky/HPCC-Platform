@@ -9,9 +9,8 @@ class CRestriction : public CXSDNode
 {
 public:
 
-    virtual ~CRestriction()
-    {
-    }
+    virtual ~CRestriction();
+
 
     GETTERSETTER(ID)
     GETTERSETTER(Base)
@@ -27,6 +26,15 @@ public:
     virtual void traverseAndProcessNodes() const;
 
     virtual const char* getXML(const char* /*pComponent*/);
+
+    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+
+    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+
+    CEnumerationArray* getEnumerationArray()
+    {
+        return m_pEnumerationArray;
+    }
 
     static CRestriction* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
@@ -44,11 +52,6 @@ protected:
         {
             m_pEnumerationArray = pEnumerationArray;
         }
-    }
-
-    CEnumerationArray* getEnumerationArray()
-    {
-        return m_pEnumerationArray;
     }
 
     CEnumerationArray *m_pEnumerationArray;

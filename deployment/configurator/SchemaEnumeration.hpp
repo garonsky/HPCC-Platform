@@ -12,6 +12,7 @@ public:
     }
 
     GETTERSETTER(Value)
+//    GETTERSETTER(InstanceValue)
 
     virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
 
@@ -29,13 +30,25 @@ public:
 
     virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
 
+    bool isInstanceValueValid() const
+    {
+        return m_bInstanceValueValid;
+    }
+
     static CEnumeration* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
-    CEnumeration(CXSDNodeBase* pParentNode) : CXSDNode::CXSDNode(pParentNode, XSD_ENUMERATION), m_strValue("")
+    CEnumeration(CXSDNodeBase* pParentNode) : CXSDNode::CXSDNode(pParentNode, XSD_ENUMERATION), m_strValue(""), m_bInstanceValueValid(false)
     {
     }
+
+    void setInstanceValueValid(bool b)
+    {
+        m_bInstanceValueValid = b;
+    }
+
+    bool m_bInstanceValueValid;
 
 private:
 
@@ -71,6 +84,8 @@ public:
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
 
     virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+
+    int getEnvValueNodeIndex() const;
 
     static CEnumerationArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
