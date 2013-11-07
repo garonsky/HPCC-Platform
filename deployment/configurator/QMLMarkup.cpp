@@ -39,7 +39,6 @@ void CQMLMarkupHelper::getToolTipQML(StringBuffer &strQML, const char *pToolTip,
     CQMLMarkupHelper::getRandomID(&strTimer2);
     CQMLMarkupHelper::getRandomID(&strMouseArea);
     CQMLMarkupHelper::getRandomID(&strRectangle);
-    //CQMLMarkupHelper::getRandomID(&strTextArea);
 
     CQMLMarkupHelper::getToolTipRectangle(strQML, strToolTip.str(), strRectangle.str());
     DEBUG_MARK_QML;
@@ -47,9 +46,6 @@ void CQMLMarkupHelper::getToolTipQML(StringBuffer &strQML, const char *pToolTip,
     DEBUG_MARK_QML;
     CQMLMarkupHelper::getToolMouseArea(strQML, strToolTip.str(), strRectangle.str(), strTimer1.str(), strTimer2.str(), strMouseArea.str(), strTextArea.str());
     DEBUG_MARK_QML;
-
-    //strQML.append(QML_TEXT_FIELD_ID_BEGIN).append(strTextArea).append(QML_TEXT_FIELD_ID_END);
-    //DEBUG_MARK_QML;
 }
 
 void CQMLMarkupHelper::getToolTipTimer(StringBuffer &strQML, const char *pToolTip, const char *pRectangleID, const char* pTimerID_1, const char* pTimerID_2, const char *pMouseAreaID)

@@ -237,15 +237,14 @@ void CAttribute::getQML(StringBuffer &strQML) const
             DEBUG_MARK_QML;
 
             strQML.append(QML_TEXT_FIELD_BEGIN);
-            DEBUG_MARK_QML;
 
             StringBuffer strTextArea("textarea");
             CQMLMarkupHelper::getRandomID(&strTextArea);
 
-            //strQML.append("ApplicationData.getValue(\"").append(this->getEnvXPath()).append("\")");
-            strQML.append(APP_DATA_GET_VALUE_BEGIN).append(this->getEnvXPath()).append(APP_DATA_GET_VALUE_END);
-            strQML.append("\nonAccepted: ApplicationData.setValue(\"").append(this->getEnvXPath()).append("\", ").append(strTextArea.str()).append(".text)\n");
+            strQML.append(QML_APP_DATA_GET_VALUE_BEGIN).append(this->getEnvXPath()).append(QML_APP_DATA_GET_VALUE_END);
 
+            strQML.append(QML_ON_ACCEPTED);
+            strQML.append(QML_APP_DATA_SET_VALUE_BEGIN).append(this->getEnvXPath()).append("\", ").append(strTextArea.str()).append(QML_APP_DATA_SET_VALUE_END);
 
             strQML.append(QML_TEXT_FIELD_ID_BEGIN).append(strTextArea).append(QML_TEXT_FIELD_ID_END);
             DEBUG_MARK_QML;
@@ -306,14 +305,11 @@ void CAttribute::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 
     if (pEnvTree->hasProp(strXPath.str()) == true)
     {
-        //this->setEnvValueFromXML(pEnvTree->queryPropTree(strXPath.str())->queryProp(this->getEnvXPath()));
-
-        //this->setEnvValueFromXML(pEnvTree->queryProp(this->getEnvXPath()));
         StringBuffer strAttribName("@");
         strAttribName.append(this->getName());
         this->setEnvValueFromXML(pEnvTree->queryPropTree(strXPath.str())->queryProp(strAttribName.str()));
 
-        m_bInstanceValueValid = true;
+        setInstanceAsValid();
 
         if (this->m_pSimpleTypeArray != NULL)
         {

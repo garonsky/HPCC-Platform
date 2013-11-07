@@ -37,6 +37,8 @@ public:
 
     static CEnumeration* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
+    friend class CEnumerationArray;
+
 protected:
 
     CEnumeration(CXSDNodeBase* pParentNode) : CXSDNode::CXSDNode(pParentNode, XSD_ENUMERATION), m_strValue(""), m_bInstanceValueValid(false)
@@ -86,6 +88,8 @@ public:
     virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
 
     int getEnvValueNodeIndex() const;
+
+    void setEnvValueNodeIndex(int index);
 
     static CEnumerationArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 

@@ -1,6 +1,7 @@
 #include "SchemaCommon.hpp"
 #include "SchemaAttributes.hpp"
 #include "SchemaEnumeration.hpp"
+#include "SchemaRestriction.hpp"
 #include "XMLTags.h"
 #include "jptree.hpp"
 #include "DocumentationMarkup.hpp"
@@ -26,7 +27,7 @@ CEnumeration* CEnumeration::load(CXSDNodeBase* pParentNode, const IPropertyTree 
 
         if (pTree == NULL)
         {
-            return NULL;
+            return pEnumeration;
         }
 
         const char* pValue = pTree->queryProp(XML_ATTR_VALUE);
@@ -192,7 +193,25 @@ int CEnumerationArray::getEnvValueNodeIndex() const
     }
 
     assert(false); // should never get here
+
+    //throw MakeExceptionFromMap()
+
     //return 1;
+}
+
+void CEnumerationArray::setEnvValueNodeIndex(int index)
+{
+    assert(index >= 0);
+    assert(index < this->length());
+
+    for (int idx = 0; idx < this->length(); idx++)
+    {
+        if (this->item(idx).isInstanceValueValid() == true)
+        {
+            this->item(idx).setInstanceValueValid(false);
+        }
+    }
+    this->item(index).setInstanceValueValid(true);
 }
 
 CEnumerationArray* CEnumerationArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
@@ -224,12 +243,28 @@ CEnumerationArray* CEnumerationArray::load(CXSDNodeBase* pParentNode, const IPro
         count++;
     }
 
+    SETPARENTNODE(pEnumerationArray, pParentNode);
+
+    const CAttribute *pAttribute = dynamic_cast<const CAttribute*>(pEnumerationArray->getParentNodeByType(XSD_ATTRIBUTE));
+
+    if (pAttribute != NULL)
+    {
+        if (pAttribute->getUse() != NULL && stricmp(pAttribute->getUse(),TAG_REQUIRED) != 0)
+        {
+            StringBuffer strXPathExt(xpath);
+
+            strXPathExt.append("[value=\"\"]");
+
+            CEnumeration *pEnumeration = CEnumeration::load(pEnumerationArray, pSchemaRoot, strXPathExt.str());
+
+            pEnumerationArray->append(*pEnumeration);
+        }
+    }
+
     if (pEnumerationArray->length() == 0)
     {
         return NULL;
     }
-
-    SETPARENTNODE(pEnumerationArray, pParentNode);
 
     return pEnumerationArray;
 }

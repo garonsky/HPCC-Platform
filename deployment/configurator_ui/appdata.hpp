@@ -37,4 +37,11 @@ public:
 
         return pSchemaHelper->getIndex(XPath.toStdString().c_str());
     }
+
+    Q_INVOKABLE void  setIndex(QString XPath, int index)
+    {
+        CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
+
+        return pSchemaHelper->setIndex(XPath.toStdString().c_str(), index);
+    }
 };

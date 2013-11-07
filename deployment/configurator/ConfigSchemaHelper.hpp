@@ -87,6 +87,7 @@ public:
     bool getValue(const char *pXPath, char *pValue);
     void setValue(const char *pXPath, const char *pValue);
     int getIndex(const char *pXPath);
+    void setIndex(const char *pXPath, int newIndex);
 
 protected:
 

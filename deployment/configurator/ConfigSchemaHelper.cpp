@@ -107,6 +107,20 @@ int CConfigSchemaHelper::getIndex(const char *pXPath)
     return pRestriction->getEnumerationArray()->getEnvValueNodeIndex();
 }
 
+void CConfigSchemaHelper::setIndex(const char *pXPath, int newIndex)
+{
+    assert(newIndex >= 0);
+
+    CRestriction *pRestriction = *(this->m_restrictionPtrsMap.getValue(pXPath));
+
+    assert(pRestriction != NULL);
+    assert(pRestriction->getEnumerationArray() != NULL);
+
+    pRestriction->getEnumerationArray()->setEnvValueNodeIndex(newIndex);
+
+    setEnvTreeProp(pXPath, pRestriction->getEnumerationArray()->item(newIndex).getValue());
+}
+
 void CConfigSchemaHelper::getBuildSetComponents(StringArray& buildSetArray) const
 {
     LOOP_THRU_BUILD_SET
@@ -753,6 +767,10 @@ void CConfigSchemaHelper::setEnvTreeProp(const char *pXPath, const char* pValue)
     StringBuffer strPropName("@");
     strPropName.append(pAttribute->getName());
 
+    if (strcmp (this->getEnvPropertyTree()->queryPropTree(pAttribute->getConstAncestorNode(1)->getEnvXPath())->queryProp(strPropName.str()), pValue) == 0)
+    {
+        return; // nothing changed
+    }
     this->getEnvPropertyTree()->queryPropTree(pAttribute->getConstAncestorNode(1)->getEnvXPath())->setProp(strPropName.str(), pValue);
 
     StringBuffer strXML;

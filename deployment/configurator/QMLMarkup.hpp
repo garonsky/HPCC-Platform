@@ -4,10 +4,20 @@
 class StringBuffer;
 class CAttribute;
 
+static const char* QML_APP_DATA_GET_VALUE_BEGIN(" ApplicationData.getValue(\"");
+static const char* QML_APP_DATA_GET_VALUE_END("\")\n");
+static const char* QML_APP_DATA_SET_VALUE_BEGIN(" ApplicationData.setValue(\"");
+static const char* QML_APP_DATA_SET_VALUE_END(".text)\n");
+static const char* QML_APP_DATA_GET_INDEX_BEGIN(" ApplicationData.getIndex(\"");
+static const char* QML_APP_DATA_GET_INDEX_END("\")\n");
+static const char* QML_APP_DATA_SET_INDEX_BEGIN(" ApplicationData.setIndex(\"");
+static const char* QML_APP_DATA_SET_INDEX_END(".currentIndex)\n");
 
-//static const char* APP_DATA("ApplicationData");
-static const char* APP_DATA_GET_VALUE_BEGIN("ApplicationData.getValue(\"");
-static const char* APP_DATA_GET_VALUE_END("\")");
+static const char* QML_ON_ACCEPTED("\n\
+        onAccepted: ");
+
+static const char* QML_ON_CURRENT_INDEX_CHANGED("\n\
+            onCurrentIndexChanged: ");
 
 static const char* QML_START("\
  import QtQuick 2.1\n\
@@ -203,6 +213,7 @@ static const char* QML_LIST_MODEL_END("\
 static const char* QML_COMBO_BOX_BEGIN("\
     ComboBox {\n\
         implicitWidth: 250\n\
+        id:\
 ");
 
 static const char* QML_COMBO_BOX_CURRENT_INDEX("\

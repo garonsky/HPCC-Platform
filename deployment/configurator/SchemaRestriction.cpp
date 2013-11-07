@@ -88,7 +88,6 @@ void CRestriction::getQML(StringBuffer &strQML) const
         const CAttribute *pAttrib = dynamic_cast<const CAttribute*>(this->getConstAncestorNode(3));
 
         assert(pAttrib != NULL);
-        /*strQML.append(QML_TEXT_BEGIN).append(pAttrib->getName()).append(QML_TEXT_END);*/
 
         strQML.append(QML_ROW_BEGIN);
         strQML.append(QML_RECTANGLE_LIGHT_STEEEL_BLUE_BEGIN);
@@ -98,7 +97,12 @@ void CRestriction::getQML(StringBuffer &strQML) const
 
         strQML.append(QML_RECTANGLE_LIGHT_STEEEL_BLUE_END);
 
+        StringBuffer strComboBoxID("combobox");
+        CQMLMarkupHelper::getRandomID(&strComboBoxID);
+
         strQML.append(QML_COMBO_BOX_BEGIN);
+        strQML.append(strComboBoxID);
+        DEBUG_MARK_QML;
 
         strQML.append(QML_LIST_MODEL_BEGIN);
         DEBUG_MARK_QML;
@@ -108,8 +112,10 @@ void CRestriction::getQML(StringBuffer &strQML) const
 
         strQML.append(QML_LIST_MODEL_END);
 
-        //strQML.append(QML_COMBO_BOX_CURRENT_INDEX).append(1).append(";");
-        strQML.append(QML_COMBO_BOX_CURRENT_INDEX).append("ApplicationData.getIndex(\"").append(this->getEnvXPath()).append("\")");
+        strQML.append(QML_COMBO_BOX_CURRENT_INDEX).append(QML_APP_DATA_GET_INDEX_BEGIN).append(this->getEnvXPath()).append(QML_APP_DATA_GET_INDEX_END);
+        DEBUG_MARK_QML;
+
+        strQML.append(QML_ON_CURRENT_INDEX_CHANGED).append(QML_APP_DATA_SET_INDEX_BEGIN).append(this->getEnvXPath()).append("\", ").append(strComboBoxID).append(QML_APP_DATA_SET_INDEX_END);
         DEBUG_MARK_QML;
 
         strQML.append(QML_COMBO_BOX_END);
