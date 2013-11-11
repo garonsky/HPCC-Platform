@@ -285,7 +285,10 @@ void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     assert(this->getName() != NULL);
 
+    //strXPath.appendf("[%d]", index);
+
     strXPath.append("/").append("[@").append(this->getName()).append("]");
+
     this->setEnvXPath(strXPath.str());
 
     CConfigSchemaHelper::getInstance()->addMapOfXPathToAttribute(this->getEnvXPath(), this);
@@ -753,9 +756,9 @@ void CAttributeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index
 {
     assert(index == 1);  // Only 1 array of elements per node
 
-    QUICK_ENV_XPATH(strXPath)
-
     this->setEnvXPath(strXPath);
+
+    QUICK_ENV_XPATH(strXPath)
 }
 
 void CAttributeArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)

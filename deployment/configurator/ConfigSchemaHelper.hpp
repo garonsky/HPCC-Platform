@@ -92,7 +92,7 @@ public:
     int getIndex(const char *pXPath);
     void setIndex(const char *pXPath, int newIndex);
 
-    const char* getTableValue(const char* pXPath) const;
+    const char* getTableValue(const char* pXPath, int nRow = 1) const;
 
     int getAttributeXPathSize() const
     {
@@ -108,6 +108,16 @@ public:
     }
 
     int getElementArraySize(const char *pXPath) const;
+
+    const char* getAttributeXSDXPathFromEnvXPath(const char* pEnvXPath) const;
+    const char* getElementArrayXSDXPathFromEnvXPath(const char* pEnvXPath) const;
+
+    static void stripXPathIndex(StringBuffer &strXPath);
+
+    IPropertyTree* getEnvPropertyTree()
+    {
+        return m_pEnvPropertyTree;
+    }
 
 protected:
 
@@ -127,11 +137,6 @@ protected:
     StringBuffer m_buildSetPath;
     StringArray m_strToolTipsJS;
     StringArray m_strArrayEnvXPaths;
-
-    IPropertyTree* getEnvPropertyTree()
-    {
-        return m_pEnvPropertyTree;
-    }
 
     void setEnvPropertyTree(IPropertyTree *pEnvTree)
     {

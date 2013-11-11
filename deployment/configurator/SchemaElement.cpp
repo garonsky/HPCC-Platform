@@ -11,6 +11,7 @@
 #include "SchemaAppInfo.hpp"
 #include "SchemaDocumentation.hpp"
 #include "DocumentationMarkup.hpp"
+#include "ConfigSchemaHelper.hpp"
 #include "DojoJSMarkup.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "DojoHelper.hpp"
@@ -525,7 +526,23 @@ void CElement::getQML(StringBuffer &strQML) const
 
 void CElement::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
-    strXPath.append("/").append(this->getName()).append("[").append(index).append("]");
+    StringBuffer subPath;
+    subPath.append(this->getName()).append("[").append(index).append("]");
+
+    strXPath.replaceString(subPath.str(),"");
+    strXPath.append("/").append(subPath);
+
+ /*   if (strXPath.length() > subPath.length())
+    {
+        StringBuffer myStr(copySubPath.substring(0, strXPath.length()-subPath.length())->toCharArray());
+
+        if (strcmp(myStr.str(), subPath.str()) != 0)
+        {
+            strXPath.append("/").append(this->getName()).append("[").append(index).append("]");
+        }
+    }*/
+
+    assert(strXPath.length() > 0);
 
     this->setEnvXPath(strXPath);
 
@@ -665,43 +682,45 @@ const char* CElementArray::getXML(const char* /*pComponent*/)
 
 void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
+    CConfigSchemaHelper::getInstance()->addMapOfXPathToElementArray(this->getEnvXPath(), this);
+
     QUICK_LOAD_ENV_XML(pEnvTree);
 
-    StringBuffer xpath(this->getEnvXPath());
-    xpath.append("/").append(item(0).getName()).append("[1]");
+    int nUniqueElements = this->length();
 
-    CConfigSchemaHelper::getInstance()->addMapOfXPathToElementArray(xpath.str(), this);
-
-    int idx = 2;
-
-    bool bOnce = true;
-
-    while (true)
+    for (int idx = 0; idx < nUniqueElements; idx++)
     {
-        StringBuffer xpath(this->getEnvXPath());
-        xpath.append("/").append(item(0).getName()).append("[").append(idx).append("]");
+        StringBuffer strXPath(this->item(idx).getEnvXPath());
 
-        if (pEnvTree->hasProp(xpath.str()) == false)
+        if (pEnvTree->hasProp(strXPath.str()) == false)
         {
-            break;
+            continue;
         }
-        else
+
+        int subIndex = 1;
+
+        do
         {
-            if (bOnce == true)
+            StringBuffer strEnvXPath(this->item(idx).getEnvXPath());
+            CConfigSchemaHelper::stripXPathIndex(strEnvXPath);
+
+            strEnvXPath.appendf("[%d]",subIndex);
+
+            if (pEnvTree->hasProp(strEnvXPath.str()) == false)
             {
-                this->remove(0);
-                bOnce = false;
+                break;
             }
-            CElement *pElement = CElement::load(this, this->getSchemaRoot(), this->item(0).getXSDXPath());
 
-            assert(pElement != NULL);
+            CElement *pElement = CElement::load(this, this->getSchemaRoot(), this->item(idx).getXSDXPath());
+            pElement->populateEnvXPath(strEnvXPath, (subIndex));
 
-            pElement->populateEnvXPath(this->getEnvXPath(), idx);
             pElement->loadXMLFromEnvXml(pEnvTree);
 
             this->append(*pElement);
+
+            subIndex++;
         }
-        idx++;
+        while (true);
     }
 }
 
@@ -741,6 +760,7 @@ CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const IPropertyTre
     pSchemaRoot->Link();
     pElemArray->setSchemaRoot(pSchemaRoot);
 
+    StringBuffer strXPathExt(xpath);
     pElemArray->setXSDXPath(xpath);
 
     Owned<IPropertyTreeIterator> elemIter = pSchemaRoot->getElements(xpath);
@@ -749,7 +769,7 @@ CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const IPropertyTre
 
     ForEach(*elemIter)
     {
-        StringBuffer strXPathExt(xpath);
+        strXPathExt.set(xpath);
         strXPathExt.appendf("[%d]", count);
 
         CElement *pElem = CElement::load(pElemArray, pSchemaRoot, strXPathExt.str());
@@ -769,4 +789,30 @@ CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const IPropertyTre
     SETPARENTNODE(pElemArray, pParentNode);
 
     return pElemArray;
+}
+
+int CElementArray::getCountOfSibilingElements(const char *pXPath)
+{
+    assert(pXPath != NULL && *pXPath != 0);
+
+    const CConfigSchemaHelper *pConfigHelper = CConfigSchemaHelper::getInstance();
+    const char* pXSDXPath = pConfigHelper->getElementArrayXSDXPathFromEnvXPath(pXPath);
+
+    assert(pXSDXPath != NULL && *pXSDXPath != 0);
+
+    int count = 0;
+
+    StringBuffer strXSDXPathExt(pXSDXPath);
+    strXSDXPathExt.append("[1]");
+
+    for (int idx=0; idx < this->length(); idx++)
+    {
+        if (strcmp(this->item(idx).getXSDXPath(), strXSDXPathExt.str()) == 0)
+        {
+            count++;
+        }
+    }
+
+    return count;
+
 }

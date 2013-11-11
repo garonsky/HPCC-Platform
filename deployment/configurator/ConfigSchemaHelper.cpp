@@ -802,7 +802,7 @@ void CConfigSchemaHelper::setEnvTreeProp(const char *pXPath, const char* pValue)
 }
 
 
-const char* CConfigSchemaHelper::getTableValue(const char* pXPath) const
+const char* CConfigSchemaHelper::getTableValue(const char* pXPath,  int nRow) const
 {
     assert(pXPath != NULL);
 
@@ -810,9 +810,29 @@ const char* CConfigSchemaHelper::getTableValue(const char* pXPath) const
 
     assert(pAttribute != NULL);
 
-    return (*pAttribute)->getEnvValueFromXML();
-}
+    if (nRow == 1)
+    {
+        return (*pAttribute)->getEnvValueFromXML();
+    }
+    else
+    {
+        StringBuffer strXPath(pXPath);
+        StringBuffer strXPathOrignal(pXPath);
 
+        CConfigSchemaHelper::stripXPathIndex(strXPath);
+        CConfigSchemaHelper::stripXPathIndex(strXPath);
+
+        strXPath.appendf("[%d]", nRow);
+
+        strXPath.append((String(strXPathOrignal).substring(strXPath.length(), strXPathOrignal.length()))->toCharArray());
+
+        pAttribute = (m_attributePtrsMap.getValue(strXPath.str()));
+
+        assert(pAttribute != NULL);
+
+        return (*pAttribute)->getEnvValueFromXML();
+    }
+}
 
 int CConfigSchemaHelper::getElementArraySize(const char *pXPath) const
 {
@@ -822,5 +842,43 @@ int CConfigSchemaHelper::getElementArraySize(const char *pXPath) const
 
     assert(pElementArray != NULL);
 
-    return (**pElementArray).length();
+    return (**pElementArray).getCountOfSibilingElements(pXPath);
+}
+
+const char* CConfigSchemaHelper::getAttributeXSDXPathFromEnvXPath(const char* pEnvXPath) const
+{
+    assert(pEnvXPath != NULL && *pEnvXPath != 0);
+
+    CAttribute **pAttribute = m_attributePtrsMap.getValue(pEnvXPath);
+
+    assert(pAttribute != NULL);
+
+    return (*pAttribute)->getXSDXPath();
+}
+
+const char* CConfigSchemaHelper::getElementArrayXSDXPathFromEnvXPath(const char* pEnvXPath) const
+{
+    assert(pEnvXPath != NULL && *pEnvXPath != 0);
+
+    CElementArray **pElementArray = m_elementArrayPtrsMap.getValue(pEnvXPath);
+
+    assert(pElementArray != NULL);
+
+    return (*pElementArray)->getXSDXPath();
+}
+
+
+void CConfigSchemaHelper::stripXPathIndex(StringBuffer &strXPath)
+{
+    int nLen = strXPath.length()-3;
+
+    while (nLen > 0)
+    {
+        if (strXPath[nLen] == '[')
+        {
+            strXPath.remove(nLen, strXPath.length()-nLen);
+            return;
+        }
+        nLen--;
+    }
 }

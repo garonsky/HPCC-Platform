@@ -24,7 +24,7 @@ QVariant TableDataModel::data(const QModelIndex & index, int role) const
 
     QHash<int, QByteArray> Roles = roleNames();
 
-    const char *pValue = pSchemaHelper->getTableValue(Roles.value(role));
+    const char *pValue = pSchemaHelper->getTableValue(Roles.value(role), index.row()+1);
 
     assert(pValue != NULL);
 
