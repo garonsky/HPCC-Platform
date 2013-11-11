@@ -25,7 +25,6 @@ enum eExceptionCodes
     EX_STR_XPATH_DOES_NOT_EXIST_IN_TREE,
     EX_STR_MISSING_REQUIRED_ATTRIBUTE,
     EX_STR_UNKNOWN,
-
     EX_STR_LAST_ENTRY
 };
 
@@ -52,7 +51,7 @@ const char pExceptionStringActionArray[EX_STR_LAST_ENTRY][MAX_EXCEPTION_STRING_L
                                                                                             /*** ADD CORRESPONDING ENTRY TO pExceptionStringActionArray ***/
                                                                                         };
 
-IException *MakeExceptionFromMap(int code, enum eExceptionCodes);
-IException *MakeExceptionFromMap(enum eExceptionCodes);
+IException *MakeExceptionFromMap(int code, enum eExceptionCodes, const char* pMsg = NULL);
+IException *MakeExceptionFromMap(enum eExceptionCodes, const char* pMsg = NULL);
 
 #endif // _EXCEPTION_STRINGS_HPP_
