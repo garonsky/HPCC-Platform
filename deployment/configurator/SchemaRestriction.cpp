@@ -11,7 +11,7 @@
 
 CRestriction::~CRestriction()
 {
-    CConfigSchemaHelper::getInstance()->removeMapOfRestrictionToXPath(this->getEnvXPath());
+    CConfigSchemaHelper::getInstance()->removeMapOfXPathToRestriction(this->getEnvXPath());
 }
 
 void CRestriction::dump(std::ostream& cout, unsigned int offset) const
@@ -129,7 +129,7 @@ void CRestriction::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     this->setEnvXPath(strXPath);
 
-    CConfigSchemaHelper::getInstance()->addMapOfRestrictionToXPath(this->getEnvXPath(), this);
+    CConfigSchemaHelper::getInstance()->addMapOfXPathToRestriction(this->getEnvXPath(), this);
 
     if (this->m_pEnumerationArray != NULL)
     {

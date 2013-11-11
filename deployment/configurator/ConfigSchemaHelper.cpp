@@ -718,7 +718,7 @@ const char* CConfigSchemaHelper::getToolTipJS() const
     return strJS.str();
 }
 
-void CConfigSchemaHelper::addMapOfAttributeToXPath(const char*pXPath, CAttribute *pAttribute)
+void CConfigSchemaHelper::addMapOfXPathToAttribute(const char*pXPath, CAttribute *pAttribute)
 {
     assert (pAttribute != NULL);
     assert(pXPath != NULL && *pXPath != 0);
@@ -733,15 +733,28 @@ void CConfigSchemaHelper::addMapOfAttributeToXPath(const char*pXPath, CAttribute
     m_strArrayEnvXPaths.append(pXPath);
 }
 
-void CConfigSchemaHelper::removeMapOfAttributeToXPath(const char*pXPath)
+void CConfigSchemaHelper::removeMapOfXPathToAttribute(const char*pXPath)
 {
     assert (m_attributePtrsMap.find(pXPath) != NULL);
 
     m_attributePtrsMap.remove(pXPath);
 }
 
+void CConfigSchemaHelper::addMapOfXPathToElementArray(const char*pXPath, CElementArray *pElementArray)
+{
+    assert (pElementArray != NULL);
+    assert(pXPath != NULL && *pXPath != 0);
 
-void CConfigSchemaHelper::addMapOfRestrictionToXPath(const char*pXPath, CRestriction *pRestriction)
+    m_elementArrayPtrsMap.setValue(pXPath, pElementArray);
+}
+
+void CConfigSchemaHelper::removeMapOfXPathToElementArray(const char*pXPath)
+{
+    assert (m_elementArrayPtrsMap.find(pXPath) != NULL);
+    m_elementArrayPtrsMap.remove(pXPath);
+}
+
+void CConfigSchemaHelper::addMapOfXPathToRestriction(const char*pXPath, CRestriction *pRestriction)
 {
     assert (pRestriction != NULL);
     assert(pXPath != NULL && *pXPath != 0);
@@ -750,7 +763,7 @@ void CConfigSchemaHelper::addMapOfRestrictionToXPath(const char*pXPath, CRestric
     m_restrictionPtrsMap.setValue(pXPath, pRestriction);
 }
 
-void CConfigSchemaHelper::removeMapOfRestrictionToXPath(const char*pXPath)
+void CConfigSchemaHelper::removeMapOfXPathToRestriction(const char*pXPath)
 {
     assert(pXPath != NULL && *pXPath != 0);
 
@@ -798,4 +811,16 @@ const char* CConfigSchemaHelper::getTableValue(const char* pXPath) const
     assert(pAttribute != NULL);
 
     return (*pAttribute)->getEnvValueFromXML();
+}
+
+
+int CConfigSchemaHelper::getElementArraySize(const char *pXPath) const
+{
+    assert(pXPath != NULL);
+
+    CElementArray **pElementArray = m_elementArrayPtrsMap.getValue(pXPath);
+
+    assert(pElementArray != NULL);
+
+    return (**pElementArray).length();
 }

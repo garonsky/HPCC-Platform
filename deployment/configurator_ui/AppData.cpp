@@ -7,7 +7,9 @@ TableDataModel::TableDataModel()
 
 int TableDataModel::rowCount(const QModelIndex & parent) const
 {
-    return 1;
+    CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
+
+    return pSchemaHelper->getElementArraySize(this->m_pActiveTable);
 }
 
 int TableDataModel::columnCount(const QModelIndex & parent) const

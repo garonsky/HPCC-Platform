@@ -6,6 +6,8 @@
 #include <QAbstractListModel>
 #include "ConfigSchemaHelper.hpp"
 
+#define BUFFER_SIZE 2048
+
 class TableDataModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -20,11 +22,25 @@ public:
 
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const;
 
+    QString getActiveTable()
+    {
+        return m_qstrActiveTable;
+    }
+
+    Q_INVOKABLE void setActiveTable(const QString &XPath)
+    {
+        m_qstrActiveTable = XPath;
+        strncpy(m_pActiveTable, XPath.toStdString().c_str(), XPath.length());
+    }
+
 protected:
 
     QHash<int, QByteArray> roleNames() const;
 
 private:
+
+    QString m_qstrActiveTable;
+    char m_pActiveTable[BUFFER_SIZE];
 };
 
 class ApplicationData : public QObject
@@ -33,7 +49,7 @@ class ApplicationData : public QObject
 public:
     Q_INVOKABLE QString getValue(QString XPath)
     {
-        char pValue[1024];
+        char pValue[BUFFER_SIZE];
 
         CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
 
@@ -53,7 +69,7 @@ public:
 
     Q_INVOKABLE int getIndex(QString XPath)
     {
-        char pValue[1024];
+        char pValue[BUFFER_SIZE];
 
         CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
 

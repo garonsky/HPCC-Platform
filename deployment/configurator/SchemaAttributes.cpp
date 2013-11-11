@@ -12,7 +12,7 @@
 
 CAttribute::~CAttribute()
 {
-    CConfigSchemaHelper::getInstance()->removeMapOfAttributeToXPath(this->getEnvXPath());
+    CConfigSchemaHelper::getInstance()->removeMapOfXPathToAttribute(this->getEnvXPath());
 }
 
 const char* CAttribute::getTitle() const
@@ -288,7 +288,7 @@ void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     strXPath.append("/").append("[@").append(this->getName()).append("]");
     this->setEnvXPath(strXPath.str());
 
-    CConfigSchemaHelper::getInstance()->addMapOfAttributeToXPath(this->getEnvXPath(), this);
+    CConfigSchemaHelper::getInstance()->addMapOfXPathToAttribute(this->getEnvXPath(), this);
 
     if (this->m_pSimpleTypeArray != NULL)
     {
@@ -668,6 +668,12 @@ void CAttributeArray::getQML(StringBuffer &strQML) const
         DEBUG_MARK_QML;
 
         strQML.append(QML_MODEL).append(QML_TABLE_DATA_MODEL);
+        DEBUG_MARK_QML;
+
+        const CElement *pElement = dynamic_cast<const CElement*>(this->getParentNodeByType(XSD_ELEMENT));
+        assert(pElement != NULL);
+
+        strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(pElement->getEnvXPath()).append(QML_PROPERTY_STRING_TABLE_END);
         DEBUG_MARK_QML;
 
         QUICK_QML_ARRAY(strQML);

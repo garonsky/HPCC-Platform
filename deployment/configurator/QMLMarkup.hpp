@@ -5,6 +5,9 @@ class StringBuffer;
 class CAttribute;
 
 static const char* QML_TABLE_DATA_MODEL(" tableDataModel\n");
+static const char* QML_PROPERTY_STRING_TABLE_BEGIN("\
+        property string table: tableDataModel.setActiveTable(\"");
+static const char* QML_PROPERTY_STRING_TABLE_END("\")\n");
 
 static const char* QML_APP_DATA_GET_VALUE_BEGIN(" ApplicationData.getValue(\"");
 static const char* QML_APP_DATA_GET_VALUE_END("\")\n");

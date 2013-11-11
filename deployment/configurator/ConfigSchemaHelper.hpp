@@ -78,11 +78,14 @@ public:
 
     void setEnvTreeProp(const char *pXPath, const char* pValue);
 
-    void addMapOfAttributeToXPath(const char*pXPath, CAttribute *pAttribute);
-    void removeMapOfAttributeToXPath(const char*pXPath);
+    void addMapOfXPathToAttribute(const char*pXPath, CAttribute *pAttribute);
+    void removeMapOfXPathToAttribute(const char*pXPath);
 
-    void addMapOfRestrictionToXPath(const char*pXPath, CRestriction *pRestriction);
-    void removeMapOfRestrictionToXPath(const char*pXPath);
+    void addMapOfXPathToRestriction(const char*pXPath, CRestriction *pRestriction);
+    void removeMapOfXPathToRestriction(const char*pXPath);
+
+    void addMapOfXPathToElementArray(const char*pXPath, CElementArray *pElementArray);
+    void removeMapOfXPathToElementArray(const char*pXPath);
 
     bool getValue(const char *pXPath, char *pValue);
     void setValue(const char *pXPath, const char *pValue);
@@ -104,6 +107,8 @@ public:
         return m_strArrayEnvXPaths.item(idx);
     }
 
+    int getElementArraySize(const char *pXPath) const;
+
 protected:
 
     CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = NULL);
@@ -116,6 +121,7 @@ protected:
     MapStringTo<CAttributeGroup*> m_attributeGroupTypePtrsMap;
     MapStringTo<CAttribute*> m_attributePtrsMap;
     MapStringTo<CRestriction*> m_restrictionPtrsMap;
+    MapStringTo<CElementArray*> m_elementArrayPtrsMap;
     CIArrayOf<CExtension> m_extensionArr;
     CIArrayOf<CAttributeGroup> m_attributeGroupArr;
     StringBuffer m_buildSetPath;

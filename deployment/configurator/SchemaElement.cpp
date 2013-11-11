@@ -628,12 +628,12 @@ void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     assert(index == 1);  // Only 1 array of elements per node
 
+    this->setEnvXPath(strXPath);
+
     for (int idx=0; idx < this->length(); idx++)
     {
         (this->item(idx)).populateEnvXPath(strXPath, 1);
     }
-
-    this->setEnvXPath(strXPath);
 }
 
 void CElementArray::traverseAndProcessNodes() const
@@ -667,8 +667,16 @@ void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
     QUICK_LOAD_ENV_XML(pEnvTree);
 
+    StringBuffer xpath(this->getEnvXPath());
+    xpath.append("/").append(item(0).getName()).append("[1]");
+
+    CConfigSchemaHelper::getInstance()->addMapOfXPathToElementArray(xpath.str(), this);
+
     int idx = 2;
-    while (1)
+
+    bool bOnce = true;
+
+    while (true)
     {
         StringBuffer xpath(this->getEnvXPath());
         xpath.append("/").append(item(0).getName()).append("[").append(idx).append("]");
@@ -679,6 +687,11 @@ void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         }
         else
         {
+            if (bOnce == true)
+            {
+                this->remove(0);
+                bOnce = false;
+            }
             CElement *pElement = CElement::load(this, this->getSchemaRoot(), this->item(0).getXSDXPath());
 
             assert(pElement != NULL);
