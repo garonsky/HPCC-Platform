@@ -3,7 +3,29 @@
 #include <QGuiApplication>
 #include <QDateTime>
 #include <QString>
+#include <QAbstractListModel>
 #include "ConfigSchemaHelper.hpp"
+
+class TableDataModel : public QAbstractListModel
+{
+    Q_OBJECT
+
+public:
+
+    TableDataModel();
+
+    int rowCount(const QModelIndex & parent = QModelIndex()) const;
+
+    int columnCount(const QModelIndex & parent = QModelIndex()) const;
+
+    QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const;
+
+protected:
+
+    QHash<int, QByteArray> roleNames() const;
+
+private:
+};
 
 class ApplicationData : public QObject
 {

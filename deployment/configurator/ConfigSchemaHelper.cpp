@@ -730,6 +730,7 @@ void CConfigSchemaHelper::addMapOfAttributeToXPath(const char*pXPath, CAttribute
     // should I remove automatically?
 
     m_attributePtrsMap.setValue(pXPath, pAttribute);
+    m_strArrayEnvXPaths.append(pXPath);
 }
 
 void CConfigSchemaHelper::removeMapOfAttributeToXPath(const char*pXPath)
@@ -785,4 +786,16 @@ void CConfigSchemaHelper::setEnvTreeProp(const char *pXPath, const char* pValue)
     pFileIO.setown(pFile->open(IFOcreaterw));
 
     pFileIO->write(0, strXML.length(), strXML.str());
+}
+
+
+const char* CConfigSchemaHelper::getTableValue(const char* pXPath) const
+{
+    assert(pXPath != NULL);
+
+    CAttribute **pAttribute = (m_attributePtrsMap.getValue(pXPath));
+
+    assert(pAttribute != NULL);
+
+    return (*pAttribute)->getEnvValueFromXML();
 }

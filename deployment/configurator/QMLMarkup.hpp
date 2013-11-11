@@ -4,6 +4,8 @@
 class StringBuffer;
 class CAttribute;
 
+static const char* QML_TABLE_DATA_MODEL(" tableDataModel\n");
+
 static const char* QML_APP_DATA_GET_VALUE_BEGIN(" ApplicationData.getValue(\"");
 static const char* QML_APP_DATA_GET_VALUE_END("\")\n");
 static const char* QML_APP_DATA_SET_VALUE_BEGIN(" ApplicationData.setValue(\"");
@@ -15,6 +17,12 @@ static const char* QML_APP_DATA_SET_INDEX_END(".currentIndex)\n");
 
 static const char* QML_ON_ACCEPTED("\n\
         onAccepted: ");
+
+static const char* QML_MODEL("\n\
+       model: ");
+static const char* QML_ROLE_BEGIN("\
+            role: \"");
+static const char* QML_ROLE_END("\"\n");
 
 static const char* QML_ON_CURRENT_INDEX_CHANGED("\n\
             onCurrentIndexChanged: ");
@@ -400,7 +408,7 @@ public:
 
     static void getToolMouseArea(StringBuffer &strQML, const char *pToolTip, const char *pRectangleID, const char* pTimerID_1, const char* pTimerID_2, const char *pMouseAreaID, const char* pTextAreaID);
 
-    static void getTableViewColumn(StringBuffer &strQML, const char* colTitle);
+    static void getTableViewColumn(StringBuffer &strQML, const char* colTitle, const char *pRole);
 
     static unsigned getRandomID(StringBuffer *pID = 0);
 

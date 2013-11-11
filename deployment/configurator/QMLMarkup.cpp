@@ -86,13 +86,16 @@ void CQMLMarkupHelper::getToolMouseArea(StringBuffer &strQML, const char *pToolT
             .append(QML_MOUSE_AREA_END);
 }
 
-void CQMLMarkupHelper::getTableViewColumn(StringBuffer &strQML, const char* colTitle)
+void CQMLMarkupHelper::getTableViewColumn(StringBuffer &strQML, const char* colTitle, const char *pRole)
 {
     assert(colTitle != NULL);
+    assert(pRole != NULL);
 
-    if (colTitle != NULL)
+    if (colTitle != NULL && pRole != NULL)
     {
-        strQML.append(QML_TABLE_VIEW_COLUMN_BEGIN).append(QML_TABLE_VIEW_COLUMN_TITLE_BEGIN).append(colTitle).append(QML_TABLE_VIEW_COLUMN_TITLE_END).append(QML_TABLE_VIEW_COLUMN_END);
+        strQML.append(QML_TABLE_VIEW_COLUMN_BEGIN).append(QML_TABLE_VIEW_COLUMN_TITLE_BEGIN).append(colTitle).append(QML_TABLE_VIEW_COLUMN_TITLE_END);
+        strQML.append(QML_ROLE_BEGIN).append(pRole).append(QML_ROLE_END);
+        strQML.append(QML_TABLE_VIEW_COLUMN_END);
         DEBUG_MARK_QML;
     }
 }

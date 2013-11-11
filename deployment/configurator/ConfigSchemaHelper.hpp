@@ -89,6 +89,21 @@ public:
     int getIndex(const char *pXPath);
     void setIndex(const char *pXPath, int newIndex);
 
+    const char* getTableValue(const char* pXPath) const;
+
+    int getAttributeXPathSize() const
+    {
+        return m_strArrayEnvXPaths.length();
+    }
+
+    const char* getAttributeXPaths(int idx) const
+    {
+        assert(idx >= 0);
+        assert(m_strArrayEnvXPaths.length() > idx);
+
+        return m_strArrayEnvXPaths.item(idx);
+    }
+
 protected:
 
     CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = NULL);
@@ -105,6 +120,7 @@ protected:
     CIArrayOf<CAttributeGroup> m_attributeGroupArr;
     StringBuffer m_buildSetPath;
     StringArray m_strToolTipsJS;
+    StringArray m_strArrayEnvXPaths;
 
     IPropertyTree* getEnvPropertyTree()
     {

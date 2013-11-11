@@ -1,12 +1,11 @@
 #include <QtQuick/QQuickView>
 #include <QGuiApplication>
-#include "configuratorui.hpp"
 #include <QQmlContext>
-
 #include <QObject>
 #include <QtQuick/QQuickView>
 #include <QGuiApplication>
-#include "appdata.hpp"
+#include "ConfiguratorUI.hpp"
+#include "AppData.hpp"
 
 int main2(int argc, char *argv[])
 {
@@ -15,9 +14,11 @@ int main2(int argc, char *argv[])
     QQuickView view;
 
     ApplicationData data;
+    TableDataModel tableDataModel;
 
 
     view.rootContext()->setContextProperty("ApplicationData", &data);
+    view.rootContext()->setContextProperty("tableDataModel", &tableDataModel);
     view.setResizeMode(QQuickView::SizeRootObjectToView);
     view.setSource(QUrl::fromLocalFile(*argv));
     view.show();

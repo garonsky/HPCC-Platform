@@ -6,7 +6,7 @@
 #include "ExceptionStrings.hpp"
 #include <iostream>
 #include "jfile.hpp"
-#include "../configurator_ui/configuratorui.hpp"
+#include "../configurator_ui/ConfiguratorUI.hpp"
 
 #define BUFF_SIZE 1024
 

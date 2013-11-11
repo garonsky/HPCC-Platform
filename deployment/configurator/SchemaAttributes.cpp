@@ -220,7 +220,7 @@ void CAttribute::getQML(StringBuffer &strQML) const
 
     if (CQMLMarkupHelper::isTableRequired(this) == true)
     {
-        CQMLMarkupHelper::getTableViewColumn(strQML, this->getTitle());
+        CQMLMarkupHelper::getTableViewColumn(strQML, this->getTitle(), this->getEnvXPath());
         DEBUG_MARK_QML;
     }
     else
@@ -665,6 +665,9 @@ void CAttributeArray::getQML(StringBuffer &strQML) const
         DEBUG_MARK_QML;
 
         strQML.append(QML_TABLE_VIEW_BEGIN);
+        DEBUG_MARK_QML;
+
+        strQML.append(QML_MODEL).append(QML_TABLE_DATA_MODEL);
         DEBUG_MARK_QML;
 
         QUICK_QML_ARRAY(strQML);
