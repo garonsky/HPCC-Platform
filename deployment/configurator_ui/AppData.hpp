@@ -31,6 +31,7 @@ public:
     {
         m_qstrActiveTable = XPath;
         strncpy(m_pActiveTable, XPath.toStdString().c_str(), XPath.length());
+        m_pActiveTable[XPath.length()] = 0;
     }
 
 protected:

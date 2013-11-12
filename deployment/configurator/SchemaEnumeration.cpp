@@ -192,11 +192,9 @@ int CEnumerationArray::getEnvValueNodeIndex() const
         }
     }
 
-    assert(false); // should never get here
+    //assert(false); // should never get here?
 
-    //throw MakeExceptionFromMap()
-
-    //return 1;
+    return 1;
 }
 
 void CEnumerationArray::setEnvValueNodeIndex(int index)

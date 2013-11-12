@@ -115,8 +115,6 @@ void CAttributeGroup::getQML(StringBuffer &strQML) const
 
 void CAttributeGroup::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
-    //strXPath.append("/").append(this->getRef());
-
     if (this->getRef() != NULL && this->getRef()[0] != 0 && m_pRefAttributeGroup != NULL)
     {
         if (m_pRefAttributeGroup->getConstAttributeArray() != NULL)
@@ -384,7 +382,10 @@ void CAttributeGroupArray::populateEnvXPath(StringBuffer strXPath, unsigned int 
 {
     assert(index == 1);  // Only 1 array of elements per node
 
-    QUICK_ENV_XPATH(strXPath)
+    for (int idx=0; idx < this->length(); idx++)
+    {
+        (this->item(idx)).populateEnvXPath(strXPath, 1);
+    }
 
     this->setEnvXPath(strXPath);
 }

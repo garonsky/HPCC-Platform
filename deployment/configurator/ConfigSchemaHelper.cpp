@@ -840,7 +840,11 @@ int CConfigSchemaHelper::getElementArraySize(const char *pXPath) const
 
     CElementArray **pElementArray = m_elementArrayPtrsMap.getValue(pXPath);
 
-    assert(pElementArray != NULL);
+    //assert(pElementArray != NULL);
+    if (pElementArray == NULL)
+    {
+        return 0;
+    }
 
     return (**pElementArray).getCountOfSibilingElements(pXPath);
 }
@@ -876,7 +880,7 @@ void CConfigSchemaHelper::stripXPathIndex(StringBuffer &strXPath)
     {
         if (strXPath[nLen] == '[')
         {
-            strXPath.remove(nLen, strXPath.length()-nLen);
+            strXPath.reverse().remove(0,strXPath.length()-nLen).reverse();
             return;
         }
         nLen--;

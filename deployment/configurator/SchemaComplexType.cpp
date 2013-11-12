@@ -436,9 +436,9 @@ void CComplexTypeArray::populateEnvXPath(StringBuffer strXPath, unsigned int ind
 {
     assert(index == 1);  // Only 1 array of elements per node
 
-    QUICK_ENV_XPATH(strXPath)
-
     this->setEnvXPath(strXPath);
+
+    QUICK_ENV_XPATH(strXPath)
 }
 
 

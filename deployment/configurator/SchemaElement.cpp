@@ -526,23 +526,9 @@ void CElement::getQML(StringBuffer &strQML) const
 
 void CElement::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
-    StringBuffer subPath;
-    subPath.append(this->getName()).append("[").append(index).append("]");
-
-    strXPath.replaceString(subPath.str(),"");
-    strXPath.append("/").append(subPath);
-
- /*   if (strXPath.length() > subPath.length())
-    {
-        StringBuffer myStr(copySubPath.substring(0, strXPath.length()-subPath.length())->toCharArray());
-
-        if (strcmp(myStr.str(), subPath.str()) != 0)
-        {
-            strXPath.append("/").append(this->getName()).append("[").append(index).append("]");
-        }
-    }*/
-
     assert(strXPath.length() > 0);
+
+    strXPath.append("/").append(this->getName()).append("[").append(index).append("]");
 
     this->setEnvXPath(strXPath);
 
@@ -553,10 +539,6 @@ void CElement::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     if (m_pAttributeArray != NULL)
     {
         m_pAttributeArray->populateEnvXPath(strXPath);
-    }
-    if (m_pAnnotation != NULL)
-    {
-        m_pAnnotation->populateEnvXPath(strXPath);
     }
 }
 
@@ -579,16 +561,6 @@ void CElement::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         try
         {
             m_pAttributeArray->loadXMLFromEnvXml(pEnvTree);
-        }
-        catch (...)
-        {
-        }
-    }
-    if (m_pAnnotation != NULL)
-    {
-        try
-        {
-            m_pAnnotation->loadXMLFromEnvXml(pEnvTree);
         }
         catch (...)
         {
@@ -647,6 +619,10 @@ void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 
     this->setEnvXPath(strXPath);
 
+    StringBuffer mapKey(strXPath);
+    mapKey.appendf("/%s[1]", this->item(0).getName());
+    CConfigSchemaHelper::getInstance()->addMapOfXPathToElementArray(mapKey, this);
+
     for (int idx=0; idx < this->length(); idx++)
     {
         (this->item(idx)).populateEnvXPath(strXPath, 1);
@@ -682,10 +658,6 @@ const char* CElementArray::getXML(const char* /*pComponent*/)
 
 void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
-    CConfigSchemaHelper::getInstance()->addMapOfXPathToElementArray(this->getEnvXPath(), this);
-
-    QUICK_LOAD_ENV_XML(pEnvTree);
-
     int nUniqueElements = this->length();
 
     for (int idx = 0; idx < nUniqueElements; idx++)
@@ -711,12 +683,19 @@ void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
                 break;
             }
 
-            CElement *pElement = CElement::load(this, this->getSchemaRoot(), this->item(idx).getXSDXPath());
-            pElement->populateEnvXPath(strEnvXPath, (subIndex));
+            CElement *pElement = NULL;
+            if (subIndex > 1)
+            {
+                pElement = CElement::load(this, this->getSchemaRoot(), this->item(idx).getXSDXPath());
+                pElement->populateEnvXPath(this->getEnvXPath(), subIndex);
 
+                this->append(*pElement);
+            }
+            else
+            {
+                pElement = &(this->item(idx));
+            }
             pElement->loadXMLFromEnvXml(pEnvTree);
-
-            this->append(*pElement);
 
             subIndex++;
         }
