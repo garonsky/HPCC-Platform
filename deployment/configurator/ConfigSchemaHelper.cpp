@@ -824,7 +824,10 @@ const char* CConfigSchemaHelper::getTableValue(const char* pXPath,  int nRow) co
 
         strXPath.appendf("[%d]", nRow);
 
-        strXPath.append((String(strXPathOrignal).substring(strXPath.length(), strXPathOrignal.length()))->toCharArray());
+        char pTemp[64];
+        int offset = strlen(itoa(nRow, pTemp, 10)) - 1;
+
+        strXPath.append((String(strXPathOrignal).substring(strXPath.length()-offset, strXPathOrignal.length()))->toCharArray());
 
         pAttribute = (m_attributePtrsMap.getValue(strXPath.str()));
 
@@ -846,7 +849,7 @@ int CConfigSchemaHelper::getElementArraySize(const char *pXPath) const
         return 0;
     }
 
-    return (**pElementArray).getCountOfSibilingElements(pXPath);
+    return (**pElementArray).getCountOfSiblingElements(pXPath);
 }
 
 const char* CConfigSchemaHelper::getAttributeXSDXPathFromEnvXPath(const char* pEnvXPath) const

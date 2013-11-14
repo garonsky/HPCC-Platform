@@ -673,10 +673,10 @@ void CAttributeArray::getQML(StringBuffer &strQML) const
         strQML.append(QML_MODEL).append(QML_TABLE_DATA_MODEL);
         DEBUG_MARK_QML;
 
-        const CElementArray *pElementArray = dynamic_cast<const CElementArray*>(this->getParentNodeByType(XSD_ELEMENT_ARRAY));
-        assert(pElementArray != NULL);
+        const CElement *pElement = dynamic_cast<const CElement*>(this->getParentNodeByType(XSD_ELEMENT));
+        assert(pElement != NULL);
 
-        strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(this->getEnvXPath()).append(QML_PROPERTY_STRING_TABLE_END);
+        strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(pElement->getXSDXPath()).append(QML_PROPERTY_STRING_TABLE_END);
         DEBUG_MARK_QML;
 
         QUICK_QML_ARRAY(strQML);
@@ -743,7 +743,10 @@ void CAttributeArray::getQML(StringBuffer &strQML) const
             const CElementArray *pElementArray = dynamic_cast<const CElementArray*>(this->getParentNodeByType(XSD_ELEMENT_ARRAY));
             assert(pElementArray != NULL);
 
-            strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(this->getEnvXPath()).append(QML_PROPERTY_STRING_TABLE_END);
+            const CElement *pElement = dynamic_cast<const CElement*>(this->getParentNodeByType(XSD_ELEMENT));
+            assert(pElement != NULL);
+
+            strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(pElement->getXSDXPath()).append(QML_PROPERTY_STRING_TABLE_END);
             DEBUG_MARK_QML;
 
             QUICK_QML_ARRAY(strQML);

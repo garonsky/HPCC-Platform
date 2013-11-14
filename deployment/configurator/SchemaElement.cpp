@@ -620,12 +620,13 @@ void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     this->setEnvXPath(strXPath);
 
     StringBuffer mapKey(strXPath);
-    mapKey.appendf("/%s[1]", this->item(0).getName());
-    CConfigSchemaHelper::getInstance()->addMapOfXPathToElementArray(mapKey, this);
 
     for (int idx=0; idx < this->length(); idx++)
     {
         (this->item(idx)).populateEnvXPath(strXPath, 1);
+
+        mapKey.setf("%s[%d]", this->getXSDXPath(), idx+1);//, this->item(idx).getName());
+        CConfigSchemaHelper::getInstance()->addMapOfXPathToElementArray(mapKey.str(), this);
     }
 }
 
@@ -770,28 +771,19 @@ CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const IPropertyTre
     return pElemArray;
 }
 
-int CElementArray::getCountOfSibilingElements(const char *pXPath)
+int CElementArray::getCountOfSiblingElements(const char *pXPath)
 {
     assert(pXPath != NULL && *pXPath != 0);
 
-    const CConfigSchemaHelper *pConfigHelper = CConfigSchemaHelper::getInstance();
-    const char* pXSDXPath = pConfigHelper->getElementArrayXSDXPathFromEnvXPath(pXPath);
-
-    assert(pXSDXPath != NULL && *pXSDXPath != 0);
-
     int count = 0;
-
-    StringBuffer strXSDXPathExt(pXSDXPath);
-    strXSDXPathExt.append("[1]");
 
     for (int idx=0; idx < this->length(); idx++)
     {
-        if (strcmp(this->item(idx).getXSDXPath(), strXSDXPathExt.str()) == 0)
+        if (strcmp(this->item(idx).getXSDXPath(), pXPath) == 0)
         {
             count++;
         }
     }
 
     return count;
-
 }

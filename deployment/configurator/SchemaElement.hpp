@@ -110,7 +110,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    virtual int getCountOfSibilingElements(const char *pXPath);
+    virtual int getCountOfSiblingElements(const char *pXPath);
 
     virtual void setSchemaRoot(const IPropertyTree *pSchemaRoot)
     {
