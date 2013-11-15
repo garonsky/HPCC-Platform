@@ -35,7 +35,7 @@ static const char* DJ_START("define([\n\
 \n\
                                  \"hpcc/_TabContainerWidget\",\n\
 \n\
-                                 \"dojo/text!../templates/GlebWidget4.html\"\n\
+                                 \"dojo/text!../templates/ConfiguratorWidget.html\"\n\
 \n\
                              ], function (declare, dom, domConstruct, Memory,\n\
                                      TableContainer, DataGrid,\n\
@@ -45,10 +45,10 @@ static const char* DJ_START("define([\n\
                                      _TabConterWidget,\n\
                                      template) {\n\
 \n\
-                                 return declare(\"GlebWidget4\", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {\n\
+                                 return declare(\"ConfiguratorWidget\", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {\n\
                                      templateString: template,\n\
-                                     baseClass: \"GlebWidget4\",\n\
-                                 name: \"GlebWidget4\",\n\
+                                     baseClass: \"ConfiguratorWidget\",\n\
+                                 name: \"ConfiguratorWidget\",\n\
 \n\
 \n\
                                      postCreate: function (args) {\n\
