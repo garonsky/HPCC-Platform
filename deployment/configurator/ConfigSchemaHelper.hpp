@@ -15,6 +15,22 @@
 
 class CSimpleType;
 
+
+#define MAX_ARRAY_X 10
+#define MAX_ARRAY_Y 100
+
+const char modelNames[MAX_ARRAY_X][MAX_ARRAY_Y] = {"tableDataModel0",
+                                                   "tableDataModel1",
+                                                   "tableDataModel2",
+                                                   "tableDataModel3",
+                                                   "tableDataModel4",
+                                                   "tableDataModel5",
+                                                   "tableDataModel6",
+                                                   "tableDataModel7",
+                                                   "tableDataModel8",
+                                                   "tableDataModel9" };
+
+
 class CConfigSchemaHelper : public CInterface//, CXMLConfiguration
 {
 public:
@@ -119,6 +135,26 @@ public:
         return m_pEnvPropertyTree;
     }
 
+    int getNumberOfTables() const
+    {
+/*        HashIterator iter(m_elementArrayPtrsMap);
+
+        int count = 0;
+
+        ForEach(iter)
+        {
+            count++;
+        }
+
+        return count;*/
+        return m_nTables;
+    }
+
+    void incTables()
+    {
+        m_nTables++;
+    }
+
 protected:
 
     CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = NULL);
@@ -158,6 +194,7 @@ protected:
 private:
 
     static CConfigSchemaHelper* s_pCConfigSchemaHelper;
+    int m_nTables;
     const char *m_pBasePath;
 
     StringBuffer m_strEnvFilePath;
@@ -169,6 +206,7 @@ private:
         assert(m_pBasePath == NULL); // why ever set this twice?
         m_pBasePath = pBasePath;
     }
+
 };
 
 #endif // _CONFIG_SCHEMA_HELPER_HPP_

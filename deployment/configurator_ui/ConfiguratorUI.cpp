@@ -4,8 +4,10 @@
 #include <QObject>
 #include <QtQuick/QQuickView>
 #include <QGuiApplication>
+#include <QString>
 #include "ConfiguratorUI.hpp"
 #include "AppData.hpp"
+
 
 int main2(int argc, char *argv[])
 {
@@ -14,11 +16,21 @@ int main2(int argc, char *argv[])
     QQuickView view;
 
     ApplicationData data;
-    TableDataModel tableDataModel;
 
+
+    int nTables = CConfigSchemaHelper::getInstance(0)->getNumberOfTables();
+
+    TableDataModel tableDataModel[10];
+
+    assert(nTables <= MAX_ARRAY_X);
 
     view.rootContext()->setContextProperty("ApplicationData", &data);
-    view.rootContext()->setContextProperty("tableDataModel", &tableDataModel);
+
+    for (int idx = 0; idx < MAX_ARRAY_X; idx++)
+    {
+        view.rootContext()->setContextProperty(modelNames[idx], &(tableDataModel[idx]));
+    }
+
     view.setResizeMode(QQuickView::SizeRootObjectToView);
     view.setSource(QUrl::fromLocalFile(*argv));
     view.show();

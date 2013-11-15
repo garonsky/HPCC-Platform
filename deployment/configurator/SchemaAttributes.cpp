@@ -670,14 +670,19 @@ void CAttributeArray::getQML(StringBuffer &strQML) const
         strQML.append(QML_TABLE_VIEW_BEGIN);
         DEBUG_MARK_QML;
 
-        strQML.append(QML_MODEL).append(QML_TABLE_DATA_MODEL);
+        //strQML.append(QML_MODEL).append(QML_TABLE_DATA_MODEL);
+        strQML.append(QML_MODEL).append(modelNames[CConfigSchemaHelper::getInstance(0)->getNumberOfTables()]);
+        //CConfigSchemaHelper::getInstance(0)->incTables();
         DEBUG_MARK_QML;
 
         const CElement *pElement = dynamic_cast<const CElement*>(this->getParentNodeByType(XSD_ELEMENT));
         assert(pElement != NULL);
 
-        strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(pElement->getXSDXPath()).append(QML_PROPERTY_STRING_TABLE_END);
+        //strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(pElement->getXSDXPath()).append(QML_PROPERTY_STRING_TABLE_END);
+        strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(modelNames[CConfigSchemaHelper::getInstance(0)->getNumberOfTables()]).append(QML_PROPERTY_STRING_TABLE_PART_1).append(pElement->getXSDXPath()).append(QML_PROPERTY_STRING_TABLE_END);
         DEBUG_MARK_QML;
+
+        CConfigSchemaHelper::getInstance(0)->incTables();
 
         QUICK_QML_ARRAY(strQML);
         DEBUG_MARK_QML;
@@ -737,7 +742,10 @@ void CAttributeArray::getQML(StringBuffer &strQML) const
             strQML.append(QML_TABLE_VIEW_BEGIN);
             DEBUG_MARK_QML;
 
-            strQML.append(QML_MODEL).append(QML_TABLE_DATA_MODEL);
+            //strQML.append(QML_MODEL).append(QML_TABLE_DATA_MODEL);
+            //CConfigSchemaHelper::getInstance(0)->incTables();
+            //DEBUG_MARK_QML;
+            strQML.append(QML_MODEL).append(modelNames[CConfigSchemaHelper::getInstance(0)->getNumberOfTables()]);
             DEBUG_MARK_QML;
 
             const CElementArray *pElementArray = dynamic_cast<const CElementArray*>(this->getParentNodeByType(XSD_ELEMENT_ARRAY));
@@ -746,8 +754,11 @@ void CAttributeArray::getQML(StringBuffer &strQML) const
             const CElement *pElement = dynamic_cast<const CElement*>(this->getParentNodeByType(XSD_ELEMENT));
             assert(pElement != NULL);
 
-            strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(pElement->getXSDXPath()).append(QML_PROPERTY_STRING_TABLE_END);
+            //strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(pElement->getXSDXPath()).append(QML_PROPERTY_STRING_TABLE_END);
+            strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(modelNames[CConfigSchemaHelper::getInstance(0)->getNumberOfTables()]).append(QML_PROPERTY_STRING_TABLE_PART_1).append(pElement->getXSDXPath()).append(QML_PROPERTY_STRING_TABLE_END);
             DEBUG_MARK_QML;
+
+            CConfigSchemaHelper::getInstance(0)->incTables();
 
             QUICK_QML_ARRAY(strQML);
 

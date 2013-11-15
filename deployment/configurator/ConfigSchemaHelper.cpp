@@ -20,6 +20,7 @@ CConfigSchemaHelper* CConfigSchemaHelper::getInstance(const char* pDefaultDirOve
     if (s_pCConfigSchemaHelper == NULL)
     {
         s_pCConfigSchemaHelper = new CConfigSchemaHelper();
+        s_pCConfigSchemaHelper->m_nTables = 0;
 
         if (s_pCConfigSchemaHelper != NULL && pDefaultDirOverride == NULL)
         {
@@ -42,6 +43,7 @@ CConfigSchemaHelper* CConfigSchemaHelper::getInstance(const char* pBuildSetFileN
     if (s_pCConfigSchemaHelper == NULL && pBuildSetFileName != NULL && pBaseDirectory != NULL)
     {
        s_pCConfigSchemaHelper = new CConfigSchemaHelper(pBuildSetFileName, pBaseDirectory, pDefaultDirOverride);
+       s_pCConfigSchemaHelper->m_nTables = 0;
     }
 
     return s_pCConfigSchemaHelper;
