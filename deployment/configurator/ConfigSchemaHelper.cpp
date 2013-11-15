@@ -747,6 +747,10 @@ void CConfigSchemaHelper::addMapOfXPathToElementArray(const char*pXPath, CElemen
     assert (pElementArray != NULL);
     assert(pXPath != NULL && *pXPath != 0);
 
+    if (m_elementArrayPtrsMap.find(pXPath) != NULL)
+    {
+        return;  // already mapped, we must be dealing with live data
+    }
     m_elementArrayPtrsMap.setValue(pXPath, pElementArray);
 }
 

@@ -625,7 +625,8 @@ void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     {
         (this->item(idx)).populateEnvXPath(strXPath, 1);
 
-        mapKey.setf("%s[%d]", this->getXSDXPath(), idx+1);//, this->item(idx).getName());
+        mapKey.setf("%s[%d]", this->getXSDXPath(), idx+1);
+
         CConfigSchemaHelper::getInstance()->addMapOfXPathToElementArray(mapKey.str(), this);
     }
 }
