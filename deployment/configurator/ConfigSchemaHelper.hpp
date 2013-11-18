@@ -113,7 +113,7 @@ public:
 
     const char* getTableValue(const char* pXPath, int nRow = 1) const;
 
-    int getAttributeXPathSize() const
+    int getEnvironmentXPathSize() const
     {
         return m_strArrayEnvXPaths.length();
     }
