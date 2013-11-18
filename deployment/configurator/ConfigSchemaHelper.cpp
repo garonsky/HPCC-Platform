@@ -760,6 +760,23 @@ void CConfigSchemaHelper::removeMapOfXPathToElementArray(const char*pXPath)
     m_elementArrayPtrsMap.remove(pXPath);
 }
 
+void CConfigSchemaHelper::addMapOfXPathToElement(const char* pXPath, CElement *pElement)
+{
+    assert (pElement != NULL);
+    assert(pXPath != NULL && *pXPath != 0);
+
+    assert(m_elementPtrsMap.find(pXPath) == NULL);
+
+    m_elementPtrsMap.setValue(pXPath, pElement);
+    m_strArrayEnvXPaths.append(pXPath);
+}
+
+void CConfigSchemaHelper::removeMapOfXPathToElement(const char*pXPath)
+{
+    assert (m_elementPtrsMap.find(pXPath) != NULL);
+    m_elementPtrsMap.remove(pXPath);
+}
+
 void CConfigSchemaHelper::addMapOfXPathToRestriction(const char*pXPath, CRestriction *pRestriction)
 {
     assert (pRestriction != NULL);
@@ -822,33 +839,45 @@ const char* CConfigSchemaHelper::getTableValue(const char* pXPath,  int nRow) co
     assert(pXPath != NULL);
 
     CAttribute **pAttribute = (m_attributePtrsMap.getValue(pXPath));
+    CElement **pElement = NULL;
 
-    assert(pAttribute != NULL);
-
-    if (nRow == 1)
+    if (pAttribute == NULL)
     {
-        return (*pAttribute)->getEnvValueFromXML();
+        pElement = m_elementPtrsMap.getValue(pXPath);
+
+        assert(pElement != NULL);
+
+        return (*pElement)->getEnvValueFromXML();
     }
     else
     {
-        StringBuffer strXPath(pXPath);
-        StringBuffer strXPathOrignal(pXPath);
-
-        CConfigSchemaHelper::stripXPathIndex(strXPath);
-        CConfigSchemaHelper::stripXPathIndex(strXPath);
-
-        strXPath.appendf("[%d]", nRow);
-
-        char pTemp[64];
-        int offset = strlen(itoa(nRow, pTemp, 10)) - 1;
-
-        strXPath.append((String(strXPathOrignal).substring(strXPath.length()-offset, strXPathOrignal.length()))->toCharArray());
-
-        pAttribute = (m_attributePtrsMap.getValue(strXPath.str()));
-
         assert(pAttribute != NULL);
 
-        return (*pAttribute)->getEnvValueFromXML();
+        if (nRow == 1)
+        {
+            return (*pAttribute)->getEnvValueFromXML();
+        }
+        else
+        {
+            StringBuffer strXPath(pXPath);
+            StringBuffer strXPathOrignal(pXPath);
+
+            CConfigSchemaHelper::stripXPathIndex(strXPath);
+            CConfigSchemaHelper::stripXPathIndex(strXPath);
+
+            strXPath.appendf("[%d]", nRow);
+
+            char pTemp[64];
+            int offset = strlen(itoa(nRow, pTemp, 10)) - 1;
+
+            strXPath.append((String(strXPathOrignal).substring(strXPath.length()-offset, strXPathOrignal.length()))->toCharArray());
+
+            pAttribute = (m_attributePtrsMap.getValue(strXPath.str()));
+
+            assert(pAttribute != NULL);
+
+            return (*pAttribute)->getEnvValueFromXML();
+        }
     }
 }
 

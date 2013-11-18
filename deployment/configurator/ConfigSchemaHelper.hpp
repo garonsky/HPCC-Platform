@@ -103,6 +103,9 @@ public:
     void addMapOfXPathToElementArray(const char*pXPath, CElementArray *pElementArray);
     void removeMapOfXPathToElementArray(const char*pXPath);
 
+    void addMapOfXPathToElement(const char*pXPath, CElement *pElement);
+    void removeMapOfXPathToElement(const char*pXPath);
+
     bool getValue(const char *pXPath, char *pValue);
     void setValue(const char *pXPath, const char *pValue);
     int getIndex(const char *pXPath);
@@ -115,7 +118,7 @@ public:
         return m_strArrayEnvXPaths.length();
     }
 
-    const char* getAttributeXPaths(int idx) const
+    const char* getEnvironmentXPaths(int idx) const
     {
         assert(idx >= 0);
         assert(m_strArrayEnvXPaths.length() > idx);
@@ -137,16 +140,6 @@ public:
 
     int getNumberOfTables() const
     {
-/*        HashIterator iter(m_elementArrayPtrsMap);
-
-        int count = 0;
-
-        ForEach(iter)
-        {
-            count++;
-        }
-
-        return count;*/
         return m_nTables;
     }
 
@@ -168,6 +161,7 @@ protected:
     MapStringTo<CAttribute*> m_attributePtrsMap;
     MapStringTo<CRestriction*> m_restrictionPtrsMap;
     MapStringTo<CElementArray*> m_elementArrayPtrsMap;
+    MapStringTo<CElement*> m_elementPtrsMap;
     CIArrayOf<CExtension> m_extensionArr;
     CIArrayOf<CAttributeGroup> m_attributeGroupArr;
     StringBuffer m_buildSetPath;

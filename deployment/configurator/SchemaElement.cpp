@@ -458,10 +458,33 @@ void CElement::getQML(StringBuffer &strQML) const
             m_pComplexTypeArray->getQML(strQML);
         }
 
-        if (this->getConstAncestorNode(2)->getNodeType() == XSD_SEQUENCE)
+        if (this->getConstAncestorNode(2)->getNodeType() == XSD_SEQUENCE  && this->m_pComplexTypeArray == NULL)
         {
-            //CQMLMarkupHelper::getTableViewColumn(strQML, this->getName());
-            //DEBUG_MARK_QML;
+            strQML.append(QML_ROW_BEGIN);
+            DEBUG_MARK_QML;
+
+            strQML.append(QML_TABLE_VIEW_BEGIN);
+            DEBUG_MARK_QML;
+
+            strQML.append(QML_MODEL).append(modelNames[CConfigSchemaHelper::getInstance(0)->getNumberOfTables()]);
+            DEBUG_MARK_QML;
+
+            const CElement *pElement = dynamic_cast<const CElement*>(this->getParentNodeByType(XSD_ELEMENT));
+            assert(pElement != NULL);
+
+            strQML.append(QML_PROPERTY_STRING_TABLE_BEGIN).append(modelNames[CConfigSchemaHelper::getInstance()->getNumberOfTables()]).append(QML_PROPERTY_STRING_TABLE_PART_1).append(pElement->getXSDXPath()).append(QML_PROPERTY_STRING_TABLE_END);
+            DEBUG_MARK_QML;
+
+            CQMLMarkupHelper::getTableViewColumn(strQML, this->getTitle(), this->getEnvXPath());
+            DEBUG_MARK_QML;
+
+            CConfigSchemaHelper::getInstance()->incTables();
+
+            strQML.append(QML_TABLE_VIEW_END);
+            DEBUG_MARK_QML;
+
+            strQML.append(QML_ROW_END);
+            DEBUG_MARK_QML;
         }
     }
     else if (m_pComplexTypeArray != NULL)
@@ -564,6 +587,18 @@ void CElement::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         }
         catch (...)
         {
+        }
+    }
+
+    if (m_pAttributeArray == NULL && m_pComplexTypeArray == NULL)
+    {
+        const char* pValue =  pEnvTree->queryPropTree(this->getEnvXPath())->queryProp("");
+
+        if (pValue != NULL)
+        {
+            this->setEnvValueFromXML(pValue);
+
+            CConfigSchemaHelper::getInstance()->addMapOfXPathToElement(this->getEnvXPath(), this);
         }
     }
 }

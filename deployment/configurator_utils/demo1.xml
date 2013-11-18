@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Edited with ConfigMgr on ip 127.0.0.1 on 2013-11-15T14:39:23 -->
+<!-- Edited with ConfigMgr on ip 127.0.0.1 on 2013-11-18T01:50:36 -->
 <Environment>
  <EnvSettings>
   <blockname>HPCCSystems</blockname>
@@ -876,7 +876,10 @@
              directory="/var/lib/HPCCSystems/myesp"
              FQDN=""
              name="s1"
-             netAddress="192.168.0.1"/>
+             netAddress="192.168.0.1">
+    <Certificate>CERT1</Certificate>
+    <PrivateKey>PRIVATEKEY1</PrivateKey>
+   </Instance>
    <Instance computer="node000002"
              directory="/var/lib/HPCCSystems/myesp"
              FQDN=""
@@ -940,6 +943,30 @@
     <CSR/>
     <PrivateKey/>
    </Instance>
+   <Notes computer="127.0.0.1"
+          date="11/17/2013 20:50:17"
+          severity="Minor"
+          user="">
+    <Note/>
+   </Notes>
+   <Notes computer="127.0.0.1"
+          date="11/17/2013 20:50:23"
+          severity="Normal"
+          user="">
+    <Note/>
+   </Notes>
+   <Notes computer="127.0.0.1"
+          date="11/17/2013 20:50:25"
+          severity="Minor"
+          user="">
+    <Note/>
+   </Notes>
+   <Notes computer="127.0.0.1"
+          date="11/17/2013 20:50:27"
+          severity="Critical"
+          user="">
+    <Note/>
+   </Notes>
   </EspProcess>
   <EspService allowNewRoxieOnDemandQuery="false"
               AWUsCacheTimeout="15"
@@ -1942,20 +1969,8 @@
              netAddress="192.168.0.12"
              port="8877"/>
    <Notes computer="127.0.0.1"
-          date="11/15/2013 09:27:20"
+          date="11/17/2013 20:46:17"
           severity="Minor"
-          user="">
-    <Note>test note&#10;</Note>
-   </Notes>
-   <Notes computer="127.0.0.1"
-          date="11/15/2013 09:27:22"
-          severity="Normal"
-          user="">
-    <Note/>
-   </Notes>
-   <Notes computer="127.0.0.1"
-          date="11/15/2013 09:27:23"
-          severity="Critical"
           user="">
     <Note/>
    </Notes>

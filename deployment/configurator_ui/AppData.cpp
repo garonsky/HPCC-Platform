@@ -39,9 +39,9 @@ QHash<int, QByteArray> TableDataModel::roleNames() const
 
     static QHash<int, QByteArray> Roles;
 
-    for (int idx = 0; idx < pSchemaHelper->getAttributeXPathSize(); idx++)
+    for (int idx = 0; idx < pSchemaHelper->getEnvironmentXPaths(); idx++)
     {
-        const char *pRole =  pSchemaHelper->getAttributeXPaths(idx);
+        const char *pRole =  pSchemaHelper->getEnvironmentXPaths(idx);
         Roles[Qt::UserRole + idx+1] = pRole;
     }
 
