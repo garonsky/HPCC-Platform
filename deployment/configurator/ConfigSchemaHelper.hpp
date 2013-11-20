@@ -11,7 +11,6 @@
 #include "SchemaSchema.hpp"
 #include "SchemaExtension.hpp"
 #include "BuildSet.hpp"
-//#include "XMLConfiguration.hpp"
 
 class CSimpleType;
 
@@ -31,7 +30,7 @@ const char modelNames[MAX_ARRAY_X][MAX_ARRAY_Y] = {"tableDataModel0",
                                                    "tableDataModel9" };
 
 
-class CConfigSchemaHelper : public CInterface//, CXMLConfiguration
+class CConfigSchemaHelper : public CInterface
 {
 public:
 

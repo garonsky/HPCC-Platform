@@ -12,13 +12,6 @@ include_directories (
          ./../../system/include
          ./../../system/jlib
          ./../deploy/
-         /opt/Qt5.1.0/5.1.0/gcc_64/mkspecs/linux-g++
-         /opt/Qt5.1.0/5.1.0/gcc_64/include
-         /opt/Qt5.1.0/5.1.0/gcc_64/include/QtQuick
-         /opt/Qt5.1.0/5.1.0/gcc_64/include/QtQml
-         /opt/Qt5.1.0/5.1.0/gcc_64/include/QtNetwork
-         /opt/Qt5.1.0/5.1.0/gcc_64/include/QtGui
-         /opt/Qt5.1.0/5.1.0/gcc_64/include/QtCore
 
          /opt/Qt/5.1.1/gcc_64/mkspecs/linux-g++
          /opt/Qt/5.1.1/gcc_64/include
@@ -28,13 +21,17 @@ include_directories (
          /opt/Qt/5.1.1/gcc_64/include/QtGui
          /opt/Qt/5.1.1/gcc_64/include/QtCore
          ./../configurator_ui
+         ./../configurator_app
 
 )
 
-ADD_DEFINITIONS ( -D_CONSOLE )
+#ADD_DEFINITIONS ( -D_CONSOLE )
+ADD_DEFINITIONS( -D_USRDLL )
 
-link_directories(../configurator_ui /opt/Qt/5.1.1/gcc_64/lib/ /opt/Qt5.1.0/5.1.0/gcc_64/lib/ )
-
-HPCC_ADD_EXECUTABLE ( configurator  ${SRCS} )
+#link_directories(../configurator_ui /opt/Qt/5.1.1/gcc_64/lib/ ../build-configurator_app-Desktop-Debug )
+link_directories(../configurator_ui /opt/Qt/5.1.1/gcc_64/lib/ )
+#HPCC_ADD_EXECUTABLE ( configurator  ${SRCS} )
+HPCC_ADD_LIBRARY ( configurator  ${SRCS} )
 install ( TARGETS configurator DESTINATION sbin )
+#target_link_libraries ( configurator jlib ConfiguratorUI configurator_app )
 target_link_libraries ( configurator jlib ConfiguratorUI )

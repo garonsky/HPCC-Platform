@@ -7,6 +7,7 @@
 #include <iostream>
 #include "jfile.hpp"
 #include "../configurator_ui/ConfiguratorUI.hpp"
+#include "../configurator_app/MainWindowInterface.h"
 
 #define BUFF_SIZE 1024
 
@@ -40,15 +41,12 @@ void usage()
     std::cout << "-j -dojo                          : prints dojo js" << std::endl;
     std::cout << "-q -qml                           : prints QML" << std::endl;
     std::cout << "-c -env -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << std::endl;
-    std::cout << "-s -server <qml file>             : run server using qml file" << std::endl;
+    std::cout << "-s1 -server1 <qml file>           : run server using qml file" << std::endl;
+    std::cout << "-s2 -server2                      : run QT application mode" << std::endl;
     std::cout << "-dump                             : dump out xsd internal structure and values" << std::endl;
 }
 
-
-//extern "C" void StartQMLUI();
-
-
-int main(int argc, char *argv[])
+int main2(int argc, char *argv[])
 {
     InitModuleObjects();
 
@@ -74,13 +72,14 @@ int main(int argc, char *argv[])
     strncpy(pTargetDocExt, pDefaultDocExt, sizeof(pTargetDocExt));
 
 
-    bool bListXSDs  = false;
-    bool bGenDocs   = false;
-    bool bGenDojoJS = false;
-    bool bGenQML    = false;
-    bool bDump      = false;
-    bool bLoadEnvXML= false;
-    bool bQMLServer = false;
+    bool bListXSDs      = false;
+    bool bGenDocs       = false;
+    bool bGenDojoJS     = false;
+    bool bGenQML        = false;
+    bool bDump          = false;
+    bool bLoadEnvXML    = false;
+    bool bQMLServer     = false;
+    bool bQMLServer2    = false;
 
     StringArray arrXSDs;
 
@@ -171,7 +170,7 @@ int main(int argc, char *argv[])
 
             arrXSDs.append(argv[idx]);
         }
-        else if (stricmp(argv[idx], "-s") == 0 || stricmp(argv[idx], "-server") == 0)
+        else if (stricmp(argv[idx], "-s1") == 0 || stricmp(argv[idx], "-server1") == 0)
         {
             idx++;
 
@@ -183,6 +182,10 @@ int main(int argc, char *argv[])
 
             strncpy(pQMLFile, argv[idx], BUFF_SIZE);
             bQMLServer = true;
+        }
+        else if (stricmp(argv[idx], "-s2") == 0 || stricmp(argv[idx], "-server2") == 0)
+        {
+            bQMLServer2 = true;
         }
         else if (stricmp(argv[idx], "-list") == 0 || stricmp(argv[idx], "-l") == 0)
         {
@@ -442,4 +445,23 @@ int main(int argc, char *argv[])
     {
         StartQMLUI(pQMLFile);
     }
+    else if (bQMLServer2 == true)
+    {
+//        StartMainWindowUI(argc, argv);
+
+        StringArray strBuildSet;
+
+        pSchemaHelper->getBuildSetComponents(strBuildSet);
+
+        int nCount = strBuildSet.length();
+
+        for (int idx = 0; idx < nCount; idx++)
+        {
+         //   AddComponentToList(strBuildSet.item(0));
+        }
+
+//        ShowMainWindowUI();
+    }
+
+    return 1;
 }
