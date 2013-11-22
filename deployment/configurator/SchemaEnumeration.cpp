@@ -114,6 +114,7 @@ void CEnumerationArray::traverseAndProcessNodes() const
 const char* CEnumerationArray::getXML(const char* /*pComponent*/)
 {
     assert(false); // NOT IMPLEMENTED
+    return NULL;
 }
 
 CEnumerationArray* CEnumerationArray::load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath)
