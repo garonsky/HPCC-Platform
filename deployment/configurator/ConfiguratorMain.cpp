@@ -1,3 +1,4 @@
+#include "ConfiguratorMain.hpp"
 #include "EnvironmentConfiguration.hpp"
 #include "WizardBase.hpp"
 #include "ConfigSchemaHelper.hpp"
@@ -46,7 +47,15 @@ void usage()
     std::cout << "-dump                             : dump out xsd internal structure and values" << std::endl;
 }
 
-int main2(int argc, char *argv[])
+#ifndef CONFIGURATOR_STATIC_LIB
+
+int main(int argc, char *argv[])
+
+#else
+
+int ConfiguratorMain(int argc, char* argv[])
+
+#endif // CONFIGURATOR_STATIC_LIB
 {
     InitModuleObjects();
 
@@ -276,12 +285,6 @@ int main2(int argc, char *argv[])
         return 0;
     }
 
-/*    if (bDump == false && bLoadEnvXML ==true)
-    {
-        puts("Parameter -dump is not active.  Nothing to do.");
-        return 0;
-    }*/
-
     if (bGenDocs == true && bGenDojoJS == true)
     {
         puts("Can not generate docs and dojo java script at the same time! (Coming...)");
@@ -305,7 +308,8 @@ int main2(int argc, char *argv[])
 
     if (pOverrideSchema[0] != 0)
     {
-        pSchemaHelper->setBuildSetArray(arrXSDs);
+        ///pSchemaHelper->setBuildSetArray(arrXSDs);
+        CBuildSetManager::getInstance()->setBuildSetArray(arrXSDs);
     }
     else if (pSchemaHelper->populateBuildSet() == false)
     {
@@ -325,7 +329,7 @@ int main2(int argc, char *argv[])
     {
         StringArray arrXSDs;
 
-        pSchemaHelper->getBuildSetComponents(arrXSDs);
+         CBuildSetManager::getInstance()->getBuildSetComponents(arrXSDs);
 
         if (arrXSDs.length() > 0)
         {
@@ -451,7 +455,7 @@ int main2(int argc, char *argv[])
 
         StringArray strBuildSet;
 
-        pSchemaHelper->getBuildSetComponents(strBuildSet);
+         CBuildSetManager::getInstance()->getBuildSetComponents(strBuildSet);
 
         int nCount = strBuildSet.length();
 

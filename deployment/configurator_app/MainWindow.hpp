@@ -15,10 +15,11 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = 0);
+
     ~MainWindow();
 
-    //void setComponentList(int nCount, char *pComponentList[]);
-    void addComponentToList(char *pComponentList);
+    void addComponentToList(char *pComponent);
+    void addServiceToList(char *pService);
 
 private:
     Ui::MainWindow *ui;

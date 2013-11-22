@@ -7,8 +7,9 @@
 #include "ExceptionStrings.hpp"
 #include <cstring>
 #include "jfile.hpp"
+#include "BuildSet.hpp"
 
-#define LOOP_THRU_BUILD_SET for (int idx = 0; idx < m_buildSetArray.length(); idx++)
+#define LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET for (int idx = 0; idx < CBuildSetManager::getInstance()->getSchemaCount(); idx++)
 
 CConfigSchemaHelper* CConfigSchemaHelper::s_pCConfigSchemaHelper = NULL;
 
@@ -21,15 +22,6 @@ CConfigSchemaHelper* CConfigSchemaHelper::getInstance(const char* pDefaultDirOve
     {
         s_pCConfigSchemaHelper = new CConfigSchemaHelper();
         s_pCConfigSchemaHelper->m_nTables = 0;
-
-        if (s_pCConfigSchemaHelper != NULL && pDefaultDirOverride == NULL)
-        {
-            s_pCConfigSchemaHelper->setBasePath(DEFAULT_SCHEMA_DIRECTORY);
-        }
-        else if (s_pCConfigSchemaHelper != NULL && pDefaultDirOverride != NULL)
-        {
-              s_pCConfigSchemaHelper->setBasePath(pDefaultDirOverride);
-        }
     }
 
     return s_pCConfigSchemaHelper;
@@ -55,10 +47,7 @@ CConfigSchemaHelper::CConfigSchemaHelper(const char* pBuildSetFile, const char* 
     assert(pBuildSetFile != NULL);
     assert(pBuildSetDir != NULL);
 
-    if (pBuildSetFile != NULL && pBuildSetDir != NULL)
-    {
-        m_buildSetPath.clear().appendf("%s%s%s", pBuildSetDir, pBuildSetDir[strlen(pBuildSetDir)-1] == '/' ? "" : "/", pBuildSetFile);
-    }
+    CBuildSetManager::getInstance(pBuildSetFile, pBuildSetDir);
 }
 
 CConfigSchemaHelper::~CConfigSchemaHelper()
@@ -123,59 +112,23 @@ void CConfigSchemaHelper::setIndex(const char *pXPath, int newIndex)
     setEnvTreeProp(pXPath, pRestriction->getEnumerationArray()->item(newIndex).getValue());
 }
 
-void CConfigSchemaHelper::getBuildSetComponents(StringArray& buildSetArray) const
-{
-    LOOP_THRU_BUILD_SET
-    {
-        const char *pName = m_buildSetArray.item(idx).getName();
-        buildSetArray.append(pName);
-    }
-}
-
 bool CConfigSchemaHelper::populateBuildSet()
 {
-    StringBuffer xpath;
-
-    if (m_buildSetTree.get() != NULL)
-    {
-        return false;
-    }
-
-    try
-    {
-        m_buildSetTree.set(createPTreeFromXMLFile(m_buildSetPath.str()));
-    }
-    catch(...)
-    {
-        return false;
-    }
-
-    xpath.appendf("./%s/%s/%s", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET);
-
-    Owned<IPropertyTreeIterator> iter = m_buildSetTree->getElements(xpath.str());
-
-    ForEach(*iter)
-    {
-        IPropertyTree* pTree = &iter->query();
-        Owned<CBuildSet> pBuildSet = new CBuildSet(pTree->queryProp(XML_ATTR_INSTALLSET), pTree->queryProp(XML_ATTR_NAME), pTree->queryProp(XML_ATTR_PROCESS_NAME), pTree->queryProp(XML_ATTR_SCHEMA));
-
-        m_buildSetArray.append(*pBuildSet.getLink());
-    }
-
-    return true;
+    return CBuildSetManager::getInstance()->populateBuildSet();
 }
 
 bool CConfigSchemaHelper::populateSchema()
 {
-    LOOP_THRU_BUILD_SET
-    {
-        const char *pSchemaFile = m_buildSetArray.item(idx).getSchema();
 
-        if (pSchemaFile != NULL)
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
+    {
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+
+        if (pSchemaName != NULL)
         {
             CXSDNodeBase *pNull = NULL;
-            CSchema *pSchema = CSchema::load(pSchemaFile, pNull);
-            m_schemaMap.setValue(pSchemaFile, pSchema);
+            CSchema *pSchema = CSchema::load(pSchemaName, pNull);
+            m_schemaMap.setValue(pSchemaName, pSchema);
         }
     }
 
@@ -186,18 +139,21 @@ void CConfigSchemaHelper::printConfigSchema(StringBuffer &strXML) const
 {
     const char *pComponent = NULL;
     CSchema* pSchema = NULL;
-    LOOP_THRU_BUILD_SET
+
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        if (pComponent == NULL || strcmp(pComponent, m_buildSetArray.item(idx).getSchema()) == 0)
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+
+        if (pComponent == NULL || strcmp(pComponent, pSchemaName) == 0)
         {
-            const char* pXSDSchema = m_buildSetArray.item(idx).getSchema();
+            const char* pXSDSchema = pSchemaName;
 
             if (pXSDSchema == NULL)
             {
                 continue;
             }
 
-            pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+            pSchema = m_schemaMap.getValue(pSchemaName);
 
             if (pSchema != NULL)
             {
@@ -219,11 +175,14 @@ const char* CConfigSchemaHelper::printDocumentation(const char* comp)
 
     CSchema* pSchema = NULL;
 
-    LOOP_THRU_BUILD_SET
+
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        if (m_buildSetArray.item(idx).getSchema() != NULL && strcmp(comp, m_buildSetArray.item(idx).getSchema()) == 0)
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+
+        if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
-             pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+             pSchema = m_schemaMap.getValue(pSchemaName);
 
              assert(pSchema != NULL);
 
@@ -253,11 +212,13 @@ const char* CConfigSchemaHelper::printDojoJS(const char* comp)
 
     CSchema* pSchema = NULL;
 
-    LOOP_THRU_BUILD_SET
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        if (m_buildSetArray.item(idx).getSchema() != NULL && strcmp(comp, m_buildSetArray.item(idx).getSchema()) == 0)
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+
+        if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
-             pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+             pSchema = m_schemaMap.getValue(pSchemaName);
 
              assert(pSchema != NULL);
 
@@ -283,11 +244,13 @@ const char* CConfigSchemaHelper::printQML(const char* comp) const
 
     CSchema* pSchema = NULL;
 
-    LOOP_THRU_BUILD_SET
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        if (m_buildSetArray.item(idx).getSchema() != NULL && strcmp(comp, m_buildSetArray.item(idx).getSchema()) == 0)
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+
+        if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
-             pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+             pSchema = m_schemaMap.getValue(pSchemaName);
 
              assert(pSchema != NULL);
 
@@ -313,11 +276,13 @@ void CConfigSchemaHelper::printDump(const char* comp) const
 
     CSchema* pSchema = NULL;
 
-    LOOP_THRU_BUILD_SET
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        if (m_buildSetArray.item(idx).getSchema() != NULL && strcmp(comp, m_buildSetArray.item(idx).getSchema()) == 0)
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+
+        if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
-             pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+             pSchema = m_schemaMap.getValue(pSchemaName);
 
              assert(pSchema != NULL);
 
@@ -341,53 +306,21 @@ bool CConfigSchemaHelper::getXMLFromSchema(StringBuffer& strXML, const char* pCo
     CElementArray *pElementArray = NULL;
     CSchema* pSchema = NULL;
 
-    //std::cout << "\n<XML>\n<";
-
-/*    LOOP_THRU_BUILD_SET
-    {
-        if (strcmp(pComponent, m_buildSetArray.item(idx).getName()) != 0)
-        {
-
-        pAttributeArray = m_componentAttributesArrayMap.getValue(m_buildSetArray.item(idx).getName());
-
-        if (pAttributeArray != NULL)
-        {
-            strXML.clear().append(pAttributeArray->getXML(NULL));
-            return true;
-        }
-
-        m_componentElementArrayMap
-
-
-    }
-
-    strXML.clear();
-    LOOP_THRU_BUILD_SET
-    {
-        if (pComponent == NULL || strcmp(pComponent, m_buildSetArray.item(idx).getSchema()) == 0)
-        {
-            pElementArray = m_componentElementArrayMap.getValue(m_buildSetArray.item(idx).getSchema());
-
-            if (pElementArray != NULL)
-            {
-                strXML.append(pElementArray->getXML(NULL));
-            }
-        }
-    }
-*/
     strXML.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Environment>\n\t<Software>");
-    LOOP_THRU_BUILD_SET
-    {
-        if (pComponent == NULL || strcmp(pComponent, m_buildSetArray.item(idx).getSchema()) == 0)
-        {
-            const char* pXSDSchema = m_buildSetArray.item(idx).getSchema();
 
-            if (pXSDSchema == NULL)
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
+    {
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+
+        if (pComponent == NULL || strcmp(pComponent, pSchemaName) == 0)
+        {
+
+            if (pSchemaName == NULL)
             {
                 continue;
             }
 
-            pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+            pSchema = m_schemaMap.getValue(pSchemaName);
 
             if (pSchema != NULL)
             {
@@ -395,13 +328,10 @@ bool CConfigSchemaHelper::getXMLFromSchema(StringBuffer& strXML, const char* pCo
             }
         }
     }
+
     strXML.append("\t</Software>\n</Environment>\n");
 
     return true;
-
-    //std::cout << ">\n</XML>";
-
-    //return false;
 }
 
 CSchema* CConfigSchemaHelper::getSchemaForXSD(const char* pComponent)
@@ -608,9 +538,9 @@ void CConfigSchemaHelper::populateEnvXPath()
     CSchema* pSchema = NULL;
     StringBuffer strXPath;
 
-    LOOP_THRU_BUILD_SET
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+        pSchema = m_schemaMap.getValue(CBuildSetManager::getInstance()->getBuildSetSchema(idx));
 
         if (pSchema != NULL)
         {
@@ -639,9 +569,9 @@ void CConfigSchemaHelper::loadEnvFromConfig(const char *pEnvFile)
     this->setEnvPropertyTree(pEnvXMLRoot.getLink());
     this->setEnvFilePath(pEnvFile);
 
-    LOOP_THRU_BUILD_SET
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+        pSchema = m_schemaMap.getValue(CBuildSetManager::getInstance()->getBuildSetSchema(idx));
 
         if (pSchema != NULL)
         {
@@ -655,43 +585,26 @@ void CConfigSchemaHelper::traverseAndProcessArray(const char *pXSDName)
     const char *pComponent = NULL;
     CSchema* pSchema = NULL;
 
-    LOOP_THRU_BUILD_SET
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        if (pComponent == NULL || strcmp(pComponent, m_buildSetArray.item(idx).getSchema()) == 0)
-        {
-            const char* pXSDSchema = m_buildSetArray.item(idx).getSchema();
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
 
-            if (pXSDSchema == NULL || (pXSDName != NULL && strcmp(pXSDName, pXSDSchema) != 0))
+        if (pComponent == NULL || strcmp(pComponent,pSchemaName) == 0)
+        {
+            if (pSchemaName == NULL || (pXSDName != NULL && strcmp(pXSDName, pSchemaName) != 0))
             {
                 continue;
             }
 
-            pSchema = m_schemaMap.getValue(m_buildSetArray.item(idx).getSchema());
+            pSchema = m_schemaMap.getValue(pSchemaName);
 
             if (pSchema != NULL)
             {
-                //strXML.append(pSchema->dump(std::cout));
                 pSchema->traverseAndProcessNodes();
             }
         }
     }
 }
-
-
-void CConfigSchemaHelper::setBuildSetArray(const StringArray &strArray)
-{
-    m_buildSetArray.kill();
-
-    for (int idx = 0; idx < strArray.length(); idx++)
-    {
-        Owned<CBuildSet> pBSet = new CBuildSet(NULL, strArray.item(idx), NULL, strArray.item(idx));
-
-        assert (pBSet != NULL);
-
-        m_buildSetArray.append(*pBSet.getClear());
-    }
-}
-
 
 void CConfigSchemaHelper::addToolTip(const char *js)
 {

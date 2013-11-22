@@ -2,6 +2,7 @@
 #define _CONFIG_SCHEMA_HELPER_HPP_
 
 #include "jiface.hpp"
+#include "jptree.hpp"
 #include "jutil.hpp"
 #include "jarray.hpp"
 #include "jhash.hpp"
@@ -14,9 +15,8 @@
 
 class CSimpleType;
 
-
 #define MAX_ARRAY_X 10
-#define MAX_ARRAY_Y 100
+#define MAX_ARRAY_Y 128
 
 const char modelNames[MAX_ARRAY_X][MAX_ARRAY_Y] = {"tableDataModel0",
                                                    "tableDataModel1",
@@ -41,7 +41,6 @@ public:
 
     virtual ~CConfigSchemaHelper();
 
-    void getBuildSetComponents(StringArray& buildSetArray) const;
     bool populateBuildSet();
     bool populateSchema();
     void printConfigSchema(StringBuffer &str) const;
@@ -79,8 +78,6 @@ public:
     const char* printQML(const char* comp) const;
     void printDump(const char* comp) const;
     void dumpStdOut() const;
-
-    void setBuildSetArray(const StringArray &strArray);
 
     void addToolTip(const char *js);
 
@@ -151,8 +148,6 @@ protected:
 
     CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = NULL);
 
-    Owned<IPropertyTree> m_buildSetTree;
-    CIArrayOf<CBuildSet> m_buildSetArray;
     MapStringToMyClass<CSchema> m_schemaMap;
     MapStringTo<CSimpleType*> m_simpleTypePtrMap;
     MapStringTo<CComplexType*> m_complexTypePtrsMap;
@@ -163,7 +158,6 @@ protected:
     MapStringTo<CElement*> m_elementPtrsMap;
     CIArrayOf<CExtension> m_extensionArr;
     CIArrayOf<CAttributeGroup> m_attributeGroupArr;
-    StringBuffer m_buildSetPath;
     StringArray m_strToolTipsJS;
     StringArray m_strArrayEnvXPaths;
 
@@ -193,13 +187,6 @@ private:
     StringBuffer m_strEnvFilePath;
 
     IPropertyTree *m_pEnvPropertyTree;
-
-    void setBasePath(const char* pBasePath)
-    {
-        assert(m_pBasePath == NULL); // why ever set this twice?
-        m_pBasePath = pBasePath;
-    }
-
 };
 
 #endif // _CONFIG_SCHEMA_HELPER_HPP_

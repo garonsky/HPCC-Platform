@@ -1,0 +1,65 @@
+diff --git a/deployment/configurator/SchemaElement.hpp b/deployment/configurator/SchemaElement.hpp
+index a8bf58f..6fbd62d 100644
+--- a/deployment/configurator/SchemaElement.hpp
++++ b/deployment/configurator/SchemaElement.hpp
+@@ -48,6 +48,19 @@ public:
+         return m_pAnnotation;
+     }
+ 
++    virtual void setSchemaRoot(const IPropertyTree *pSchemaRoot)
++    {
++        assert(m_pSchemaRoot == NULL);
++        assert(pSchemaRoot);
++
++        m_pSchemaRoot = pSchemaRoot;
++    }
++
++    const IPropertyTree* getSchemaRoot() const
++    {
++        return m_pSchemaRoot;
++    }
++
+     static const CXSDNodeBase* getAncestorElement(const CXSDNodeBase *pNode)
+     {
+          return pNode->getParentNodeByType(XSD_ELEMENT);
+@@ -60,21 +73,26 @@ public:
+         return (pNode != NULL && pNode->getParentNodeByType(XSD_ELEMENT) == getTopMostElement(pNode));
+     }
+ 
+-    static CElement* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath);
++    static CElement* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+ 
+ protected:
+ 
+-    CElement(CXSDNodeBase* pParentNode, const char* pName = "") : CXSDNode::CXSDNode(pParentNode, XSD_ELEMENT), m_strMinOccurs(""), m_strMaxOccurs(""), m_strName(pName), m_pAnnotation(NULL), m_pComplexTypeArray(NULL), m_pAttributeArray(NULL)
++    CElement(CXSDNodeBase* pParentNode, const char* pName = "") : CXSDNode::CXSDNode(pParentNode, XSD_ELEMENT), m_strMinOccurs(""), m_strMaxOccurs(""), m_strName(pName), m_pAnnotation(NULL), m_pSchemaRoot(NULL)
+     {
+     }
+ 
+     CAnnotation* m_pAnnotation;
+-    CComplexTypeArray* m_pComplexTypeArray;
+-    CAttributeArray* m_pAttributeArray;
++    //CComplexTypeArray* m_pComplexTypeArray;
++    //CAttributeArray* m_pAttributeArray;
++    PointerArray m_arrComplexTypeArray;
++    PointerArray m_arrAttributeArray;
+ 
+ private:
+ 
+-    CElement() : CXSDNode::CXSDNode(NULL, XSD_ELEMENT)
++    // to create nodes for storing data from an environment xml config that is unbounded
++    const IPropertyTree *m_pSchemaRoot;
++
++    CElement() : CXSDNode::CXSDNode(NULL, XSD_ELEMENT), m_pAnnotation(NULL), m_pSchemaRoot(NULL)
+     {
+     }
+ };
+@@ -107,7 +125,7 @@ public:
+ 
+     virtual const char* getXML(const char* /*pComponent*/);
+ 
+-    static CElementArray* load(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot, const char* xpath = DEFAULT_ELEMENT_ARRAY_XPATH);
++    static CElementArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = DEFAULT_ELEMENT_ARRAY_XPATH);
+ 
+     static CElementArray* load(const char *pSchemaFile);
+ 

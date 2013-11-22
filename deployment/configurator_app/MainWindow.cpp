@@ -46,6 +46,13 @@ void MainWindow::addComponentToList(char *pComponent)
 {
     QString qstrComp(pComponent);
 
-    this->ui->menuAdd_Component->addMenu(qstrComp);
+    this->ui->menuAdd_Component->addAction(qstrComp);
 }
 
+
+void MainWindow::addServiceToList(char *pService)
+{
+    QString qstrComp(pService);
+
+    this->ui->menuAdd_Service->addAction(qstrComp);
+}

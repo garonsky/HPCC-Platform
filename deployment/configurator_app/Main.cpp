@@ -4,6 +4,7 @@
 //#include "MainWindowInterface.h"
 #include "MainWindowThread.hpp"
 #include "../configurator/ConfigSchemaHelper.hpp"
+#include "../configurator/BuildSet.hpp"
 #include "jstring.hpp"
 
 
@@ -33,7 +34,9 @@ int main(int argc, char *argv[])
     //arrXSD.append(");
     //pSchemaHelper->setBuildSetArray(arrXSDs);
     pSchemaHelper->populateBuildSet();
-    pSchemaHelper->getBuildSetComponents(strBuildSet);
+    CBuildSetManager::getInstance()->getBuildSetComponents(strBuildSet);
+    //pSchemaHelper->getBuildSetComponents(strBuildSet);
+
 
     int nCount = strBuildSet.length();
 
@@ -42,7 +45,16 @@ int main(int argc, char *argv[])
         w.addComponentToList(const_cast<char*>(strBuildSet.item(idx)));
     }
 
+    StringArray arrBuildSetServices;
 
+    CBuildSetManager::getInstance()->getBuildSetServices(arrBuildSetServices);
+
+    nCount = arrBuildSetServices.length();
+
+    for (int idx = 0; idx < nCount; idx++)
+    {
+        w.addServiceToList(const_cast<char*>(arrBuildSetServices.item(idx)));
+    }
 
     return a.exec();
 }
