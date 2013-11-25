@@ -11,7 +11,7 @@
 #include <cassert>
 
 
-int main(int argc, char *argv[])
+int main2(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
@@ -41,5 +41,5 @@ int main(int argc, char *argv[])
 
 extern "C" void StartQMLUI(char* pQMLFile)
 {
-    main(1,&pQMLFile);
+    main2(1,&pQMLFile);
 }
