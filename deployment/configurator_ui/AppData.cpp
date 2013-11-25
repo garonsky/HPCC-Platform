@@ -1,32 +1,27 @@
 #include "AppData.hpp"
+#include <cassert>
 
 TableDataModel::TableDataModel()
 {
 }
 
-
-int TableDataModel::rowCount(const QModelIndex & parent) const
+int TableDataModel::rowCount(const QModelIndex& /*parent*/) const
 {
-    CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
-
-    int nCount = pSchemaHelper->getElementArraySize(this->m_pActiveTable);
+    int nCount = CONFIGURATOR_API::getNumberOfRows(this->m_pActiveTable);
 
     return nCount;
 }
 
-int TableDataModel::columnCount(const QModelIndex & parent) const
+int TableDataModel::columnCount(const QModelIndex & /*parent*/) const
 {
     return 1;
 }
 
-
 QVariant TableDataModel::data(const QModelIndex & index, int role) const
 {
-    CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
-
     QHash<int, QByteArray> Roles = roleNames();
 
-    const char *pValue = pSchemaHelper->getTableValue(Roles.value(role), index.row()+1);
+    const char *pValue  = CONFIGURATOR_API::getTableValue(Roles.value(role), index.row()+1);
 
     assert(pValue != NULL);
 
@@ -35,13 +30,13 @@ QVariant TableDataModel::data(const QModelIndex & index, int role) const
 
 QHash<int, QByteArray> TableDataModel::roleNames() const
 {
-    static CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
-
     static QHash<int, QByteArray> Roles;
 
-    for (int idx = 0; idx < pSchemaHelper->getEnvironmentXPathSize(); idx++)
+    int nColumns = CONFIGURATOR_API::getNumberOfUniqueColumns();
+
+    for (int idx = 0; idx < nColumns; idx++)
     {
-        const char *pRole =  pSchemaHelper->getEnvironmentXPaths(idx);
+        const char *pRole =  CONFIGURATOR_API::getColumnName(idx);
         Roles[Qt::UserRole + idx+1] = pRole;
     }
 

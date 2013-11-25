@@ -8,8 +8,13 @@
 #include <cstring>
 #include "jfile.hpp"
 #include "BuildSet.hpp"
+#include "SchemaMapManager.hpp"
 
-#define LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET for (int idx = 0; idx < CBuildSetManager::getInstance()->getSchemaCount(); idx++)
+#define LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET \
+int nComponentCount = CBuildSetManager::getInstance()->getBuildSetComponentCount();         \
+\
+for (int idx = 0; idx < nComponentCount; idx++)
+
 
 CConfigSchemaHelper* CConfigSchemaHelper::s_pCConfigSchemaHelper = NULL;
 
@@ -39,78 +44,22 @@ CConfigSchemaHelper* CConfigSchemaHelper::getInstance(const char* pBuildSetFileN
     }
 
     return s_pCConfigSchemaHelper;
-
 }
 
-CConfigSchemaHelper::CConfigSchemaHelper(const char* pBuildSetFile, const char* pBuildSetDir, const char* pDefaultDirOverride) : m_pEnvPropertyTree(NULL)
+CConfigSchemaHelper::CConfigSchemaHelper(const char* pBuildSetFile, const char* pBuildSetDir, const char* pDefaultDirOverride) : m_pEnvPropertyTree(NULL), m_pSchemaMapManager(NULL), m_nTables(0)
 {
     assert(pBuildSetFile != NULL);
     assert(pBuildSetDir != NULL);
 
     CBuildSetManager::getInstance(pBuildSetFile, pBuildSetDir);
+    m_pSchemaMapManager = new CSchemaMapManager();
 }
 
 CConfigSchemaHelper::~CConfigSchemaHelper()
 {
+    delete m_pSchemaMapManager;
 }
 
-bool CConfigSchemaHelper::getValue(const char *pXPath, char *pValue)
-{
-    static int counter = 0;
-    itoa(counter, pValue, 10);
-    counter++;
-
-    CAttribute **pAttribute = m_attributePtrsMap.getValue(pXPath);
-
-    if ((**pAttribute).isInstanceValueValid() == true)
-    {
-        strcpy(pValue, (**pAttribute).getEnvValueFromXML());
-    }
-    else
-    {
-        pValue = NULL;
-    }
-    return true;
-}
-
-void CConfigSchemaHelper::setValue(const char *pXPath, const char *pValue)
-{
-    assert(pXPath != NULL && pXPath[0] != 0);
-    assert(pValue != NULL);
-
-    CAttribute **pAttribute = m_attributePtrsMap.getValue(pXPath);
-
-    assert(pAttribute != NULL && *pAttribute != NULL);
-
-    (*pAttribute)->setEnvValueFromXML(pValue);
-    (*pAttribute)->setInstanceAsValid();
-
-    setEnvTreeProp(pXPath, pValue);
-}
-
-int CConfigSchemaHelper::getIndex(const char *pXPath)
-{
-    CRestriction *pRestriction = *(this->m_restrictionPtrsMap.getValue(pXPath));
-
-    assert(pRestriction != NULL);
-    assert(pRestriction->getEnumerationArray() != NULL);
-
-    return pRestriction->getEnumerationArray()->getEnvValueNodeIndex();
-}
-
-void CConfigSchemaHelper::setIndex(const char *pXPath, int newIndex)
-{
-    assert(newIndex >= 0);
-
-    CRestriction *pRestriction = *(this->m_restrictionPtrsMap.getValue(pXPath));
-
-    assert(pRestriction != NULL);
-    assert(pRestriction->getEnumerationArray() != NULL);
-
-    pRestriction->getEnumerationArray()->setEnvValueNodeIndex(newIndex);
-
-    setEnvTreeProp(pXPath, pRestriction->getEnumerationArray()->item(newIndex).getValue());
-}
 
 bool CConfigSchemaHelper::populateBuildSet()
 {
@@ -119,30 +68,36 @@ bool CConfigSchemaHelper::populateBuildSet()
 
 bool CConfigSchemaHelper::populateSchema()
 {
+    assert(m_pSchemaMapManager != NULL);
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
 
         if (pSchemaName != NULL)
         {
             CXSDNodeBase *pNull = NULL;
             CSchema *pSchema = CSchema::load(pSchemaName, pNull);
-            m_schemaMap.setValue(pSchemaName, pSchema);
+
+            m_pSchemaMapManager->setSchemaForXSD(pSchemaName, pSchema);
         }
     }
+
+    populateEnvXPath();
 
     return true;
 }
 
 void CConfigSchemaHelper::printConfigSchema(StringBuffer &strXML) const
 {
+    assert(m_pSchemaMapManager != NULL);
+
     const char *pComponent = NULL;
     CSchema* pSchema = NULL;
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
 
         if (pComponent == NULL || strcmp(pComponent, pSchemaName) == 0)
         {
@@ -153,7 +108,7 @@ void CConfigSchemaHelper::printConfigSchema(StringBuffer &strXML) const
                 continue;
             }
 
-            pSchema = m_schemaMap.getValue(pSchemaName);
+            pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
 
             if (pSchema != NULL)
             {
@@ -166,9 +121,10 @@ void CConfigSchemaHelper::printConfigSchema(StringBuffer &strXML) const
 
 const char* CConfigSchemaHelper::printDocumentation(const char* comp)
 {
-    assert(comp);
+    assert(comp != NULL && *comp != 0);
+    assert(m_pSchemaMapManager != NULL);
 
-    if (comp == NULL)
+    if (comp == NULL || *comp == 0)
     {
         return NULL;
     }
@@ -178,11 +134,11 @@ const char* CConfigSchemaHelper::printDocumentation(const char* comp)
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
 
         if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
-             pSchema = m_schemaMap.getValue(pSchemaName);
+             pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
 
              assert(pSchema != NULL);
 
@@ -203,9 +159,10 @@ const char* CConfigSchemaHelper::printDocumentation(const char* comp)
 
 const char* CConfigSchemaHelper::printDojoJS(const char* comp)
 {
-    assert(comp);
+    assert(comp != NULL && *comp != 0);
+    assert(m_pSchemaMapManager != NULL);
 
-    if (comp == NULL)
+    if (comp == NULL || *comp == 0)
     {
         return NULL;
     }
@@ -214,11 +171,11 @@ const char* CConfigSchemaHelper::printDojoJS(const char* comp)
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
 
         if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
-             pSchema = m_schemaMap.getValue(pSchemaName);
+             pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
 
              assert(pSchema != NULL);
 
@@ -237,7 +194,10 @@ const char* CConfigSchemaHelper::printDojoJS(const char* comp)
 
 const char* CConfigSchemaHelper::printQML(const char* comp) const
 {
-    if (comp == NULL)
+    assert(comp != NULL && *comp != 0);
+    assert(m_pSchemaMapManager != NULL);
+
+    if (comp == NULL || *comp == 0)
     {
         return NULL;
     }
@@ -246,11 +206,11 @@ const char* CConfigSchemaHelper::printQML(const char* comp) const
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
 
         if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
-             pSchema = m_schemaMap.getValue(pSchemaName);
+             pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
 
              assert(pSchema != NULL);
 
@@ -269,7 +229,10 @@ const char* CConfigSchemaHelper::printQML(const char* comp) const
 
 void CConfigSchemaHelper::printDump(const char* comp) const
 {
-    if (comp == NULL)
+    assert(comp != NULL && *comp != 0);
+    assert(m_pSchemaMapManager != NULL);
+
+    if (comp == NULL || *comp == 0)
     {
         return;
     }
@@ -278,11 +241,11 @@ void CConfigSchemaHelper::printDump(const char* comp) const
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
 
         if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
-             pSchema = m_schemaMap.getValue(pSchemaName);
+             pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
 
              assert(pSchema != NULL);
 
@@ -302,6 +265,8 @@ void CConfigSchemaHelper::dumpStdOut() const
 //test purposes
 bool CConfigSchemaHelper::getXMLFromSchema(StringBuffer& strXML, const char* pComponent)
 {
+    assert (m_pSchemaMapManager != NULL);
+
     CAttributeArray *pAttributeArray = NULL;
     CElementArray *pElementArray = NULL;
     CSchema* pSchema = NULL;
@@ -310,7 +275,7 @@ bool CConfigSchemaHelper::getXMLFromSchema(StringBuffer& strXML, const char* pCo
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
 
         if (pComponent == NULL || strcmp(pComponent, pSchemaName) == 0)
         {
@@ -320,7 +285,7 @@ bool CConfigSchemaHelper::getXMLFromSchema(StringBuffer& strXML, const char* pCo
                 continue;
             }
 
-            pSchema = m_schemaMap.getValue(pSchemaName);
+            pSchema =  m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
 
             if (pSchema != NULL)
             {
@@ -332,126 +297,6 @@ bool CConfigSchemaHelper::getXMLFromSchema(StringBuffer& strXML, const char* pCo
     strXML.append("\t</Software>\n</Environment>\n");
 
     return true;
-}
-
-CSchema* CConfigSchemaHelper::getSchemaForXSD(const char* pComponent)
-{
-    return m_schemaMap.getValue(pComponent);
-}
-
-void CConfigSchemaHelper::setSchemaForXSD(const char* pComponent, CSchema *pSchema)
-{
-    assert(pSchema != NULL);
-
-    if (pSchema != NULL)
-    {
-        m_schemaMap.setValue(pComponent, pSchema);
-    }
-}
-
-CSimpleType* CConfigSchemaHelper::getSimpleTypeWithName(const char* pName)
-{
-    assert(pName != NULL);
-
-    if (pName == NULL)
-    {
-        return NULL;
-    }
-
-    CSimpleType *pSimpleType = NULL;
-
-    pSimpleType = *(m_simpleTypePtrMap.getValue(pName));
-
-    assert(pSimpleType != NULL);
-
-    return pSimpleType;
-}
-
-void CConfigSchemaHelper::setSimpleTypeWithName(const char* pName, CSimpleType *pSimpleType)
-{
-    assert (pSimpleType != NULL);
-
-    if (pName == NULL || pSimpleType == NULL)
-    {
-        return;
-    }
-
-    if (m_simpleTypePtrMap.getValue(pName) != NULL)
-    {
-        throw MakeExceptionFromMap(EX_STR_SIMPLE_TYPE_ALREADY_DEFINED);
-    }
-
-    m_simpleTypePtrMap.setValue(pName, pSimpleType);
-}
-
-CComplexType* CConfigSchemaHelper::getComplexTypeWithName(const char* pName)
-{
-    assert(pName != NULL);
-
-    if (pName == NULL)
-    {
-        return NULL;
-    }
-
-    CComplexType *pComplexType = NULL;
-
-    pComplexType = *(m_complexTypePtrsMap.getValue(pName));
-
-    assert(pComplexType != NULL);
-
-    return pComplexType;
-}
-
-void CConfigSchemaHelper::setComplexTypeWithName(const char* pName, CComplexType *pComplexType)
-{
-    assert (pComplexType != NULL);
-
-    if (pName == NULL || pComplexType == NULL)
-    {
-        return;
-    }
-
-    if (m_complexTypePtrsMap.getValue(pName) != NULL)
-    {
-        throw MakeExceptionFromMap(EX_STR_COMPLEX_TYPE_ALREADY_DEFINED);
-    }
-
-    m_complexTypePtrsMap.setValue(pName, pComplexType);
-}
-
-CAttributeGroup* CConfigSchemaHelper::getAttributeGroup(const char* pName)
-{
-    assert(pName != NULL);
-
-    if (pName == NULL)
-    {
-        return NULL;
-    }
-
-    CAttributeGroup *pAttributeGroup = NULL;
-
-    pAttributeGroup = *(m_attributeGroupTypePtrsMap.getValue(pName));
-
-    assert(pAttributeGroup != NULL);
-
-    return pAttributeGroup;
-}
-
-void CConfigSchemaHelper::setAttributeGroupTypeWithName(const char* pName, CAttributeGroup *pAttributeGroup)
-{
-    assert (pAttributeGroup != NULL);
-
-    if (pName == NULL || pAttributeGroup == NULL)
-    {
-        return;
-    }
-
-    if (m_attributeGroupTypePtrsMap.getValue(pName) != NULL)
-    {
-        throw MakeExceptionFromMap(EX_STR_ATTRIBUTE_GROUP_ALREADY_DEFINED);
-    }
-
-    m_attributeGroupTypePtrsMap.setValue(pName, pAttributeGroup);
 }
 
 void CConfigSchemaHelper::addExtensionToBeProcessed(CExtension *pExtension)
@@ -489,11 +334,11 @@ void CConfigSchemaHelper::processExtensionArr()
         {
             CXSDNodeBase *pNodeBase = NULL;
 
-            pNodeBase = m_simpleTypePtrMap.getValue(pName) != NULL ? dynamic_cast<CSimpleType*>(*(m_simpleTypePtrMap.getValue(pName))) : NULL;
+            pNodeBase = m_pSchemaMapManager->getSimpleTypeWithName(pName) != NULL ? dynamic_cast<CSimpleType*>(m_pSchemaMapManager->getSimpleTypeWithName(pName)) : NULL;
 
             if (pNodeBase == NULL)
             {
-                pNodeBase = m_complexTypePtrsMap.getValue(pName) != NULL ? dynamic_cast<CComplexType*>(*(m_complexTypePtrsMap.getValue(pName))) : NULL ;
+                pNodeBase = m_pSchemaMapManager->getComplexTypeWithName(pName) != NULL ? dynamic_cast<CComplexType*>(m_pSchemaMapManager->getComplexTypeWithName(pName)) : NULL ;
             }
 
             assert(pNodeBase != NULL);
@@ -504,6 +349,8 @@ void CConfigSchemaHelper::processExtensionArr()
             }
         }
     }
+
+    m_extensionArr.popAll(false);
 }
 
 void CConfigSchemaHelper::processAttributeGroupArr()
@@ -519,9 +366,9 @@ void CConfigSchemaHelper::processAttributeGroupArr()
 
         if (pRef != NULL && pRef[0] != 0)
         {
-            CAttributeGroup *pAttributeGroup = NULL;
+            assert(m_pSchemaMapManager != NULL);
 
-            pAttributeGroup = *(m_attributeGroupTypePtrsMap.getValue(pRef));
+            CAttributeGroup *pAttributeGroup = m_pSchemaMapManager->getAttributeGroupFromXPath(pRef);
 
             assert(pAttributeGroup != NULL);
 
@@ -531,6 +378,8 @@ void CConfigSchemaHelper::processAttributeGroupArr()
             }
         }
     }
+
+    m_attributeGroupArr.popAll(true);
 }
 
 void CConfigSchemaHelper::populateEnvXPath()
@@ -540,7 +389,7 @@ void CConfigSchemaHelper::populateEnvXPath()
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        pSchema = m_schemaMap.getValue(CBuildSetManager::getInstance()->getBuildSetSchema(idx));
+        pSchema = m_pSchemaMapManager->getSchemaForXSD(CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx));
 
         if (pSchema != NULL)
         {
@@ -571,7 +420,7 @@ void CConfigSchemaHelper::loadEnvFromConfig(const char *pEnvFile)
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        pSchema = m_schemaMap.getValue(CBuildSetManager::getInstance()->getBuildSetSchema(idx));
+        pSchema = m_pSchemaMapManager->getSchemaForXSD(CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx));
 
         if (pSchema != NULL)
         {
@@ -587,7 +436,7 @@ void CConfigSchemaHelper::traverseAndProcessArray(const char *pXSDName)
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetSchema(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
 
         if (pComponent == NULL || strcmp(pComponent,pSchemaName) == 0)
         {
@@ -596,7 +445,7 @@ void CConfigSchemaHelper::traverseAndProcessArray(const char *pXSDName)
                 continue;
             }
 
-            pSchema = m_schemaMap.getValue(pSchemaName);
+            pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
 
             if (pSchema != NULL)
             {
@@ -633,84 +482,12 @@ const char* CConfigSchemaHelper::getToolTipJS() const
     return strJS.str();
 }
 
-void CConfigSchemaHelper::addMapOfXPathToAttribute(const char*pXPath, CAttribute *pAttribute)
-{
-    assert (pAttribute != NULL);
-    assert(pXPath != NULL && *pXPath != 0);
-
-    // TODO:: throw exception if problems here
-
-    assert(m_attributePtrsMap.find(pXPath) == NULL);
-
-    // should I remove automatically?
-
-    m_attributePtrsMap.setValue(pXPath, pAttribute);
-    m_strArrayEnvXPaths.append(pXPath);
-}
-
-void CConfigSchemaHelper::removeMapOfXPathToAttribute(const char*pXPath)
-{
-    assert (m_attributePtrsMap.find(pXPath) != NULL);
-
-    m_attributePtrsMap.remove(pXPath);
-}
-
-void CConfigSchemaHelper::addMapOfXPathToElementArray(const char*pXPath, CElementArray *pElementArray)
-{
-    assert (pElementArray != NULL);
-    assert(pXPath != NULL && *pXPath != 0);
-
-    if (m_elementArrayPtrsMap.find(pXPath) != NULL)
-    {
-        return;  // already mapped, we must be dealing with live data
-    }
-    m_elementArrayPtrsMap.setValue(pXPath, pElementArray);
-}
-
-void CConfigSchemaHelper::removeMapOfXPathToElementArray(const char*pXPath)
-{
-    assert (m_elementArrayPtrsMap.find(pXPath) != NULL);
-    m_elementArrayPtrsMap.remove(pXPath);
-}
-
-void CConfigSchemaHelper::addMapOfXPathToElement(const char* pXPath, CElement *pElement)
-{
-    assert (pElement != NULL);
-    assert(pXPath != NULL && *pXPath != 0);
-
-    assert(m_elementPtrsMap.find(pXPath) == NULL);
-
-    m_elementPtrsMap.setValue(pXPath, pElement);
-    m_strArrayEnvXPaths.append(pXPath);
-}
-
-void CConfigSchemaHelper::removeMapOfXPathToElement(const char*pXPath)
-{
-    assert (m_elementPtrsMap.find(pXPath) != NULL);
-    m_elementPtrsMap.remove(pXPath);
-}
-
-void CConfigSchemaHelper::addMapOfXPathToRestriction(const char*pXPath, CRestriction *pRestriction)
-{
-    assert (pRestriction != NULL);
-    assert(pXPath != NULL && *pXPath != 0);
-    assert(m_restrictionPtrsMap.find(pXPath) == NULL);
-
-    m_restrictionPtrsMap.setValue(pXPath, pRestriction);
-}
-
-void CConfigSchemaHelper::removeMapOfXPathToRestriction(const char*pXPath)
-{
-    assert(pXPath != NULL && *pXPath != 0);
-
-    m_restrictionPtrsMap.remove(pXPath);
-}
-
 void CConfigSchemaHelper::setEnvTreeProp(const char *pXPath, const char* pValue)
 {
     assert(pXPath != NULL && pXPath[0] != 0);
+    assert(m_pSchemaMapManager != NULL);
 
-    CAttribute *pAttribute = *(m_attributePtrsMap.getValue(pXPath));
+    CAttribute *pAttribute = m_pSchemaMapManager->getAttributeFromXPath(pXPath);
 
     assert(pAttribute != NULL);
 
@@ -746,21 +523,21 @@ void CConfigSchemaHelper::setEnvTreeProp(const char *pXPath, const char* pValue)
     pFileIO->write(0, strXML.length(), strXML.str());
 }
 
-
 const char* CConfigSchemaHelper::getTableValue(const char* pXPath,  int nRow) const
 {
     assert(pXPath != NULL);
+    assert(m_pSchemaMapManager != NULL);
 
-    CAttribute **pAttribute = (m_attributePtrsMap.getValue(pXPath));
-    CElement **pElement = NULL;
+    CAttribute *pAttribute = m_pSchemaMapManager->getAttributeFromXPath(pXPath);
+    CElement *pElement = NULL;
 
     if (pAttribute == NULL)
     {
-        pElement = m_elementPtrsMap.getValue(pXPath);
+        pElement = m_pSchemaMapManager->getElementFromXPath(pXPath);
 
         assert(pElement != NULL);
 
-        return (*pElement)->getEnvValueFromXML();
+        return pElement->getEnvValueFromXML();
     }
     else
     {
@@ -768,7 +545,7 @@ const char* CConfigSchemaHelper::getTableValue(const char* pXPath,  int nRow) co
 
         if (nRow == 1)
         {
-            return (*pAttribute)->getEnvValueFromXML();
+            return pAttribute->getEnvValueFromXML();
         }
         else
         {
@@ -785,11 +562,11 @@ const char* CConfigSchemaHelper::getTableValue(const char* pXPath,  int nRow) co
 
             strXPath.append((String(strXPathOrignal).substring(strXPath.length()-offset, strXPathOrignal.length()))->toCharArray());
 
-            pAttribute = (m_attributePtrsMap.getValue(strXPath.str()));
+            pAttribute = m_pSchemaMapManager->getAttributeFromXPath(strXPath.str());
 
             assert(pAttribute != NULL);
 
-            return (*pAttribute)->getEnvValueFromXML();
+            return pAttribute->getEnvValueFromXML();
         }
     }
 }
@@ -797,40 +574,51 @@ const char* CConfigSchemaHelper::getTableValue(const char* pXPath,  int nRow) co
 int CConfigSchemaHelper::getElementArraySize(const char *pXPath) const
 {
     assert(pXPath != NULL);
+    assert(m_pSchemaMapManager != NULL);
 
-    CElementArray **pElementArray = m_elementArrayPtrsMap.getValue(pXPath);
+    CElementArray *pElementArray = m_pSchemaMapManager->getElementArrayFromXPath(pXPath);
 
-    //assert(pElementArray != NULL);
     if (pElementArray == NULL)
     {
         return 0;
     }
 
-    return (**pElementArray).getCountOfSiblingElements(pXPath);
+    return pElementArray->getCountOfSiblingElements(pXPath);
 }
 
 const char* CConfigSchemaHelper::getAttributeXSDXPathFromEnvXPath(const char* pEnvXPath) const
 {
     assert(pEnvXPath != NULL && *pEnvXPath != 0);
+    assert(m_pSchemaMapManager != NULL);
 
-    CAttribute **pAttribute = m_attributePtrsMap.getValue(pEnvXPath);
+    CAttribute *pAttribute = m_pSchemaMapManager->getAttributeFromXPath(pEnvXPath);
 
     assert(pAttribute != NULL);
 
-    return (*pAttribute)->getXSDXPath();
+    return pAttribute->getXSDXPath();
 }
 
 const char* CConfigSchemaHelper::getElementArrayXSDXPathFromEnvXPath(const char* pEnvXPath) const
 {
-    assert(pEnvXPath != NULL && *pEnvXPath != 0);
+    assert(pEnvXPath != NULL);
+    assert(m_pSchemaMapManager != NULL);
 
-    CElementArray **pElementArray = m_elementArrayPtrsMap.getValue(pEnvXPath);
+    CElementArray *pElementArray = m_pSchemaMapManager->getElementArrayFromXPath(pEnvXPath);
 
     assert(pElementArray != NULL);
 
-    return (*pElementArray)->getXSDXPath();
+    return pElementArray->getXSDXPath();
 }
 
+void CConfigSchemaHelper::appendAttributeXPath(const char* pXPath)
+{
+    m_strArrayEnvXPaths.append(pXPath);
+}
+
+void CConfigSchemaHelper::appendElementXPath(const char* pXPath)
+{
+    m_strArrayEnvXPaths.append(pXPath);
+}
 
 void CConfigSchemaHelper::stripXPathIndex(StringBuffer &strXPath)
 {

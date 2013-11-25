@@ -2,6 +2,7 @@
 #include "DocumentationMarkup.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "jptree.hpp"
+#include "SchemaMapManager.hpp"
 
 const CXSDNodeBase* CAttributeGroup::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const
 {
@@ -236,7 +237,7 @@ CAttributeGroup* CAttributeGroup::load(CXSDNodeBase* pParentNode, const IPropert
     }
     else if (pAttributeGroup->getName() != NULL && pAttributeGroup->getName()[0] != 0)
     {
-        CConfigSchemaHelper::getInstance()->setAttributeGroupTypeWithName(pAttributeGroup->getName(), pAttributeGroup);
+        CConfigSchemaHelper::getInstance()->getSchemaMapManager()->setAttributeGroupTypeWithName(pAttributeGroup->getName(), pAttributeGroup);
     }
 
     StringBuffer strXPath(xpath);

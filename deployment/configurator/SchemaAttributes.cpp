@@ -9,10 +9,12 @@
 #include "DojoHelper.hpp"
 #include "QMLMarkup.hpp"
 #include "ExceptionStrings.hpp"
+#include "SchemaMapManager.hpp"
+#include "ConfiguratorMain.hpp"
 
 CAttribute::~CAttribute()
 {
-    CConfigSchemaHelper::getInstance()->removeMapOfXPathToAttribute(this->getEnvXPath());
+    CConfigSchemaHelper::getInstance()->getSchemaMapManager()->removeMapOfXPathToAttribute(this->getEnvXPath());
 }
 
 const char* CAttribute::getTitle() const
@@ -291,7 +293,9 @@ void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 
     this->setEnvXPath(strXPath.str());
 
-    CConfigSchemaHelper::getInstance()->addMapOfXPathToAttribute(this->getEnvXPath(), this);
+    CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToAttribute(this->getEnvXPath(), this);
+    CConfigSchemaHelper::getInstance()->appendAttributeXPath(this->getEnvXPath());
+
 
     if (this->m_pSimpleTypeArray != NULL)
     {

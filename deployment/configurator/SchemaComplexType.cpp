@@ -13,6 +13,7 @@
 #include "ConfigSchemaHelper.hpp"
 #include "DocumentationMarkup.hpp"
 #include "ExceptionStrings.hpp"
+#include "SchemaMapManager.hpp"
 
 void CComplexType::dump(std::ostream& cout, unsigned int offset) const
 {
@@ -371,7 +372,7 @@ CComplexType* CComplexType::load(CXSDNodeBase* pParentNode, const IPropertyTree 
 
         if (pName != NULL)
         {
-            CConfigSchemaHelper::getInstance()->setComplexTypeWithName(pName, pComplexType);
+            CConfigSchemaHelper::getInstance()->getSchemaMapManager()->setComplexTypeWithName(pName, pComplexType);
         }
     }
 

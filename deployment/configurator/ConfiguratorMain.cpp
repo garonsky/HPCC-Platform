@@ -319,9 +319,6 @@ int ConfiguratorMain(int argc, char* argv[])
     try
     {
         pSchemaHelper->populateSchema();
-        pSchemaHelper->processExtensionArr();
-        pSchemaHelper->processAttributeGroupArr();
-        pSchemaHelper->populateEnvXPath();
     }
     CATCH_EXCEPTION_AND_EXIT
 

@@ -3,6 +3,7 @@
 #include "SchemaSimpleType.hpp"
 #include "SchemaRestriction.hpp"
 #include "ConfigSchemaHelper.hpp"
+#include "SchemaMapManager.hpp"
 
 
 CXSDNodeBase* CSimpleType::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName)
@@ -149,7 +150,7 @@ CSimpleType* CSimpleType::load(CXSDNodeBase* pParentNode, const IPropertyTree *p
 
     if (pName != NULL)
     {
-        CConfigSchemaHelper::getInstance()->setSimpleTypeWithName(pName, pSimpleType);
+        CConfigSchemaHelper::getInstance()->getSchemaMapManager()->setSimpleTypeWithName(pName, pSimpleType);
     }
 
     return pSimpleType;

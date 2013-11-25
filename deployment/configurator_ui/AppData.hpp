@@ -4,7 +4,7 @@
 #include <QDateTime>
 #include <QString>
 #include <QAbstractListModel>
-#include "ConfigSchemaHelper.hpp"
+#include "../configurator/ConfiguratorAPI.hpp"
 
 #define BUFFER_SIZE 2048
 
@@ -52,35 +52,28 @@ public:
     {
         char pValue[BUFFER_SIZE];
 
-        CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
-
-        if (pSchemaHelper->getValue(XPath.toStdString().c_str(), pValue))
+        if (CONFIGURATOR_API::getValue(XPath.toStdString().c_str(), pValue) )
         {
             return pValue;
+        }
+        else
+        {
+            return "";
         }
     }
 
     Q_INVOKABLE void setValue(QString XPath, QString qstrNewValue)
     {
-
-        CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
-
-        pSchemaHelper->setValue(XPath.toStdString().c_str(), qstrNewValue.toStdString().c_str());
+        CONFIGURATOR_API::setValue(XPath.toStdString().c_str(), qstrNewValue.toStdString().c_str());
     }
 
     Q_INVOKABLE int getIndex(QString XPath)
     {
-        char pValue[BUFFER_SIZE];
-
-        CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
-
-        return pSchemaHelper->getIndex(XPath.toStdString().c_str());
+        return CONFIGURATOR_API::getIndex(XPath.toStdString().c_str());
     }
 
-    Q_INVOKABLE void  setIndex(QString XPath, int index)
+    Q_INVOKABLE void setIndex(QString XPath, int index)
     {
-        CConfigSchemaHelper *pSchemaHelper = CConfigSchemaHelper::getInstance();
-
-        return pSchemaHelper->setIndex(XPath.toStdString().c_str(), index);
+        return CONFIGURATOR_API::setIndex(XPath.toStdString().c_str(), index);
     }
 };

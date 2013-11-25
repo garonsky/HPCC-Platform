@@ -7,11 +7,11 @@
 #include "ConfigSchemaHelper.hpp"
 #include "QMLMarkup.hpp"
 #include "DocumentationMarkup.hpp"
-
+#include "SchemaMapManager.hpp"
 
 CRestriction::~CRestriction()
 {
-    CConfigSchemaHelper::getInstance()->removeMapOfXPathToRestriction(this->getEnvXPath());
+    CConfigSchemaHelper::getInstance()->getSchemaMapManager()->removeMapOfXPathToRestriction(this->getEnvXPath());
 }
 
 void CRestriction::dump(std::ostream& cout, unsigned int offset) const
@@ -129,7 +129,7 @@ void CRestriction::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     this->setEnvXPath(strXPath);
 
-    CConfigSchemaHelper::getInstance()->addMapOfXPathToRestriction(this->getEnvXPath(), this);
+    CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToRestriction(this->getEnvXPath(), this);
 
     if (this->m_pEnumerationArray != NULL)
     {

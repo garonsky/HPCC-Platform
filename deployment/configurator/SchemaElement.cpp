@@ -16,7 +16,8 @@
 #include "ConfigSchemaHelper.hpp"
 #include "DojoHelper.hpp"
 #include "QMLMarkup.hpp"
-
+#include "SchemaMapManager.hpp"
+#include "ConfiguratorMain.hpp"
 
 CElement* CElement::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
@@ -598,7 +599,8 @@ void CElement::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         {
             this->setEnvValueFromXML(pValue);
 
-            CConfigSchemaHelper::getInstance()->addMapOfXPathToElement(this->getEnvXPath(), this);
+            CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(this->getEnvXPath(), this);
+            CConfigSchemaHelper::getInstance()->appendElementXPath(this->getEnvXPath());
         }
     }
 }
@@ -662,7 +664,7 @@ void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 
         mapKey.setf("%s[%d]", this->getXSDXPath(), idx+1);
 
-        CConfigSchemaHelper::getInstance()->addMapOfXPathToElementArray(mapKey.str(), this);
+        CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElementArray(mapKey.str(), this);
     }
 }
 

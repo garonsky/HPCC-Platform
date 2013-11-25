@@ -88,7 +88,7 @@ void CBuildSetManager::getBuildSetServices(StringArray& buildSetArray) const
 }
 
 
-const char* CBuildSetManager::getServiceName(int index) const
+const char* CBuildSetManager::getBuildSetServiceName(int index) const
 {
     LOOP_THRU_BUILD_SET
     {
@@ -108,13 +108,53 @@ const char* CBuildSetManager::getServiceName(int index) const
     return NULL;
 }
 
-const char* CBuildSetManager::getComponentName(int index) const
+const char* CBuildSetManager::getBuildSetServiceFileName(int index) const
+{
+    LOOP_THRU_BUILD_SET
+    {
+        if (index == 0)
+        {
+            return m_buildSetArray.item(idx).getSchema();
+        }
+
+        if (m_buildSetArray.item(idx).getProcessName() != NULL && strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) == 0)
+        {
+            index--;
+        }
+    }
+
+    assert(false);
+
+    return NULL;
+}
+
+const char* CBuildSetManager::getBuildSetComponentName(int index) const
 {
     LOOP_THRU_BUILD_SET
     {
         if (index == 0)
         {
             return m_buildSetArray.item(idx).getName();
+        }
+
+        if (m_buildSetArray.item(idx).getProcessName() == NULL || strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) != 0 && (m_buildSetArray.item(idx).getDeployable() == NULL || stricmp(m_buildSetArray.item(idx).getDeployable(), "no") != 0))
+        {
+            index--;
+        }
+    }
+
+    assert(false);
+
+    return NULL;
+}
+
+const char* CBuildSetManager::getBuildSetComponentFileName(int index) const
+{
+    LOOP_THRU_BUILD_SET
+    {
+        if (index == 0)
+        {
+            return m_buildSetArray.item(idx).getSchema();
         }
 
         if (m_buildSetArray.item(idx).getProcessName() == NULL || strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) != 0 && (m_buildSetArray.item(idx).getDeployable() == NULL || stricmp(m_buildSetArray.item(idx).getDeployable(), "no") != 0))
@@ -195,7 +235,37 @@ const char* CBuildSetManager::getBuildSetSchema(int index) const
     }
 }
 
-const int CBuildSetManager::getSchemaCount() const
+const int CBuildSetManager::getBuildSetSchemaCount() const
 {
     return m_buildSetArray.length();
+}
+
+const int CBuildSetManager::getBuildSetServiceCount() const
+{
+    int nCount = 0;
+
+    LOOP_THRU_BUILD_SET
+    {
+        if (m_buildSetArray.item(idx).getProcessName() != NULL && strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) == 0)
+        {
+            nCount++;
+        }
+    }
+
+    return nCount;
+}
+
+const int CBuildSetManager::getBuildSetComponentCount() const
+{
+    int nCount = 0;
+
+    LOOP_THRU_BUILD_SET
+    {
+        if (m_buildSetArray.item(idx).getProcessName() == NULL || strcmp(m_buildSetArray.item(idx).getProcessName(), XML_TAG_ESPSERVICE) != 0 && (m_buildSetArray.item(idx).getDeployable() == NULL || stricmp(m_buildSetArray.item(idx).getDeployable(), "no") != 0))
+        {
+            nCount++;
+        }
+    }
+
+    return nCount;
 }

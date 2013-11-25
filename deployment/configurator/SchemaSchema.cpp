@@ -3,6 +3,7 @@
 #include "SchemaSchema.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "DocumentationMarkup.hpp"
+#include "SchemaMapManager.hpp"
 
 CSchema* CSchema::load(const char* pSchemaLocation, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
@@ -15,9 +16,9 @@ CSchema* CSchema::load(const char* pSchemaLocation, const IPropertyTree *pSchema
 
     CConfigSchemaHelper *pSchemaHelper = (CConfigSchemaHelper::getInstance());
 
-    if (pSchemaHelper->getSchemaForXSD(pSchemaLocation) != NULL)  // check to see if the this schema has already been processed
+    if (pSchemaHelper->getSchemaMapManager()->getSchemaForXSD(pSchemaLocation) != NULL)  // check to see if the this schema has already been processed
     {
-        return pSchemaHelper->getSchemaForXSD(pSchemaLocation);
+        return pSchemaHelper->getSchemaMapManager()->getSchemaForXSD(pSchemaLocation);
     }
 
     CSchema* pSchema = new CSchema(pSchemaLocation);
@@ -71,7 +72,10 @@ CSchema* CSchema::load(const char* pSchemaLocation, const IPropertyTree *pSchema
     pSchema->m_pSimpleTypeArray = pSimpleTypeArray;
     pSchema->m_pIncludeArray = pIncludeArray;
 
-    pSchemaHelper->setSchemaForXSD(pSchemaLocation, pSchema);
+    pSchemaHelper->getSchemaMapManager()->setSchemaForXSD(pSchemaLocation, pSchema);
+
+    CConfigSchemaHelper::getInstance()->processAttributeGroupArr();
+    CConfigSchemaHelper::getInstance()->processExtensionArr();
 
     return pSchema;
 }

@@ -23,11 +23,15 @@ public:
 
     void setBuildSetArray(const StringArray &strArray);
 
-    const char* getServiceName(int index) const;
-    const char* getComponentName(int index) const;
+    const char* getBuildSetServiceName(int index) const;
+    const char* getBuildSetServiceFileName(int index) const;
+    const char* getBuildSetComponentName(int index) const;
+    const char* getBuildSetComponentFileName(int index) const;
 
     const char* getBuildSetSchema(int index) const;
-    const int getSchemaCount() const;
+    const int getBuildSetSchemaCount() const;
+    const int getBuildSetServiceCount() const;
+    const int getBuildSetComponentCount() const;
 
 
     bool populateBuildSet();

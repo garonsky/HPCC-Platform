@@ -7,9 +7,11 @@
 #include <QString>
 #include "ConfiguratorUI.hpp"
 #include "AppData.hpp"
+#include "../configurator/ConfiguratorMain.hpp"
+#include <cassert>
 
 
-int main2(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
@@ -17,8 +19,7 @@ int main2(int argc, char *argv[])
 
     ApplicationData data;
 
-
-    int nTables = CConfigSchemaHelper::getInstance(0)->getNumberOfTables();
+    int nTables = CONFIGURATOR_API::getNumberOfTables();
 
     TableDataModel tableDataModel[10];
 
@@ -35,11 +36,10 @@ int main2(int argc, char *argv[])
     view.setSource(QUrl::fromLocalFile(*argv));
     view.show();
 
-
     return app.exec();
 }
 
 extern "C" void StartQMLUI(char* pQMLFile)
 {
-    main2(1,&pQMLFile);
+    main(1,&pQMLFile);
 }
