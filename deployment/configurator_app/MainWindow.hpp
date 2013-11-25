@@ -29,6 +29,7 @@ private:
 
 private slots:
 //    void on_componentListUpdated();
+    void on_actionOpen_triggered();
 };
 
 #endif // MAINWINDOW_HPP

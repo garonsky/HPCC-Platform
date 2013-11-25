@@ -12,9 +12,9 @@ TARGET = configurator_app
 #TEMPLATE = lib
 QMAKE_CXXFLAGS += -fPIC
 #TEMPLATE = app
-LIBS += /home/gleb/HPCC2/build/Debug/libs/libconfigurator.a
-LIBS += /home/gleb/HPCC2/build/Debug/libs/libstringlib.so
-LIBS += /home/gleb/HPCC2/build/Debug/libs/libjlib.so
+LIBS += ../../../build/Debug/libs/libconfigurator.a
+LIBS += ../../../build/Debug/libs/libstringlib.so
+LIBS += ../../../build/Debug/libs/libjlib.so
 LIBS += ../configurator_ui/libConfiguratorUI.so
 
 INCLUDEPATH += ../../system/jlib

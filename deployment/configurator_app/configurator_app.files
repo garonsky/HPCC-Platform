@@ -1,0 +1,15 @@
+build-ConfiguratorApp-Desktop_Qt_5_1_1_GCC_64bit-Debug/moc_MainWindow.cpp
+build-ConfiguratorApp-Desktop_Qt_5_1_1_GCC_64bit-Debug/ui_MainWindow.h
+Main.cpp
+MainWindow.cpp
+MainWindow.hpp
+MainWindowInterface.cpp
+MainWindowInterface.h
+MainWindowThread.cpp
+MainWindowThread.hpp
+moc_MainWindow.cpp
+moc_Worker.cpp
+ui_MainWindow.h
+Worker.cpp
+Worker.hpp
+MainWindow.ui

@@ -3,6 +3,7 @@
 #include "ui_MainWindow.h"
 #include "Worker.hpp"
 #include <QThread>
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -55,4 +56,9 @@ void MainWindow::addServiceToList(char *pService)
     QString qstrComp(pService);
 
     this->ui->menuAdd_Service->addAction(qstrComp);
+}
+
+void MainWindow::on_actionOpen_triggered()
+{
+    QString qstrFileName = QFileDialog::getOpenFileName(this, "Open Environment Configuration File", "/etc/HPCCSystems/source/", (".xml"));
 }

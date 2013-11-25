@@ -32,7 +32,7 @@ HPCC_ADD_LIBRARY ( configurator  ${SRCS} )
 
 # APPLICATION
 #ADD_DEFINITIONS ( -D_CONSOLE )
-#link_directories(../configurator_ui /opt/Qt/5.1.1/gcc_64/lib/ )
+link_directories(../configurator_ui /opt/Qt/5.1.1/gcc_64/lib/ )
 #HPCC_ADD_EXECUTABLE ( configurator  ${SRCS} )
 #target_link_libraries ( configurator jlib ConfiguratorUI )
 
