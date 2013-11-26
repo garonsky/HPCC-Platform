@@ -13,3 +13,4 @@ ui_MainWindow.h
 Worker.cpp
 Worker.hpp
 MainWindow.ui
+configurator_app.pro

@@ -517,7 +517,6 @@ void CElement::getQML(StringBuffer &strQML) const
             m_pAnnotation->getQML(strQML);
         }
 
-
         if (m_pAnnotation != NULL && m_pAnnotation->getDocumentation() != NULL)
         {
             m_pAnnotation->getQML(strQML);
@@ -709,6 +708,7 @@ void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         }
 
         int subIndex = 1;
+        bool bTopElement = this->getConstParentNode()->getNodeType() == XSD_SCHEMA;  // check if this element is the 'component' itself
 
         do
         {

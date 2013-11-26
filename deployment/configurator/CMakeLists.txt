@@ -6,7 +6,7 @@ set ( SRCS QMLMarkup.cpp QMLMarkup.hpp ConfiguratorMain.cpp ConfigFileComponentU
       SchemaAppInfo.cpp SchemaAnnotation.cpp SchemaComplexContent.cpp SchemaComplexType.cpp SchemaDocumentation.cpp
       SchemaExtension.cpp SchemaChoice.cpp SchemaInclude.cpp SchemaSchema.cpp SchemaSimpleType.cpp SchemaRestriction.cpp NodeHandlerDocumentation.cpp DojoHelper.cpp
       SchemaEnumeration.cpp SchemaCommon.cpp ExceptionStrings.cpp SchemaEnumeration.cpp SchemaAttributeGroup.cpp DocumentationMarkup.hpp DojoJSMarkup.hpp
-      SchemaCommon.hpp BuildSet.cpp ConfiguratorAPI.cpp SchemaMapManager.cpp)
+      SchemaCommon.hpp BuildSet.cpp ConfiguratorAPI.cpp SchemaMapManager.cpp )
 
 include_directories (
          ./../../system/include
@@ -25,20 +25,24 @@ include_directories (
 
 )
 
+# *** DYNAMIC LIBRARY (.so) *** #
+ADD_DEFINITIONS( -D_USRDLL -DCONFIGURATOR_STATIC_LIB)
+HPCC_ADD_LIBRARY ( configurator SHARED ${SRCS} )
+#LINK_DIRECTORIES( ../configurator_ui )
+#target_link_libraries ( configurator jlib ConfiguratorUI )
+target_link_libraries ( configurator jlib )
 
-# STATIC LIBRARY (.a)
+
+# **** STATIC LIBRARY (.a) **** #
 #ADD_DEFINITIONS( -D_USRDLL -DCONFIGURATOR_STATIC_LIB)
 #HPCC_ADD_LIBRARY ( configurator  ${SRCS} )
 
-# APPLICATION
-ADD_DEFINITIONS ( -D_CONSOLE )
-link_directories(../configurator_ui /opt/Qt/5.1.1/gcc_64/lib/ )
-HPCC_ADD_EXECUTABLE ( configurator  ${SRCS} )
-target_link_libraries ( configurator jlib ConfiguratorUI )
 
-# QT APPLICATION
-#link_directories(../configurator_ui /opt/Qt/5.1.1/gcc_64/lib/ ../build-configurator_app-Desktop-Debug )
-#target_link_libraries ( configurator jlib ConfiguratorUI configurator_app )
-#HPCC_ADD_LIBRARY ( configurator  ${SRCS} )
+# **** APPLICATION **** #
+#ADD_DEFINITIONS ( -D_CONSOLE )
+#link_directories(../configurator_ui /opt/Qt/5.1.1/gcc_64/lib/ )
+#HPCC_ADD_EXECUTABLE ( configurator  ${SRCS} )
+#target_link_libraries ( configurator jlib ConfiguratorUI )
+
 
 install ( TARGETS configurator DESTINATION sbin )

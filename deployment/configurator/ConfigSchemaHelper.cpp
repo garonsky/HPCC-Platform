@@ -46,7 +46,7 @@ CConfigSchemaHelper* CConfigSchemaHelper::getInstance(const char* pBuildSetFileN
     return s_pCConfigSchemaHelper;
 }
 
-CConfigSchemaHelper::CConfigSchemaHelper(const char* pBuildSetFile, const char* pBuildSetDir, const char* pDefaultDirOverride) : m_pEnvPropertyTree(NULL), m_pSchemaMapManager(NULL), m_nTables(0)
+CConfigSchemaHelper::CConfigSchemaHelper(const char* pBuildSetFile, const char* pBuildSetDir, const char* pDefaultDirOverride) : m_pBasePath(NULL), m_nTables(0), m_pEnvPropertyTree(NULL), m_pSchemaMapManager(NULL)
 {
     assert(pBuildSetFile != NULL);
     assert(pBuildSetDir != NULL);
@@ -58,12 +58,6 @@ CConfigSchemaHelper::CConfigSchemaHelper(const char* pBuildSetFile, const char* 
 CConfigSchemaHelper::~CConfigSchemaHelper()
 {
     delete m_pSchemaMapManager;
-}
-
-
-bool CConfigSchemaHelper::populateBuildSet()
-{
-    return CBuildSetManager::getInstance()->populateBuildSet();
 }
 
 bool CConfigSchemaHelper::populateSchema()

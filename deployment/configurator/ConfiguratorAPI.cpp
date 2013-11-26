@@ -68,9 +68,24 @@ int initialize(int argc, char *argv[])
 {
     assert(s_pConfigSchemaHelper == NULL);
 
-    ConfiguratorMain(argc, argv);
+    InitModuleObjects();
+
+    //ConfiguratorMain(argc, argv);
 
     s_pConfigSchemaHelper = CConfigSchemaHelper::getInstance();
+
+    return 1;
+}
+
+int initialize()
+{
+    assert(s_pConfigSchemaHelper == NULL);
+
+    InitModuleObjects();
+
+    s_pConfigSchemaHelper = CConfigSchemaHelper::getInstance();
+
+    s_pConfigSchemaHelper->populateSchema();
 
     return 1;
 }
@@ -219,6 +234,65 @@ int getNumberOfTables()
     return CConfigSchemaHelper::getInstance()->getNumberOfTables();
 }
 
+const char* getServiceName(int idx, char *pName)
+{
+    if (pName != NULL)
+    {
+        strcpy (pName, CBuildSetManager::getInstance()->getBuildSetComponentName(idx));
+    }
+    return CBuildSetManager::getInstance()->getBuildSetComponentName(idx);
 }
 
+const char* getComponentName(int idx, char *pName)
+{
+    if (pName != NULL)
+    {
+        strcpy (pName, CBuildSetManager::getInstance()->getBuildSetComponentName(idx));
+    }
+    return CBuildSetManager::getInstance()->getBuildSetComponentName(idx);
+}
+
+int openConfigurationFile(const char* pFile)
+{
+    CConfigSchemaHelper::getInstance()->loadEnvFromConfig(pFile);
+
+    return 1;
+}
+
+int getNumberOfComponentsInConfiguration()
+{
+    int nCount = 0;
+
+    return nCount;
+}
+
+/*
+void closeConfigurationFile()
+{
+
+}
+
+bool saveConfigurationFile()
+{
+    return true;
+}
+
+
+const char* getComponentNameInConfiguration(int index, char *pName = 0)
+{
+
+}
+
+int getNumberOfServicesInConfiguration()
+{
+
+}
+
+const char* getServiceNameInConfiguration(int index, char *pName = 0)
+{
+
+}
+*/
+
+}
 //#endif // CONFIGURATOR_STATIC_LIB

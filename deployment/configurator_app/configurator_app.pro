@@ -6,20 +6,21 @@
 
 QT       += core gui declarative
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-
+greaterThan(QT_MAJOR_VERSION, 5): QT += widgets
+QT += quick
 TARGET = configurator_app
-#TEMPLATE = lib
 QMAKE_CXXFLAGS += -fPIC
+CONFIG += debug
 #TEMPLATE = app
-LIBS += ../../../build/Debug/libs/libconfigurator.a
-LIBS += ../../../build/Debug/libs/libstringlib.so
 LIBS += ../../../build/Debug/libs/libjlib.so
 LIBS += ../configurator_ui/libConfiguratorUI.so
+#LIBS += ../../../build/Debug/libs/libconfigurator.a
+LIBS += ../../../build/Debug/libs/libconfigurator.so
 
 INCLUDEPATH += ../../system/jlib
 INCLUDEPATH += ../../system/include
 INCLUDEPATH += ../deploy
+
 
 SOURCES +=\
         MainWindow.cpp \

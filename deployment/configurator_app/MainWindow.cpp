@@ -4,6 +4,10 @@
 #include "Worker.hpp"
 #include <QThread>
 #include <QFileDialog>
+#include <QtQuick/QQuickView>
+#include <QQmlContext>
+#include "../configurator_ui/AppData.hpp"
+//#include <QDeclarativeView>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -34,15 +38,6 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-/*
-void MainWindow::setComponentList(int nCount, char *pComponentList[])
-{
-    for (int idx = 0; idx < nCount; idx++)
-    {
-        this->ui->menuAdd_Component->addMenu(pComponentList[idx]);
-    }
-}*/
-
 void MainWindow::addComponentToList(char *pComponent)
 {
     QString qstrComp(pComponent);
@@ -60,5 +55,26 @@ void MainWindow::addServiceToList(char *pService)
 
 void MainWindow::on_actionOpen_triggered()
 {
-    QString qstrFileName = QFileDialog::getOpenFileName(this, "Open Environment Configuration File", "/etc/HPCCSystems/source/", (".xml"));
+    QString qstrFileName = QFileDialog::getOpenFileName(this, "Open ironment Configuration File", "/etc/HPCCSystems/source/", ("*.xml"));
+    //QString qstrFileName = QFileDialog::getOpenFileName(this, "Open ironment Configuration File", "/home/gleb//HPCC2/build/", ("*.qml"));
+
+    QQuickView *pView = new QQuickView();
+
+    CONFIGURATOR_API::openConfigurationFile("/etc/HPCCSystems/source/demo1.xml");
+
+    ApplicationData *pAppData = new ApplicationData();
+    pView->rootContext()->setContextProperty("ApplicationData", pAppData);
+
+    TableDataModel *pTableDataModel = new TableDataModel[MAX_ARRAY_X];
+
+    for (int idx = 0; idx < MAX_ARRAY_X; idx++)
+    {
+        pView->rootContext()->setContextProperty(modelNames[idx], &(pTableDataModel[idx]));
+    }
+
+    pView->setSource(QUrl::fromLocalFile(qstrFileName));
+
+    QWidget *container = QWidget::createWindowContainer(pView);
+
+    this->ui->verticalLayout->addWidget(container);
 }

@@ -27,7 +27,6 @@ public:
 
     virtual ~CConfigSchemaHelper();
 
-    bool populateBuildSet();
     bool populateSchema();
     void printConfigSchema(StringBuffer &str) const;
 
@@ -116,6 +115,7 @@ protected:
     CIArrayOf<CAttributeGroup> m_attributeGroupArr;
     StringArray m_strToolTipsJS;
     StringArray m_strArrayEnvXPaths;
+    StringArray m_strArrayEnvXMLComponentInstances;
 
     void setEnvPropertyTree(IPropertyTree *pEnvTree)
     {

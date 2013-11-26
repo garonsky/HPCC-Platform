@@ -33,7 +33,7 @@ void usage()
     std::cout << std::endl;
 
     std::cout << std::endl << "** Experimental **" << std::endl;
-    std::cout <<"Example Usage: ./configurator -use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/  -qml -t ./ -e qml -s ./esp.xsd.qml -env /etc/HPCCSystems/source/environment.xml" << std::endl;
+    std::cout <<"Example Usage: ./configurator -use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/  -qml -t ./ -e qml -s1 ./esp.xsd.qml -env /etc/HPCCSystems/source/environment.xml" << std::endl;
     std::cout << "-f -file <build set file>         : buildset file name (required if base directory is specfied" << std::endl;
     std::cout << "-p -path <base dir path>          : base directory path (required if buildset file name is specified)" << std::endl;
     std::cout << "-x -xsd  <xsd file name>          : xsd file name (can be more than one) - For use with buildset file" << std::endl;
@@ -311,10 +311,10 @@ int ConfiguratorMain(int argc, char* argv[])
         ///pSchemaHelper->setBuildSetArray(arrXSDs);
         CBuildSetManager::getInstance()->setBuildSetArray(arrXSDs);
     }
-    else if (pSchemaHelper->populateBuildSet() == false)
+    /*else if (pSchemaHelper->populateBuildSet() == false)
     {
         std::cout << "Failed to populate buildset.  Are the buildset file name and path set correctly?  Do they exist? Are permissions set properly?" << std::endl;
-    }
+    }*/
 
     try
     {
@@ -444,7 +444,11 @@ int ConfiguratorMain(int argc, char* argv[])
 
     if (bQMLServer == true)
     {
+#ifndef CONFIGURATOR_STATIC_LIB
         StartQMLUI(pQMLFile);
+#endif // CONFIGURATOR_STATIC_LIB
+        //char *par[1024]  = { pQMLFile };
+        //main2(1,par);
     }
     else if (bQMLServer2 == true)
     {

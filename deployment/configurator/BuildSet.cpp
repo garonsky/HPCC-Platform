@@ -37,6 +37,7 @@ CBuildSetManager* CBuildSetManager::getInstance(const char* pBuildSetFile, const
 
         s_pBuildSetManager->m_buildSetPath.clear().appendf("%s%s%s", pBuildSetDirectory, pBuildSetDirectory[strlen(pBuildSetDirectory)-1] == '/' ? "" : "/", pBuildSetFile);
 
+        s_pBuildSetManager->populateBuildSet();
     }
 
     return s_pBuildSetManager;
