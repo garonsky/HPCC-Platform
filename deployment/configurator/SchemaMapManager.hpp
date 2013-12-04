@@ -49,9 +49,12 @@ public:
     void removeMapOfXPathToElementArray(const char* pXPath);
     CElementArray* getElementArrayFromXPath(const char* pXPath);
 
-    void addMapOfXPathToElement(const char* pXPath, CElement *pElement);
+    void addMapOfXPathToElement(const char* pXPath, CElement *pElement, bool bIsTopLevelElement = false);
     void removeMapOfXPathToElement(const char* pXPath);
     CElement* getElementFromXPath(const char *pXPath);
+
+    int getNumberOfComponents() const;
+    CElement* getComponent(int index);
 
 protected:
 
@@ -68,4 +71,4 @@ private:
 
 };
 
-#endif // SCHEMAMAPMANAGER_HPP
+#endif // _SCHEMA_MAP_MANAGER_HPP_

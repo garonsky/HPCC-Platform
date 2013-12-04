@@ -44,6 +44,11 @@ public:
 
     virtual void traverseAndProcessNodes() const;
 
+    bool isTopLevelElement() const
+    {
+        return m_bTopLevelElement;
+    }
+
     const CAnnotation* getAnnotation() const
     {
         return m_pAnnotation;
@@ -66,7 +71,7 @@ public:
 protected:
 
     CElement(CXSDNodeBase* pParentNode, const char* pName = "") : CXSDNode::CXSDNode(pParentNode, XSD_ELEMENT), m_strMinOccurs(""), m_strMaxOccurs(""), m_strName(pName), m_pAnnotation(NULL),
-        m_pComplexTypeArray(NULL), m_pAttributeArray(NULL)
+        m_pComplexTypeArray(NULL), m_pAttributeArray(NULL), m_bTopLevelElement(false)
     {
     }
 
@@ -74,10 +79,12 @@ protected:
     CComplexTypeArray* m_pComplexTypeArray;
     CAttributeArray* m_pAttributeArray;
 
+    bool m_bTopLevelElement;
+
 private:
 
     CElement() : CXSDNode::CXSDNode(NULL, XSD_ELEMENT), m_strMinOccurs(""), m_strMaxOccurs(""), m_strName(""), m_pAnnotation(NULL),
-        m_pComplexTypeArray(NULL), m_pAttributeArray(NULL)
+        m_pComplexTypeArray(NULL), m_pAttributeArray(NULL), m_bTopLevelElement(false)
     {
     }
 };

@@ -260,10 +260,23 @@ int openConfigurationFile(const char* pFile)
 }
 
 int getNumberOfComponentsInConfiguration()
-{
-    int nCount = 0;
+{   
+    return CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getNumberOfComponents();
+}
 
-    return nCount;
+const char* getComponentNameInConfiguration(int idx, char *pName)
+{
+    if (idx < 0)
+    {
+        return NULL;
+    }
+
+    if (pName != NULL)
+    {
+        strcpy (pName, CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(idx)->getName());
+    }
+
+    return CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(idx)->getName();
 }
 
 /*

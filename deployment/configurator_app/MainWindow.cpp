@@ -6,7 +6,9 @@
 #include <QFileDialog>
 #include <QtQuick/QQuickView>
 #include <QQmlContext>
+#include <QFileSystemModel>
 #include "../configurator_ui/AppData.hpp"
+#include "../configurator_ui/model.h"
 //#include <QDeclarativeView>
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -55,8 +57,8 @@ void MainWindow::addServiceToList(char *pService)
 
 void MainWindow::on_actionOpen_triggered()
 {
-    QString qstrFileName = QFileDialog::getOpenFileName(this, "Open ironment Configuration File", "/etc/HPCCSystems/source/", ("*.xml"));
-    //QString qstrFileName = QFileDialog::getOpenFileName(this, "Open ironment Configuration File", "/home/gleb//HPCC2/build/", ("*.qml"));
+    //QString qstrFileName = QFileDialog::getOpenFileName(this, "Open ironment Configuration File", "/etc/HPCCSystems/source/", ("*.xml"));
+    QString qstrFileName = QFileDialog::getOpenFileName(this, "Open ironment Configuration File", "/home/gleb//HPCC2/build/", ("*.qml"));
 
     QQuickView *pView = new QQuickView();
 
@@ -77,4 +79,21 @@ void MainWindow::on_actionOpen_triggered()
     QWidget *container = QWidget::createWindowContainer(pView);
 
     this->ui->verticalLayout->addWidget(container);
+
+    //Model *pModel = new Model(20,1,container);
+    //this->ui->treeView->setModel(pModel);
+
+    ComponentDataModel *pComponentDataModel = new ComponentDataModel(container);
+    this->ui->treeView->setModel(pComponentDataModel);
+
+
+
+
+/*
+    QFileSystemModel *filemodel = new QFileSystemModel(this);
+       filemodel->setFilter(QDir::Files | QDir::NoDotAndDotDot);
+       filemodel->setNameFilterDisables(false);
+       //filemodel->setRootPath(sPath);
+       ui->treeView->setModel(filemodel);
+    //tree->setModel( &myModel);*/
 }

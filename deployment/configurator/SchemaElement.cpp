@@ -567,6 +567,13 @@ void CElement::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 
 void CElement::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
+    CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(this->getEnvXPath(), this);
+
+    if (this->getConstAncestorNode(2)->getNodeType() == XSD_SCHEMA)
+    {
+        m_bTopLevelElement = true;
+    }
+
     if (m_pComplexTypeArray != NULL)
     {
         try
@@ -598,7 +605,7 @@ void CElement::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         {
             this->setEnvValueFromXML(pValue);
 
-            CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(this->getEnvXPath(), this);
+//            CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(this->getEnvXPath(), this);
             CConfigSchemaHelper::getInstance()->appendElementXPath(this->getEnvXPath());
         }
     }
@@ -708,7 +715,6 @@ void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         }
 
         int subIndex = 1;
-        bool bTopElement = this->getConstParentNode()->getNodeType() == XSD_SCHEMA;  // check if this element is the 'component' itself
 
         do
         {

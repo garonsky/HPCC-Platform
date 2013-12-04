@@ -256,7 +256,7 @@ CElementArray* CSchemaMapManager::getElementArrayFromXPath(const char* pXPath)
     }
 }
 
-void CSchemaMapManager::addMapOfXPathToElement(const char* pXPath, CElement *pElement)
+void CSchemaMapManager::addMapOfXPathToElement(const char* pXPath, CElement *pElement,  bool bIsTopLevelElement)
 {
     assert (pElement != NULL);
     assert(pXPath != NULL && *pXPath != 0);
@@ -322,4 +322,49 @@ CRestriction* CSchemaMapManager::getRestrictionFromXPath(const char* pXPath)
     {
         return NULL;
     }
+}
+
+int CSchemaMapManager::getNumberOfComponents() const
+{
+    HashIterator iter(m_elementPtrsMap);
+
+    int nCount = 0;
+
+    ForEach(iter)
+    {
+        CElement *pElement = *(m_elementPtrsMap.mapToValue(&iter.query()));
+
+        if (pElement->isTopLevelElement() == true)
+        {
+            nCount++;
+        }
+    }
+
+    return nCount;
+}
+
+CElement* CSchemaMapManager::getComponent(int index)
+{
+    assert(index >= 0 && index < getNumberOfComponents());
+
+    HashIterator iter(m_elementPtrsMap);
+
+    int nCount = 0;
+
+    ForEach(iter)
+    {
+        CElement *pElement = *(m_elementPtrsMap.mapToValue(&iter.query()));
+
+        if (pElement->isTopLevelElement() == true)
+        {
+            nCount++;
+        }
+
+        if (nCount == index)
+        {
+            return pElement;
+        }
+    }
+
+    return NULL;
 }

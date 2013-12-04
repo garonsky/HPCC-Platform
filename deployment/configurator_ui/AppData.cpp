@@ -42,3 +42,63 @@ QHash<int, QByteArray> TableDataModel::roleNames() const
 
     return Roles;
 }
+
+
+ComponentDataModel::ComponentDataModel( QObject *parent) : QAbstractItemModel(parent)
+{
+}
+
+int ComponentDataModel::rowCount(const QModelIndex & /*parent */) const
+{
+    return CONFIGURATOR_API::getNumberOfComponentsInConfiguration();
+}
+
+QVariant ComponentDataModel::data(const QModelIndex &index, int role) const
+{
+    const char *pName = CONFIGURATOR_API::getComponentNameInConfiguration(index.row()-1);
+
+    //assert(pName != NULL);
+
+    if (pName == NULL || Qt::DisplayRole != role)
+    {
+        return QVariant();
+    }
+    return QString(pName);
+}
+
+int ComponentDataModel::columnCount(const QModelIndex & /* parent */) const
+{
+    return 1;
+}
+
+
+QModelIndex ComponentDataModel::parent(const QModelIndex & index) const
+{
+    if (index.row() <= 0 || index.row()  >= CONFIGURATOR_API::getNumberOfComponentsInConfiguration())
+    {
+        return QModelIndex();
+    }
+
+    //return createIndex(QModelIndex().row()-1, 1);
+    return createIndex(QModelIndex().row(), 1);
+}
+
+QModelIndex ComponentDataModel::index(int row, int column, const QModelIndex & parent) const
+{
+    if (row < 0 || row >= CONFIGURATOR_API::getNumberOfComponentsInConfiguration())
+    {
+        return QModelIndex();
+    }
+    //return createIndex(row+1, 1);
+    return createIndex(QModelIndex().row(), 1);
+}
+
+Qt::ItemFlags ComponentDataModel::flags(const QModelIndex &index) const
+{
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}
+
+QVariant ComponentDataModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    return QString("Header");
+}

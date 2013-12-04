@@ -42,6 +42,7 @@ extern "C" int getNumberOfTables();
 
 extern "C" int openConfigurationFile(const char* pFile);
 extern "C" int getNumberOfComponentsInConfiguration();
+extern "C" const char* getComponentNameInConfiguration(int idx, char *pName = 0);
 /*extern "C" void closeConfigurationFile();
 extern "C" bool saveConfigurationFile();
 
