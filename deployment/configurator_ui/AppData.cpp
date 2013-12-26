@@ -1,6 +1,9 @@
 #include "AppData.hpp"
 #include <cassert>
 
+static const int TOP_LEVEL = 1;
+static void* P_TOP_LEVEL = (void*)(&TOP_LEVEL);
+
 TableDataModel::TableDataModel()
 {
 }
@@ -48,16 +51,20 @@ ComponentDataModel::ComponentDataModel( QObject *parent) : QAbstractItemModel(pa
 {
 }
 
-int ComponentDataModel::rowCount(const QModelIndex & /*parent */) const
+int ComponentDataModel::rowCount(const QModelIndex &parent) const
 {
-    return CONFIGURATOR_API::getNumberOfComponentsInConfiguration();
+    int nRetVal = 0;
+
+    void *pointer = parent.internalPointer();
+
+    nRetVal = CONFIGURATOR_API::getNumberOfChildren(pointer);
+
+    return nRetVal;
 }
 
 QVariant ComponentDataModel::data(const QModelIndex &index, int role) const
 {
-    const char *pName = CONFIGURATOR_API::getComponentNameInConfiguration(index.row()-1);
-
-    //assert(pName != NULL);
+    const char *pName = CONFIGURATOR_API::getData(index.internalPointer());
 
     if (pName == NULL || Qt::DisplayRole != role)
     {
@@ -66,39 +73,61 @@ QVariant ComponentDataModel::data(const QModelIndex &index, int role) const
     return QString(pName);
 }
 
-int ComponentDataModel::columnCount(const QModelIndex & /* parent */) const
+int ComponentDataModel::columnCount(const QModelIndex &/*parent*/) const
 {
-    return 1;
+        return 1;
 }
-
 
 QModelIndex ComponentDataModel::parent(const QModelIndex & index) const
 {
-    if (index.row() <= 0 || index.row()  >= CONFIGURATOR_API::getNumberOfComponentsInConfiguration())
+    if (!index.isValid())
     {
         return QModelIndex();
     }
 
-    //return createIndex(QModelIndex().row()-1, 1);
-    return createIndex(QModelIndex().row(), 1);
+    /*if (index.internalPointer() == NULL || index.column() > 0)
+    {
+        createIndex(nParentRow, 0, (void*)NULL);
+    }*/
+
+    void *pParent = CONFIGURATOR_API::getParent(index.internalPointer());
+
+    if (pParent == NULL)
+    {
+        return QModelIndex();
+    }
+
+    int nParentRow = CONFIGURATOR_API::getIndexFromParent(index.internalPointer());
+
+    return createIndex(nParentRow, 0, pParent);
 }
 
 QModelIndex ComponentDataModel::index(int row, int column, const QModelIndex & parent) const
 {
-    if (row < 0 || row >= CONFIGURATOR_API::getNumberOfComponentsInConfiguration())
+    if (column > 0)
     {
         return QModelIndex();
     }
-    //return createIndex(row+1, 1);
-    return createIndex(QModelIndex().row(), 1);
+
+    void *pPointer = NULL;
+
+    pPointer = CONFIGURATOR_API::getChild(parent.internalPointer(), row);
+
+    return createIndex(row, 0, pPointer);
 }
 
 Qt::ItemFlags ComponentDataModel::flags(const QModelIndex &index) const
 {
+    if (index.isValid() == false)
+    {
+        return 0;
+    }
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
 QVariant ComponentDataModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    return QString("Header");
+    if (role == Qt::DisplayRole)
+        return QString("Components");
+    return QAbstractItemModel::headerData(section, orientation, role);
 }

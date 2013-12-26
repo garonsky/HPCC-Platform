@@ -41,8 +41,39 @@ extern "C" int getNumberOfRows(const char* pXPath);
 extern "C" int getNumberOfTables();
 
 extern "C" int openConfigurationFile(const char* pFile);
-extern "C" int getNumberOfComponentsInConfiguration();
-extern "C" const char* getComponentNameInConfiguration(int idx, char *pName = 0);
+
+
+extern "C" int getNumberOfComponentsInConfiguration(void *pData);
+extern "C" void* getComponentInConfiguration(int idx);
+extern "C" void* getComponentInstance(int idx, void *pData);
+extern "C" const void* getPointerToComponentTypeInConfiguration(void *pData);
+
+extern "C" const char* getComponentNameInConfiguration(int idx, void *pData);
+
+extern "C" const void* getPointerToComponentInConfiguration(int idx, void *pData, int compIdx = -1);
+
+extern "C" const void* getPointerToComponents();
+extern "C" int getIndexOfParent(void *pData);
+
+extern "C" int getNumberOfChildren(void *pData);
+extern "C" const char* getData(void *pData);
+extern "C" void* getParent(void *pData);
+extern "C" void* getChild(void *pData, int idx);
+extern "C" int getIndexFromParent(void *pData);
+
+
+
+
+
+
+
+
+//extern "C" void* getComponentType(int idx);
+//extern "C" void* getComponentTypes(void *pComponentTyp, int idx);
+//extern "C" void* getComponent(void *pComponent, int idx);
+
+
+
 /*extern "C" void closeConfigurationFile();
 extern "C" bool saveConfigurationFile();
 

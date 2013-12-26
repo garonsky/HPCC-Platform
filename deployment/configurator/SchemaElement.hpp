@@ -49,9 +49,34 @@ public:
         return m_bTopLevelElement;
     }
 
+    void setTopLevelElement(bool b = true)
+    {
+        m_bTopLevelElement =  b;
+    }
+
+    void setParentIndex(int index)
+    {
+        m_nParentIndex = index;
+    }
+
+    int getParentIndex() const
+    {
+        return m_nParentIndex;
+    }
+
     const CAnnotation* getAnnotation() const
     {
         return m_pAnnotation;
+    }
+
+    const CAttributeArray* getAttributeArray() const
+    {
+        return m_pAttributeArray;
+    }
+
+    const CComplexTypeArray* getComplexTypeArray() const
+    {
+        return m_pComplexTypeArray;
     }
 
     static const CXSDNodeBase* getAncestorElement(const CXSDNodeBase *pNode)
@@ -71,7 +96,7 @@ public:
 protected:
 
     CElement(CXSDNodeBase* pParentNode, const char* pName = "") : CXSDNode::CXSDNode(pParentNode, XSD_ELEMENT), m_strMinOccurs(""), m_strMaxOccurs(""), m_strName(pName), m_pAnnotation(NULL),
-        m_pComplexTypeArray(NULL), m_pAttributeArray(NULL), m_bTopLevelElement(false)
+        m_pComplexTypeArray(NULL), m_pAttributeArray(NULL), m_bTopLevelElement(false), m_nParentIndex(-1)
     {
     }
 
@@ -80,6 +105,7 @@ protected:
     CAttributeArray* m_pAttributeArray;
 
     bool m_bTopLevelElement;
+    int m_nParentIndex;
 
 private:
 
@@ -117,7 +143,7 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
 
-    virtual int getCountOfSiblingElements(const char *pXPath);
+    virtual int getCountOfSiblingElements(const char *pXPath) const;
 
     virtual void setSchemaRoot(const IPropertyTree *pSchemaRoot)
     {

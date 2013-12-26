@@ -368,3 +368,28 @@ CElement* CSchemaMapManager::getComponent(int index)
 
     return NULL;
 }
+
+int CSchemaMapManager::getIndexOfElement(const CElement *pElem)
+{
+    int nCount = 0;
+
+    HashIterator iter(m_elementPtrsMap);
+
+    ForEach(iter)
+    {
+        CElement *pElement = *(m_elementPtrsMap.mapToValue(&iter.query()));
+
+        if (pElement == pElem)
+        {
+            return nCount;
+        }
+
+        if (pElement->isTopLevelElement() == true)
+        {
+            nCount++;
+        }
+    }
+
+    assert(false);
+    return -1;
+}

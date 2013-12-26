@@ -8,7 +8,9 @@
 #include "jstring.hpp"
 #include "SchemaMapManager.hpp"
 #include "SchemaEnumeration.hpp"
+#include "SchemaCommon.hpp"
 #include "ConfiguratorMain.hpp"
+#include "EnvironmentModel.hpp"
 
 namespace CONFIGURATOR_API
 {
@@ -259,12 +261,7 @@ int openConfigurationFile(const char* pFile)
     return 1;
 }
 
-int getNumberOfComponentsInConfiguration()
-{   
-    return CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getNumberOfComponents();
-}
-
-const char* getComponentNameInConfiguration(int idx, char *pName)
+/*const char* getComponentNameInConfiguration(int idx, char *pName)
 {
     if (idx < 0)
     {
@@ -277,7 +274,268 @@ const char* getComponentNameInConfiguration(int idx, char *pName)
     }
 
     return CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(idx)->getName();
+}*/
+
+int getNumberOfComponentsInConfiguration(void *pData)
+{
+    if (pData == NULL)
+    {
+        return CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getNumberOfComponents();
+    }
+    else
+    {
+        CElement *pElement = static_cast<CElement*>(pData);
+
+        assert(pElement->getNodeType() == XSD_ELEMENT);
+
+        //int index = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getIndexOfElement(pElement);
+
+        //CElementArray *pElementArray = (static_cast<CElementArray*>(CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(index)->getParentNode()));
+
+        CElementArray *pElementArray = static_cast<CElementArray*>(pElement->getParentNode());
+
+        assert(pElementArray->getNodeType() == XSD_ELEMENT_ARRAY);
+
+        int nLength = pElementArray->length();
+
+        return nLength;
+    }
 }
+
+void* getComponentInConfiguration(int idx)
+{
+    assert(idx < CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getNumberOfComponents());
+
+    CElement *pElement = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(idx);
+
+    return pElement;
+}
+
+void* getComponentInstance(int idx, void *pData)
+{
+    assert(pData != NULL);
+    assert(((static_cast<CElement*>(pData))->getNodeType()) == XSD_ELEMENT);
+
+    CElement *pElement = static_cast<CElement*>(pData);
+
+    CElementArray *pElementArray = static_cast<CElementArray*>(pElement->getParentNode());
+
+    //assert(pElementArray->length() > idx);
+
+    if (pElementArray->length() >= idx)
+        idx = 0;
+
+    CElement *pElement2 = &(pElementArray->item(idx));
+
+    return pElement2;
+}
+
+const char* getComponentNameInConfiguration(int idx, void *pData)
+{
+    if (pData == NULL)
+    {
+        return CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(idx)->getName();
+    }
+    else
+    {
+        CElement *pElement = static_cast<CElement*>(pData);
+
+        assert(pElement->getNodeType() == XSD_ELEMENT);
+
+        pElement = &(dynamic_cast<const CElementArray*>(pElement->getConstParentNode())->item(idx));
+
+        const CAttribute *pAttribute = NULL;
+
+        if (pElement->getAttributeArray() != NULL)
+        {
+            pAttribute = pElement->getAttributeArray()->findAttributeWithName("name");
+
+            return pAttribute->getName();
+        }
+        else
+        {
+            return NULL;
+        }
+    }
+
+    assert(false);
+    return NULL;
+}
+
+
+const void* getPointerToComponentInConfiguration(int idx, void *pData, int compIdx)
+{
+    if (pData == NULL)
+    {
+        const CElement *pElement = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(idx);
+
+        assert(pElement != NULL);
+
+        const CXSDNodeBase *pNodeBase = pElement->getConstParentNode();
+        const CElementArray *pElementArray = dynamic_cast<const CElementArray*>(pNodeBase);
+
+        assert(pElementArray != NULL);
+
+        return pElementArray;
+    }
+    else
+    {
+        assert( compIdx >= 0);
+
+        CElementArray *pElementArray = static_cast<CElementArray*>(pData);
+
+        assert(pElementArray->getNodeType() == XSD_ELEMENT_ARRAY);
+
+        const CXSDNodeBase *pNodeBase = &(pElementArray->item(compIdx+idx));
+
+        const CElement *pReturnElement = dynamic_cast<const CElement*>(pNodeBase);
+
+        return pReturnElement;
+    }
+}
+
+const void* getPointerToComponentTypeInConfiguration(void *pData)
+{
+    assert (pData != NULL);
+
+    CElement *pElement = static_cast<CElement*>(pData);
+
+    assert (pElement->getNodeType() == XSD_ELEMENT);
+
+    CElementArray *pElementArray = static_cast<CElementArray*>(pElement->getParentNode());
+
+    pElement = &(pElementArray->item(0));
+
+    return pElement;
+}
+
+int getIndexOfParent(void *pData)
+{
+    assert (pData != NULL);
+    assert((static_cast<CElement*>(pData))->getNodeType() == XSD_ELEMENT);
+
+    int nIndexOfParent = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getIndexOfElement(static_cast<CElement*>(pData));
+
+    assert(nIndexOfParent >= 0);
+
+    return nIndexOfParent;
+}
+
+const void* getPointerToComponents()
+{
+    assert(CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(0)->getConstParentNode()->getNodeType() == XSD_ELEMENT_ARRAY);
+
+    return (CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(0)->getConstParentNode());
+}
+
+int getNumberOfChildren(void *pData)
+{
+    int nRetVal = 0;
+
+    if (pData == NULL)
+    {
+     //  CEnvironmentModel *pModel = CEnvironmentModel::getInstance();
+
+//        nRetVal = pModel->getRoot()->getNumberOfChildren();
+        return 1;
+    }
+    else
+    {
+        CEnvironmentModelNode *pNode = static_cast<CEnvironmentModelNode*>(pData);
+
+        nRetVal = pNode->getNumberOfChildren();
+    }
+
+    return nRetVal;
+}
+
+const char* getData(void *pData)
+{
+    assert(pData != NULL);
+
+    const char *p = CEnvironmentModel::getInstance()->getData(static_cast<CEnvironmentModelNode*>(pData));
+
+    return p;
+}
+
+void* getParent(void *pData)
+{
+    //assert(pData != NULL);
+
+    if (pData == NULL)
+    {
+        return NULL;
+    }
+
+    return (void*)(CEnvironmentModel::getInstance()->getParent(static_cast<CEnvironmentModelNode*>(pData)));
+}
+
+void* getChild(void *pData, int idx)
+{
+    if (pData == NULL)
+    {
+        assert(idx < CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getNumberOfComponents());
+
+        return (void*)(CEnvironmentModel::getInstance()->getRoot());
+    }
+    else
+    {
+        void *pRetPtr = (void*)(CEnvironmentModel::getInstance()->getChild(static_cast<CEnvironmentModelNode*>(pData), idx));
+
+        if (pRetPtr == NULL)
+        {
+            pRetPtr = pData;
+        }
+
+        return pRetPtr;
+    }
+}
+
+int getIndexFromParent(void *pData)
+{
+    assert(pData != NULL);
+
+    CEnvironmentModelNode *pNode = static_cast<CEnvironmentModelNode*>(pData);
+
+    assert (pNode->getParent() != NULL);
+
+    CEnvironmentModelNode *pGrandParent = pNode->getParent();
+
+    int nChildren = pGrandParent->getNumberOfChildren();
+
+    for (int idx = 0; idx < nChildren; idx++)
+    {
+        if (pNode == pGrandParent->getChild(idx))
+        {
+            return idx;
+        }
+    }
+
+    assert(false);
+    return 0;
+}
+
+/*void* getComponent(void *pComponent, int idx)
+{
+    assert(idx >= 0);
+
+    if (pComponenet == NULL)
+    {
+        return CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getComponent(idx)->getParentNode();
+    }
+    else
+    {
+        CElementArray *pElementArray = static_cast<CElementArray*>(pComponent);
+
+        if (pElementArray->length() >= idx || idx < 0)
+        {
+            return NULL;
+        }
+
+        pElementArray->item()
+    }
+}*/
+
 
 /*
 void closeConfigurationFile()

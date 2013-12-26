@@ -809,6 +809,36 @@ void CAttributeArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
     }
 }
 
+const CAttribute* CAttributeArray::findAttributeWithName(const char *pName, bool bCaseInsensitive) const
+{
+    assert (pName != NULL && pName[0] != 0);
+
+    if (pName == NULL || pName[0] == 0 || this->length() == 0)
+    {
+        return NULL;
+    }
+
+    for (int idx = 0; idx < this->length(); idx++)
+    {
+        if (bCaseInsensitive == true)
+        {
+            if (stricmp(this->item(idx).getName(), pName) == 0)
+            {
+                return &(this->item(idx));
+            }
+        }
+        else
+        {
+            if (strcmp(this->item(idx).getName(), pName) == 0)
+            {
+                return &(this->item(idx));
+            }
+        }
+    }
+
+    return NULL;
+}
+
 void CAttributeArray::traverseAndProcessNodes() const
 {
     QUICK_TRAVERSE_AND_PROCESS;

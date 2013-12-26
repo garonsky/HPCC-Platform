@@ -53,8 +53,6 @@
        </property>
       </layout>
      </widget>
-     <zorder>verticalLayoutWidget</zorder>
-     <zorder>verticalLayoutWidget</zorder>
     </widget>
    </widget>
    <widget class="QTreeView" name="treeView">
@@ -63,13 +61,10 @@
       <x>0</x>
       <y>20</y>
       <width>291</width>
-      <height>561</height>
+      <height>571</height>
      </rect>
     </property>
    </widget>
-   <zorder>scrollArea_2</zorder>
-   <zorder>treeView</zorder>
-   <zorder>treeView</zorder>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">

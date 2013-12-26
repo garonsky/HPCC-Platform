@@ -55,6 +55,7 @@ public:
 
     int getNumberOfComponents() const;
     CElement* getComponent(int index);
+    int getIndexOfElement(const CElement *pElem);
 
 protected:
 

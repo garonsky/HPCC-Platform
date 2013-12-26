@@ -248,7 +248,7 @@ public:
         return m_pNodeType;
     }
 
-    NODE_TYPES getNodeType() const
+    virtual NODE_TYPES getNodeType() const
     {
         return m_eNodeType;
     }
@@ -303,7 +303,7 @@ protected:
 
 private:
 
-};
+} __attribute__((aligned (32)));
 
 
 class CXSDNode : public CInterface, public CXSDNodeBase

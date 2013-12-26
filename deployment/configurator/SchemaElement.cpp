@@ -569,10 +569,10 @@ void CElement::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
     CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(this->getEnvXPath(), this);
 
-    if (this->getConstAncestorNode(2)->getNodeType() == XSD_SCHEMA)
+/*    if (this->getConstAncestorNode(2)->getNodeType() == XSD_SCHEMA)
     {
         m_bTopLevelElement = true;
-    }
+    }*/
 
     if (m_pComplexTypeArray != NULL)
     {
@@ -739,6 +739,11 @@ void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
             else
             {
                 pElement = &(this->item(idx));
+
+                if (pElement->getConstAncestorNode(2)->getNodeType() == XSD_SCHEMA)
+                {
+                    pElement->setTopLevelElement(true);
+                }
             }
             pElement->loadXMLFromEnvXml(pEnvTree);
 
@@ -815,7 +820,7 @@ CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const IPropertyTre
     return pElemArray;
 }
 
-int CElementArray::getCountOfSiblingElements(const char *pXPath)
+int CElementArray::getCountOfSiblingElements(const char *pXPath) const
 {
     assert(pXPath != NULL && *pXPath != 0);
 

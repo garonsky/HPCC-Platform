@@ -20,6 +20,7 @@ LIBS += ../../../build/Debug/libs/libconfigurator.so
 INCLUDEPATH += ../../system/jlib
 INCLUDEPATH += ../../system/include
 INCLUDEPATH += ../deploy
+INCLUDEPATH += /opt/Qt/5.1.1/gcc_64/include/QtCore
 
 
 SOURCES +=\
