@@ -55,13 +55,21 @@ extern const IRoxiePackageMap &queryEmptyRoxiePackageMap();
 interface IRoxiePackage : public IHpccPackage
 {
     // Lookup information in package to resolve existing logical file name
-    virtual const IResolvedFile *lookupFileName(const char *fileName, bool opt, bool cacheDaliResults, IConstWorkUnit *wu) const = 0;
+    virtual const IResolvedFile *lookupFileName(const char *fileName, bool opt, bool useCache, bool cacheResults, IConstWorkUnit *wu) const = 0;
     // Lookup information in package to create new logical file name
     virtual IRoxieWriteHandler *createFileName(const char *fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu) const = 0;
     // Lookup information in package about what in-memory indexes should be built for file
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const = 0;
-    // Remove a resolved file from the cache 
-    virtual void removeCache(const IResolvedFile *goer) const = 0; // note that this is const as cache is considered mutable
+};
+
+interface IResolvedFileCache
+{
+    // Add a filename and the corresponding IResolvedFile to the cache
+    virtual void addCache(const char *filename, const IResolvedFile *file) = 0;
+    // Lookup a filename in the cache
+    virtual IResolvedFile *lookupCache(const char *filename) = 0;
+    // Remove a resolved file from the cache
+    virtual void removeCache(const IResolvedFile *goer) = 0;
 };
 
 extern IRoxiePackage *createRoxiePackage(IPropertyTree *p, IRoxiePackageMap *packages);
@@ -87,8 +95,8 @@ interface IFileIOArray : extends IInterface
 interface IRoxieQuerySetManager : extends IInterface
 {
     virtual bool isActive() const = 0;
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &ctx) const = 0;
-    virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash) = 0;
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &ctx) const = 0;
+    virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry) = 0;
     virtual void getStats(const char *queryName, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const = 0;
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx) = 0;
     virtual void resetAllQueryTimings() = 0;
@@ -105,14 +113,15 @@ interface IRoxieDebugSessionManager : extends IInterface
 
 interface IRoxieQuerySetManagerSet : extends IInterface
 {
-    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash) = 0;
+    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry) = 0;
 };
 
 interface IRoxieQueryPackageManagerSet : extends IInterface
 {
+    virtual void requestReload() = 0;
     virtual void load() = 0;
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const = 0;
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual int getActivePackageCount() const = 0;
 };
@@ -129,11 +138,12 @@ extern void cleanupPlugins();
 
 extern void mergeStats(IPropertyTree *s1, IPropertyTree *s2, unsigned level);
 extern void mergeStats(IPropertyTree *s1, IPropertyTree *s2);
+extern void mergeQueries(IPropertyTree *s1, IPropertyTree *s2);
 
 extern const char *queryNodeFileName(const IPropertyTree &graphNode);
 extern const char *queryNodeIndexName(const IPropertyTree &graphNode);
 
-extern IPropertyTreeIterator *getNodeSubFileNames(const IPropertyTree &graphNode);
-extern IPropertyTreeIterator *getNodeSubIndexNames(const IPropertyTree &graphNode);
+extern void createDelayedReleaser();
+extern void stopDelayedReleaser();
 
 #endif

@@ -650,14 +650,16 @@
 
                 var exceptionHtml = "Workunit successfully published.";
                 var headerText = "Workunit Published";
-                var i = o.responseText.indexOf('<h3>Exception');
+                var hasException = 0;
+                var i = o.responseText.indexOf('<Exception>');
                 if (i > -1) {
+                    hasException = 1;
                     headerText = "Error Publishing Workunit";
-                    var j = o.responseText.indexOf('<table');
+                    var j = o.responseText.indexOf('<Message>');
                     if (j > -1) {
-                        var k = o.responseText.indexOf('</table>');
+                        var k = o.responseText.indexOf('</Message>');
                         if (k > -1) {
-                            exceptionHtml = o.responseText.substring(j, k+8);
+                            exceptionHtml = o.responseText.substring(j+9, k);
                         }
                     }
                 } else {
@@ -690,7 +692,7 @@
                 }
                 var publishDialog =
                      new YAHOO.widget.SimpleDialog("publishDialog",
-                      { width: "300px",
+                      { width: hasException ? null : "300px",
                         fixedcenter: true,
                         visible: false,
                         draggable: false,
@@ -738,29 +740,31 @@
 </soap:Envelope>
         */
 
-                    function popupBugReportForm()
+                    function popupZAPInfoForm()
                     {
-                        mywindow = window.open ("/WsWorkunits/WUGetBugReportInfo?WUID="+wid,
+                        mywindow = window.open ("/WsWorkunits/WUGetZAPInfo?WUID="+wid,
                             "mywindow", "location=0,status=1,scrollbars=1,resizable=1,width=800,height=760");
                         if (mywindow.opener == null)
                             mywindow.opener = window;
                         mywindow.focus();
                         return false;
                     }
-                    function createBugReport(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo)
+                    function createZAPInfo(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo)
                     {
-                        var href = "/WsWorkunits/WUReportBug?WUID=" + wuid;
-                        href += "&ESPIPAddress=" + espIP;
+                        document.getElementById("ESPIPAddress").value=espIP;
                         if (thorIP != '')
-                            href += "&ThorIPAddress=" + thorIP;
-                        href += "&BuildVersion=" + ESPBuildVersion;
+                            document.getElementById("ESPIPAddress").value=thorIP;
+                        document.getElementById("BuildVersion").value=ESPBuildVersion;
                         if (problemDesciption != '')
-                            href += "&ProblemDescription=" + problemDesciption;
+                            document.getElementById("ProblemDescription").value=problemDesciption;
                         if (history != '')
-                            href += "&WhatChanged=" + history;
+                            document.getElementById("WhatChanged").value=history;
                         if (timingInfo != '')
-                            href += "&WhereSlow=" + timingInfo;
-                        document.location.href=href;
+                            document.getElementById("WhereSlow").value=timingInfo;
+
+                        document.forms['protect'].action = "/WsWorkunits/WUCreateZAPInfo";
+                        document.forms['protect'].encType="application/x-www-form-urlencoded";
+                        document.forms['protect'].submit();
                     }
                ]]></xsl:text>
           </script>

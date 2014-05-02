@@ -200,19 +200,25 @@ enum {
 
 graph_decl StringBuffer &getRecordString(const void *key, IOutputRowSerializer *serializer, const char *prefix, StringBuffer &out);
 
-#define SPILL_PRIORITY_DEFAULT 50
+//NB: low priorities are spilt 1st
+#define SPILL_PRIORITY_LOW  100
+#define SPILL_PRIORITY_HIGH 1000000
+#define SPILL_PRIORITY_DEFAULT SPILL_PRIORITY_LOW
 #define SPILL_PRIORITY_DISABLE UINT_MAX
 
-#define SPILL_PRIORITY_JOIN 10
-#define SPILL_PRIORITY_SELFJOIN 10
-#define SPILL_PRIORITY_HASHJOIN 10
-#define SPILL_PRIORITY_LARGESORT 10
-#define SPILL_PRIORITY_GROUPSORT 20
-#define SPILL_PRIORITY_HASHDEDUP 30
-#define SPILL_PRIORITY_OVERFLOWABLE_BUFFER SPILL_PRIORITY_DEFAULT
-#define SPILL_PRIORITY_SPILLABLE_STREAM SPILL_PRIORITY_DEFAULT
-#define SPILL_PRIORITY_RESULT SPILL_PRIORITY_DEFAULT
-#define SPILL_PRIORITY_LOOKUPJOIN 10
+#define SPILL_PRIORITY_OVERFLOWABLE_BUFFER SPILL_PRIORITY_LOW
+#define SPILL_PRIORITY_SPILLABLE_STREAM SPILL_PRIORITY_LOW
+#define SPILL_PRIORITY_RESULT SPILL_PRIORITY_LOW
+
+#define SPILL_PRIORITY_GROUPSORT SPILL_PRIORITY_LOW+1000
+#define SPILL_PRIORITY_HASHDEDUP SPILL_PRIORITY_LOW+2000
+
+#define SPILL_PRIORITY_JOIN SPILL_PRIORITY_HIGH
+#define SPILL_PRIORITY_SELFJOIN SPILL_PRIORITY_HIGH
+#define SPILL_PRIORITY_HASHJOIN SPILL_PRIORITY_HIGH
+#define SPILL_PRIORITY_LARGESORT SPILL_PRIORITY_HIGH
+#define SPILL_PRIORITY_LOOKUPJOIN SPILL_PRIORITY_HIGH
+
 
 enum StableSortFlag { stableSort_none, stableSort_earlyAlloc, stableSort_lateAlloc };
 class CThorSpillableRowArray;
@@ -311,6 +317,7 @@ public:
         rows[numRows++] = row;
         return true;
     }
+    bool binaryInsert(const void *row, ICompare &compare, bool dropLast=false); // NB: takes ownership on success
     inline const void *query(rowidx_t i) const
     {
         if (i>=numRows)
@@ -443,7 +450,7 @@ public:
 
     //A thread calling the following functions must own the lock, or guarantee no other thread will access
     void sort(ICompare & compare, unsigned maxcores);
-    rowidx_t save(IFile &file, bool useCompression);
+    rowidx_t save(IFile &file, bool useCompression, const char *tracingPrefix);
     const void **getBlock(rowidx_t readRows);
     inline void noteSpilled(rowidx_t spilledRows)
     {

@@ -407,6 +407,7 @@ public:
     }
 
     IMPLEMENT_IINTERFACE;
+    virtual void outputInlineXml(const char *xml){}
     virtual void outputQuoted(const char *text) { }
 
     virtual void outputString(unsigned len, const char *field, const char *fieldname) 
@@ -498,6 +499,14 @@ public:
         // Searching/breaking on unicode not supported at the moment
     }
 
+    virtual void outputBeginDataset(const char *dsname, bool nestChildren)
+    {
+        // nothing for now
+    }
+    virtual void outputEndDataset(const char *dsname)
+    {
+        // nothing for now
+    }
     virtual void outputBeginNested(const char *fieldname, bool nestChildren) 
     {
         // nothing for now

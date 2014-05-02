@@ -131,8 +131,8 @@ static void sendHttpException(SafeSocket &client, TextMarkupFormat fmt, IExcepti
 class CHttpRequestAsyncFor : public CInterface, public CAsyncFor
 {
 private:
-    const char *queryName, *queryText;
-    const IRoxieContextLogger &logctx;
+    const char *queryName, *queryText, *querySetName;
+    const ContextLogger &logctx;
     IArrayOf<IPropertyTree> &requestArray;
     Linked<IQueryFactory> f;
     SafeSocket &client;
@@ -143,8 +143,10 @@ private:
     CriticalSection crit;
 
 public:
-    CHttpRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) :
-      f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused), slaveReplyLen(_slaveReplyLen), logctx(_logctx), xmlReadFlags(_xmlReadFlags)
+    CHttpRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused,
+                            unsigned &_slaveReplyLen, const char *_queryText, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
+    : f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused),
+      slaveReplyLen(_slaveReplyLen), logctx(_logctx), xmlReadFlags(_xmlReadFlags), querySetName(_querySetName)
     {
         queryName = _queryName;
         queryText = _queryText;
@@ -168,7 +170,7 @@ public:
         try
         {
             IPropertyTree &request = requestArray.item(idx);
-            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, httpHelper.queryContentFormat(), false, false, httpHelper, true, logctx, xmlReadFlags);
+            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, httpHelper.queryContentFormat(), false, false, httpHelper, true, logctx, xmlReadFlags, querySetName);
             ctx->process();
             ctx->flush(idx);
             CriticalBlock b(crit);
@@ -520,21 +522,29 @@ public:
             return locksGot > getNumNodes()/2;
     }
 
+    enum CascadeMergeType { CascadeMergeNone, CascadeMergeStats, CascadeMergeQueries };
+
     void doControlQuery(SocketEndpoint &ep, const char *queryText, StringBuffer &reply)
     {
         if (logctx.queryTraceLevel() > 5)
             logctx.CTXLOG("doControlQuery (%d): %.80s", isMaster, queryText);
         // By this point we should have cascade-connected thanks to a prior <control:lock>
         // So do the query ourselves and in all child threads;
-        Owned<IPropertyTree> mergedStats;
+        CascadeMergeType mergeType=CascadeMergeNone;
         if (strstr(queryText, "querystats"))
-            mergedStats.setown(createPTree("Endpoint"));
+            mergeType=CascadeMergeStats;
+        else if (strstr(queryText, ":queries"))
+            mergeType=CascadeMergeQueries;
+        Owned<IPropertyTree> mergedReply;
+        if (mergeType!=CascadeMergeNone)
+            mergedReply.setown(createPTree("Endpoint"));
 
         class casyncfor: public CAsyncFor
         {
             const char *queryText;
             CascadeManager *parent;
-            IPropertyTree *mergedStats;
+            IPropertyTree *mergedReply;
+            CascadeMergeType mergeType;
             StringBuffer &reply;
             CriticalSection crit;
             SocketEndpoint &ep;
@@ -542,9 +552,9 @@ public:
             const IRoxieContextLogger &logctx;
 
         public:
-            casyncfor(const char *_queryText, CascadeManager *_parent, IPropertyTree *_mergedStats,
+            casyncfor(const char *_queryText, CascadeManager *_parent, IPropertyTree *_mergedReply, CascadeMergeType _mergeType,
                       StringBuffer &_reply, SocketEndpoint &_ep, unsigned _numChildren, const IRoxieContextLogger &_logctx)
-                : queryText(_queryText), parent(_parent), mergedStats(_mergedStats), reply(_reply), ep(_ep), numChildren(_numChildren), logctx(_logctx)
+                : queryText(_queryText), parent(_parent), mergedReply(_mergedReply), mergeType(_mergeType), reply(_reply), ep(_ep), numChildren(_numChildren), logctx(_logctx)
             {
             }
             void Do(unsigned i)
@@ -569,9 +579,12 @@ public:
                     ForEach(*meat)
                     {
                         CriticalBlock cb(crit);
-                        if (mergedStats)
+                        if (mergedReply)
                         {
-                            mergeStats(mergedStats, &meat->query());
+                            if (mergeType == CascadeMergeStats)
+                                mergeStats(mergedReply, &meat->query());
+                            else if (mergeType == CascadeMergeQueries)
+                                mergeQueries(mergedReply, &meat->query());
                         }
                         else
                             toXML(&meat->query(), reply);
@@ -599,19 +612,22 @@ public:
                 }
                 myReply.append("</Endpoint>\n");
                 CriticalBlock cb(crit);
-                if (mergedStats)
+                if (mergedReply)
                 {
                     Owned<IPropertyTree> xml = createPTreeFromXMLString(myReply);
-                    mergeStats(mergedStats, xml);
+                    if (mergeType == CascadeMergeStats)
+                        mergeStats(mergedReply, xml);
+                    else if (mergeType == CascadeMergeQueries)
+                        mergeQueries(mergedReply, xml);
                 }
                 else
                     reply.append(myReply);
             }
-        } afor(queryText, this, mergedStats, reply, ep, activeChildren.ordinality(), logctx);
+        } afor(queryText, this, mergedReply, mergeType, reply, ep, activeChildren.ordinality(), logctx);
         afor.For(activeChildren.ordinality()+(isMaster ? 0 : 1), 10);
         activeChildren.kill();
-        if (mergedStats)
-            toXML(mergedStats, reply);
+        if (mergedReply)
+            toXML(mergedReply, reply);
         if (logctx.queryTraceLevel() > 5)
             logctx.CTXLOG("doControlQuery (%d) finished: %.80s", isMaster, queryText);
     }
@@ -1126,8 +1142,25 @@ public:
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
         SCMStringBuffer target;
         wu->getClusterName(target);
-        Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wu);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
+        Owned<IQueryFactory> queryFactory;
+        try
+        {
+            queryFactory.setown(createServerQueryFactoryFromWu(wu));
+        }
+        catch (IException *E)
+        {
+            reportException(wu, E, *logctx);
+            throw E;
+        }
+#ifndef _DEBUG
+        catch(...)
+        {
+            reportUnknownException(wu, *logctx);
+            throw;
+        }
+#endif
+
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
         queryFactory.clear();
@@ -1171,7 +1204,10 @@ public:
             Owned<IRoxieServerContext> ctx = queryFactory->createContext(wu, logctx);
             try
             {
-                ctx->process();
+                {
+                    MTIME_SECTION(logctx.queryTimer(), "Process");
+                    ctx->process();
+                }
                 memused = ctx->getMemoryUsage();
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(false);
@@ -1198,9 +1234,7 @@ public:
 #ifndef _DEBUG
         catch(...)
         {
-            IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception");
-            reportException(wu, E, logctx);
-            E->Release();
+            reportUnknownException(wu, logctx);
         }
 #endif
         unsigned elapsed = msTick() - qstart;
@@ -1214,6 +1248,13 @@ public:
     }
 
 private:
+#ifndef _DEBUG
+    void reportUnknownException(IConstWorkUnit *wu, const IRoxieContextLogger &logctx)
+    {
+        Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception");
+        reportException(wu, E, logctx);
+    }
+#endif
     void reportException(IConstWorkUnit *wu, IException *E, const IRoxieContextLogger &logctx)
     {
         logctx.CTXLOG("FAILED: %s", wuid.get());
@@ -1611,7 +1652,8 @@ readAnother:
                     }
                     else
                     {
-                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, logctx));
+                        StringBuffer querySetName;
+                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, logctx));
                         if (isHTTP)
                             client->setHttpMode(queryName, isRequestArray, httpHelper.queryContentFormat());
                         if (queryFactory)
@@ -1697,12 +1739,12 @@ readAnother:
                             combinedQueryStats.noteActive();
                             if (isHTTP)
                             {
-                                CHttpRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, xmlReadFlags);
+                                CHttpRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, xmlReadFlags, querySetName);
                                 af.For(requestArray.length(), numRequestArrayThreads);
                             }
                             else
                             {
-                                Owned<IRoxieServerContext> ctx = queryFactory->createContext(queryXml, *client, mlFmt, isRaw, isBlocked, httpHelper, trim, logctx, xmlReadFlags);
+                                Owned<IRoxieServerContext> ctx = queryFactory->createContext(queryXml, *client, mlFmt, isRaw, isBlocked, httpHelper, trim, logctx, xmlReadFlags, querySetName);
                                 if (client && !ctx->outputResultsToSocket())
                                 {
                                     unsigned replyLen = 0;

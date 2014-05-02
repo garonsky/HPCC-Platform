@@ -85,7 +85,7 @@ interface IDefRecordMeta;
 interface IFilePartMap;
 class TranslatorArray;
 interface IInMemoryIndexManager ;
-interface IRoxiePackage;
+interface IResolvedFileCache;
 
 interface IResolvedFile : extends ISimpleSuperFileEnquiry
 {
@@ -99,10 +99,11 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
 
     virtual const CDateTime &queryTimeStamp() const = 0;
     virtual unsigned queryCheckSum() const = 0;
+    virtual hash64_t addHash64(hash64_t hashValue) const = 0;
 
     virtual const char *queryPhysicalName() const = 0; // Returns NULL unless in local file mode.
     virtual const char *queryFileName() const = 0;
-    virtual void setCache(const IRoxiePackage *cache) = 0;
+    virtual void setCache(IResolvedFileCache *cache) = 0;
     virtual bool isAlive() const = 0;
     virtual const IPropertyTree *queryProperties() const = 0;
 
@@ -119,7 +120,7 @@ interface IResolvedFileCreator : extends IResolvedFile
 };
 
 extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical, bool isSuperFile);
-extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool cacheIt, bool writeAccess);
+extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool isDynamic, bool cacheIt, bool writeAccess);
 
 interface IRoxiePublishCallback
 {

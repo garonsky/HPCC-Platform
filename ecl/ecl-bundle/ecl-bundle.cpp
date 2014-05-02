@@ -297,21 +297,14 @@ public:
             {
                 StringBuffer cleanedParam(bundle);
                 removeTrailingPathSepChar(cleanedParam);
-                StringBuffer drive, path;
-                splitFilename(cleanedParam, &drive, &path, &bundleName, NULL, true);
-                if (bundleFile->isDirectory())
-                {
-                    // Distinguish a directory containing a single file (zipped single module case) from a
-                    // directory containing multiple exported files. Somehow.
-                    if (directoryContainsBundleFile(bundleFile))
-                        includeOpt.appendf(" -I%s%s", drive.str(), path.str());
-                    else
-                        includeOpt.appendf(" -I%s", bundle);
-                }
-                else if (drive.length() + path.length())
-                    includeOpt.appendf(" -I%s%s", drive.str(), path.str());
+                StringBuffer path;
+                splitFilename(cleanedParam, &path, &path, &bundleName, NULL, true);
+                if (!path.length())
+                    path.append(".");
+                if (bundleFile->isDirectory() && !directoryContainsBundleFile(bundleFile))
+                    includeOpt.appendf(" -I%s", bundle);
                 else
-                    includeOpt.appendf(" -I.");
+                    includeOpt.appendf(" -I%s", path.str());
             }
             else
                 throw MakeStringException(0, "File not found");
@@ -445,7 +438,7 @@ public:
         VStringBuffer exeFileName(".%c_%s-bundle-selftest", PATHSEPCHAR, cleanName.str());
         VStringBuffer eclOpts("-   --nologfile -o%s", exeFileName.str());
         VStringBuffer bundleCmd("IMPORT %s as B;\n"
-                                "#IF (#ISDEFINED(B.__selftesdft))\n"
+                                "#IF (#ISDEFINED(B.__selftest))\n"
                                 "  EVALUATE(B.__selftest);\n"
                                 "#ELSE\n"
                                 "  FAIL(253, 'No selftests exported');\n"
@@ -463,6 +456,8 @@ public:
         {
             if (retcode != 253)
                 printf("%s selftests returned non-zero\n", cleanName.str());
+            else
+                printf("%s has no selftests\n", cleanName.str());
             return false;
         }
         else
@@ -721,7 +716,7 @@ private:
         assertex(version && *version);
         ForEachItemIn(idx, bundles)
         {
-            if (strieq(version, bundles.item(idx).queryVersion()))
+            if (bundles.item(idx).queryVersion() && strieq(version, bundles.item(idx).queryVersion()))
                 return idx;
         }
         return NotFound;
@@ -1279,13 +1274,15 @@ private:
             splitFilename(thisFile->queryFilename(), NULL, NULL, &tail, &tail);
             StringBuffer destname(destdir);
             destname.append(PATHSEPCHAR).append(tail);
+            Owned<IFile> targetFile = createIFile(destname);
             if (thisFile->isDirectory()==foundYes)
             {
+                if (!optDryRun)
+                    targetFile->createDirectory();
                 copyDirectory(thisFile, destname);
             }
             else
             {
-                Owned<IFile> targetFile = createIFile(destname);
                 if (optDryRun || optVerbose)
                     printf("cp %s %s\n", thisFile->queryFilename(), targetFile->queryFilename());
                 if (!optDryRun)

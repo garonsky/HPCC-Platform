@@ -62,6 +62,7 @@
 #include "jprop.hpp"
 #include "jptree.hpp"
 #include "defvalue.hpp"
+#include "hqlerror.hpp"
 
 interface IXmlScope;
 interface IHqlScope;
@@ -805,28 +806,6 @@ enum ExprPropKind
     typedef unsigned short node_operator;
 #endif
 
-interface HQL_API IECLError: public IException
-{
-public:
-    virtual const char* getFilename() = 0;
-    virtual int getLine() = 0;
-    virtual int getColumn() = 0;
-    virtual int getPosition() = 0;
-    virtual StringBuffer& toString(StringBuffer&) = 0;
-    virtual bool isError() = 0;
-};
-
-interface HQL_API IErrorReceiver : public IInterface
-{
-    virtual void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos) = 0;
-    virtual void report(IECLError* err) = 0;
-    virtual void reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos) = 0;
-    virtual size32_t errCount() = 0;
-    virtual size32_t warnCount() = 0;
-};
-
-typedef IArrayOf<IECLError> IECLErrorArray;
-
 interface IHqlSimpleScope : public IInterface
 {
     virtual IHqlExpression *lookupSymbol(IIdAtom * name) = 0;
@@ -925,6 +904,7 @@ public:
     Owned<IPropertyTree> nestedDependTree;
     Owned<IPropertyTree> globalDependTree;
     Owned<IPropertyTree> metaTree;
+    IECLErrorArray orphanedWarnings;
     HqlExprArray defaultFunctionCache;
     CIArrayOf<ForwardScopeItem> forwardLinks;
     bool expandCallsWhenBound;
@@ -1107,7 +1087,7 @@ interface IHqlExpression : public IInterface
     virtual unsigned getInfoFlags2() const = 0;
 
     virtual ISourcePath * querySourcePath() const = 0;
-    virtual IIdAtom * queryFullModuleId() const = 0;              // only defined for a named symbol
+    virtual IIdAtom * queryFullContainerId() const = 0;              // only defined for a named symbol and global module.
     virtual int  getStartLine() const = 0;
     virtual int  getStartColumn() const = 0;
     virtual IPropertyTree * getDocumentation() const = 0;
@@ -1392,6 +1372,8 @@ extern HQL_API void queryRemoveRows(HqlExprCopyArray & tables, IHqlExpression * 
 
 extern HQL_API bool isPureActivity(IHqlExpression * expr);
 extern HQL_API bool isPureActivityIgnoringSkip(IHqlExpression * expr);
+extern HQL_API bool assignsContainSkip(IHqlExpression * expr);
+
 extern HQL_API bool isPureInlineDataset(IHqlExpression * expr);
 extern HQL_API bool transformHasSkipAttr(IHqlExpression * transform);
 extern HQL_API IHqlExpression * queryNewColumnProvider(IHqlExpression * expr);          // what is the transform/newtransform/record?
@@ -1532,6 +1514,7 @@ extern HQL_API IHqlExpression * expandBetween(IHqlExpression * expr);
 extern HQL_API bool isAlwaysActiveRow(IHqlExpression * expr);
 extern HQL_API bool isAlwaysNewRow(IHqlExpression * expr);
 extern HQL_API IHqlExpression * ensureActiveRow(IHqlExpression * expr);
+extern HQL_API bool isRedundantGlobalScope(IHqlExpression * expr);
 extern HQL_API bool isIndependentOfScope(IHqlExpression * expr);
 extern HQL_API bool isActivityIndependentOfScope(IHqlExpression * expr);
 extern HQL_API bool exprReferencesDataset(IHqlExpression * expr, IHqlExpression * dataset);
@@ -1814,7 +1797,6 @@ inline int boolToInt(bool x)                    { return x ? 1 : 0; }
 extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, IHqlExpression * value, IHqlExpression * parms, IHqlExpression * defaults, IHqlExpression * attrs);
 extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, HqlExprArray & args);
 extern HQL_API IHqlExpression * queryNonDelayedBaseAttribute(IHqlExpression * expr);
-extern HQL_API void gatherWarnings(IErrorReceiver * errs, IHqlExpression * expr);
 
 #define NO_AGGREGATE        \
          no_count:          \
@@ -1858,9 +1840,14 @@ extern HQL_API IPropertyTree * createAttributeArchive();
 extern HQL_API void ensureSymbolsDefined(IHqlExpression * scope, HqlLookupContext & ctx);
 extern HQL_API void ensureSymbolsDefined(IHqlScope * scope, HqlLookupContext & ctx);
 extern HQL_API bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft=false);
+extern HQL_API bool getBoolAttributeInList(IHqlExpression * expr, IAtom * name, bool dft);
 
-extern HQL_API void setLegacyEclSemantics(bool _value);
-extern HQL_API bool queryLegacyEclSemantics();
+extern HQL_API void setLegacyEclSemantics(bool _legacyImport, bool _legacyWhen);
+extern HQL_API bool queryLegacyImportSemantics();
+extern HQL_API bool queryLegacyWhenSemantics();
 void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ctx);
+
+//The following is only here to provide information about the source file being compiled when reporting leaks
+extern HQL_API void setActiveSource(const char * filename);
 
 #endif

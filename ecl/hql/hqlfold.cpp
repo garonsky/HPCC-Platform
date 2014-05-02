@@ -773,7 +773,10 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
     // Get the length and address of the stack
     unsigned len = fstack.getSp();
+// ARMFIX: All 5 __64BIT__ usages in this file could be replaced by one at the top
+// regarding the type of a few local variables via typedef
 #ifdef __64BIT__
+    // ARMFIX: This will have to change for ARM. See info below.
     while (len<6*REGSIZE) 
         len = fstack.pushPtr(NULL);         // ensure enough to fill 6 registers
 #endif
@@ -788,14 +791,19 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     float floatresult = 0.0;
     double doubleresult = 0.0;
 
-#ifdef __64BIT__
+#ifdef _ARCH_X86_64_
 //  __asm__ ("\tint $0x3\n"); // for debugging
 #endif
+
+    try{
+// X86/X86_64 Procedure Call Standard
+#if defined (_ARCH_X86_) || defined(_ARCH_X86_64_)
     // Assembly code that does the dynamic function call. The calling convention is a combination of 
     // Pascal and C, that is the parameters are pushed from left to right, the stack goes downward(i.e.,
     // the stack pointer decreases as you push), and the caller is responsible for restoring the 
     // stack pointer.
-    try{
+
+// **** Windows ****
 #ifdef _WIN32
 #ifdef _WIN64
         UNIMPLEMENTED;
@@ -852,8 +860,10 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         pop    ecx
     }
 #endif
-#else
-#ifdef __64BIT__  // ---------------------------------------------------
+#else // WIN32
+
+// **** Linux/Mac ****
+#ifdef _ARCH_X86_64_
 
         __int64 dummy1, dummy2,dummy3,dummy4;
 
@@ -919,8 +929,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         else {
             intresult = (int)int64result;
         }
-#else 
-        // 32-bit -------------------------------------------------
+#else // _ARCH_X86_
         int dummy1, dummy2,dummy3;
         __asm__ __volatile__(
             "push   %%ebx \n\t"
@@ -959,6 +968,18 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         }
 #endif
 
+#endif
+
+// AARCH32/64 Procedure Call Standard
+#elif defined(_ARCH_ARM32_) || defined(_ARCH_ARM64_)
+        // ARMFIX: ARM AAPCS is different than X86 in that it uses registers for
+        // both arguments and returns values.
+        // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0042e/IHI0042E_aapcs.pdf
+        // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055c/IHI0055C_beta_aapcs64.pdf
+        UNIMPLEMENTED;
+#else
+        // Unknown architecture
+        UNIMPLEMENTED;
 #endif
     }
     catch (...) {
@@ -1532,15 +1553,17 @@ static bool hashElement(node_operator op, IHqlExpression * expr, unsigned __int6
     ITypeInfo * type = value->queryType();
     switch (type->getTypeCode())
     {
+        case type_qstring:
         case type_string:
             {
-                const char * cdata = static_cast<const char *>(value->queryValue());
-                size32_t len = rtlTrimStrLen(type->getStringLen(), cdata);
+                Owned<ITypeInfo> unknownLengthString = makeStringType(UNKNOWN_LENGTH);
+                Owned<IValue> castValue = value->castTo(unknownLengthString);
+                const char * cdata = static_cast<const char *>(castValue->queryValue());
+                size32_t len = rtlTrimStrLen(castValue->queryType()->getStringLen(), cdata);
                 hashCode = (op == no_hash32) ? rtlHash32Data(len, cdata, (unsigned)hashCode) : rtlHash64Data(len, cdata, hashCode);
                 return true;
             }
         case type_data:
-        case type_qstring:
             {
                 size32_t len = type->getSize();
                 const char * cdata = static_cast<const char *>(value->queryValue());
@@ -1556,7 +1579,7 @@ static bool hashElement(node_operator op, IHqlExpression * expr, unsigned __int6
         case type_unicode:
             {
                 const UChar * udata = static_cast<const UChar *>(value->queryValue());
-                size32_t len = rtlTrimUnicodeStrLen(type->getStringLen(), udata);
+                size32_t len = type->getStringLen();
                 hashCode = (op == no_hash32) ? rtlHash32Unicode(len, udata, (unsigned)hashCode) : rtlHash64Unicode(len, udata, hashCode);
                 return true;
             }
@@ -1882,9 +1905,8 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         {
             IValue * t0 = expr->queryChild(0)->queryValue();
             IValue * t1 = expr->queryChild(1)->queryValue();
-            IHqlExpression * c2 = queryRealChild(expr, 2);
-            IValue * t2 = c2 ? c2->queryValue() : NULL;
-            if (t0 && t1 && (!c2 || t2))
+            IValue * t2 = expr->queryChild(2)->queryValue();
+            if (t0 && t1 && t2)
             {
                 IValue * result;
                 if(isUnicodeType(t0->queryType()))
@@ -3395,7 +3417,9 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_distribute:
     case no_distributed:
         {
-            if (isNull(child) || isFail(child))
+            if (isNull(child))
+                return replaceWithNull(expr);
+            if (isFail(child))
                 return removeParentNode(expr);
             if (expr->hasAttribute(skewAtom))
             	break;
@@ -3916,6 +3940,10 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 return removeParentNode(expr);
             break;
         }
+    case no_globalscope:
+        if (isRedundantGlobalScope(expr))
+            return removeParentNode(expr);
+        break;
     }
     return NULL;
 }
@@ -4327,7 +4355,7 @@ void HqlConstantPercolator::doExtractConstantTransform(IHqlExpression * transfor
                 IHqlExpression * self = lhs->queryChild(0);
                 assertex(self->getOperator() == no_self);
 
-                OwnedHqlExpr selected = selector ? createSelectExpr(LINK(selector), LINK(lhs->queryChild(1))) : LINK(lhs);
+                OwnedHqlExpr selected = selector ? createSelectExpr(LINK(selector), LINK(lf)) : LINK(lhs);
                 if (rhs->isConstant())
                     addTransformMapping(selected, rhs);
                 if (lhs->isDatarow())
@@ -4688,7 +4716,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                                 ok = false;
                                 break;
                             }
-                            IHqlExpression * match = getExtractSelect(cur, field);
+                            IHqlExpression * match = getExtractSelect(cur, field, false);
                             if (!match)
                             {
                                 ok = false;
@@ -4731,7 +4759,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
 #if 1
                     if (!expr->isDataset() && !expr->isDatarow())
                     {
-                        OwnedHqlExpr  match = getExtractSelect(left->queryChild(0), expr->queryChild(1));
+                        OwnedHqlExpr  match = getExtractSelect(left->queryChild(0), expr->queryChild(1), false);
                         if (match && match->isConstant())
                             return match.getClear();
                     }
@@ -4741,7 +4769,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                     //Should enable once I've had time to investigate
                     if (!expr->isDataset())// && !expr->isDatarow())
                     {
-                        OwnedHqlExpr  match = getExtractSelect(left->queryChild(0), expr->queryChild(1));
+                        OwnedHqlExpr  match = getExtractSelect(left->queryChild(0), expr->queryChild(1), false);
                         if (match)// && match->isConstant())
                             return match.getClear();
                     }
@@ -4834,8 +4862,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             if (expr->queryChild(0)->getOperator() == no_list)
             {
                 ECLlocation dummyLocation(0, 0, 0, NULL);
-                ThrowingErrorReceiver errorReporter;
-                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, expr);
+                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorProcessor, dummyLocation, expr);
                 if (expr != inlineTable)
                     return inlineTable.getClear();
             }
@@ -4868,8 +4895,8 @@ FolderTransformInfo::~FolderTransformInfo()
 }
 
 static HqlTransformerInfo cExprFolderTransformerInfo("CExprFolderTransformer");
-CExprFolderTransformer::CExprFolderTransformer(ITemplateContext * _templateContext, unsigned _options)
-: NewHqlTransformer(cExprFolderTransformerInfo), templateContext(_templateContext)
+CExprFolderTransformer::CExprFolderTransformer(IErrorReceiver & _errorProcessor, ITemplateContext * _templateContext, unsigned _options)
+: NewHqlTransformer(cExprFolderTransformerInfo), templateContext(_templateContext), errorProcessor(_errorProcessor)
 {
     foldOptions = _options;
 }
@@ -6024,7 +6051,13 @@ IHqlExpression * CExprFolderTransformer::transformExpanded(IHqlExpression * expr
 
 //---------------------------------------------------------------------------
 
-IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *templateContext, unsigned foldOptions)
+IHqlExpression * foldHqlExpression(IHqlExpression * expr)
+{
+    Owned<IErrorReceiver> errorProcessor = createNullErrorReceiver();
+    return foldHqlExpression(*errorProcessor, expr);
+}
+
+IHqlExpression * foldHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * expr, ITemplateContext *templateContext, unsigned foldOptions)
 {
     if (!expr)
         return NULL;
@@ -6045,7 +6078,7 @@ IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *temp
         break;
     }
 
-    CExprFolderTransformer folder(templateContext, foldOptions);
+    CExprFolderTransformer folder(errorProcessor, templateContext, foldOptions);
 
 #if 0
     dbglogExpr(expr);
@@ -6060,14 +6093,15 @@ IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *temp
     return ret;
 }
 
-IHqlExpression * foldScopedHqlExpression(IHqlExpression * dataset, IHqlExpression * expr, unsigned foldOptions)
+IHqlExpression * foldScopedHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * dataset, IHqlExpression * expr, unsigned foldOptions)
 {
     if (!expr)
         return NULL;
 
-    CExprFolderTransformer folder(NULL, foldOptions);
+    CExprFolderTransformer folder(errorProcessor, NULL, foldOptions);
 
-    folder.setScope(dataset);
+    if (dataset)
+        folder.setScope(dataset);
 
     IHqlExpression * ret = folder.transformRoot(expr);
 
@@ -6075,9 +6109,9 @@ IHqlExpression * foldScopedHqlExpression(IHqlExpression * dataset, IHqlExpressio
 }
 
 
-void foldHqlExpression(HqlExprArray & tgt, HqlExprArray & src, unsigned foldOptions)
+void foldHqlExpression(IErrorReceiver & errorProcessor, HqlExprArray & tgt, HqlExprArray & src, unsigned foldOptions)
 {
-    CExprFolderTransformer folder(NULL, foldOptions);
+    CExprFolderTransformer folder(errorProcessor, NULL, foldOptions);
     folder.transformRoot(src, tgt);
 }
 

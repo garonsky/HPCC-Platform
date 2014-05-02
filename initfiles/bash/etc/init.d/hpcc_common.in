@@ -379,7 +379,10 @@ createRuntime() {
     # setting up ulimit for thor and other component which needs it.
     ulimit -n 32768
     ulimit -c unlimited
-
+    # for rtprio in Roxie
+    ulimit -Hr 4
+    # to enable, must also increase vm.nr_hugepages and/or vm.nr_overcommit_hugepages
+    ulimit -l unlimited
 }
 
 start_dafilesrv() {
@@ -535,7 +538,7 @@ stop_component() {
           removePid ${PIDPATH}
           unlock ${LOCKPATH}
        fi
-       return ${RCSTOP}
+       return 0
     fi
     
     stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH} >> tmp.txt 2>&1"
@@ -564,9 +567,10 @@ stop_component() {
                             removePid ${PIDPATH}
                             unlock ${LOCKPATH}
                             log_success_msg  
-                            return 3 
+                            return 0
                         fi
                     fi
+                    sleep 1
                 done
             fi
             sleep 1
@@ -575,7 +579,7 @@ stop_component() {
         removePid ${PIDPATH}
         unlock ${LOCKPATH}
         log_success_msg  
-        RCSTOP=3
+        RCSTOP=0
     fi
     return ${RCSTOP}
 }

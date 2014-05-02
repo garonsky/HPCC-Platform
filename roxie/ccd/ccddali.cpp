@@ -344,6 +344,35 @@ private:
         return dstfdesc.getClear();
     }
 
+    static StringBuffer &normalizeName(const char *name, StringBuffer &ret)
+    {
+        // Ensure only chars that are accepted by jptree in an xpath element are used
+        loop
+        {
+            char c = *name++;
+            if (!c)
+                break;
+            switch (c)
+            {
+            case '.':
+                ret.append(".."); // Double . as we use it to escape illegal chars
+                break;
+            case ':':
+            case '_':
+            case '-':
+                ret.append(c);
+                break;
+            default:
+                if (isalnum(c))
+                    ret.append(c); // Note - we COULD make the cache case-insensitive and we would be right to 99.9% if the time. But there is a weird syntax using H to force uppercase filenames...
+                else
+                    ret.append('.').append((unsigned) (unsigned char) c);
+                break;
+            }
+        }
+        return ret;
+    }
+
 public:
 
     IMPLEMENT_IINTERFACE;
@@ -403,6 +432,19 @@ public:
         return buf.str();
     }
 
+    static const char *getSuperFilePath(StringBuffer &buf, const char *lfn)
+    {
+        CDfsLogicalFileName lfnParser;
+        lfnParser.set(lfn);
+        if (!lfnParser.isForeign())
+        {
+            lfnParser.makeFullnameQuery(buf, DXB_SuperFile, true);
+            return buf.str();
+        }
+        else
+            return NULL;
+    }
+
     virtual IPropertyTree *getPackageMap(const char *id)
     {
         Owned<IPropertyTree> ret = loadDaliTree("PackageMaps/PackageMap", id);
@@ -419,41 +461,44 @@ public:
         // NOTE - we rely on the fact that  queryNamedGroupStore().lookup caches results,to avoid excessive load on remote dali
         if (_lfn && !strnicmp(_lfn, "foreign", 7)) //if need to support dali hopping should add each remote location
             return NULL;
-        if (!fdesc || !fdesc->queryProperties().hasProp("@cloneFrom"))
+        if (!fdesc)
             return NULL;
-        if (fdesc->queryProperties().hasProp("cloneFromGroup") && fdesc->queryProperties().hasProp("@cloneFromDir"))
+        const char *cloneFrom = fdesc->queryProperties().queryProp("@cloneFrom");
+        if (!cloneFrom)
+            return NULL;
+        StringBuffer foreignLfn("foreign::");
+        foreignLfn.append(cloneFrom);
+        if (!connected())
+            return resolveCachedLFN(foreignLfn);  // Note - cache only used when no dali connection available
+        try
         {
-            try
+            if (fdesc->queryProperties().hasProp("cloneFromGroup") && fdesc->queryProperties().hasProp("@cloneFromDir"))
             {
-                return recreateCloneSource(fdesc, _lfn);
+                Owned<IFileDescriptor> ret = recreateCloneSource(fdesc, _lfn);
+                if (cacheIt)
+                    cacheFileDescriptor(foreignLfn, ret);
+                return ret.getClear();
             }
-            catch (IException *E)
+            else // Legacy mode - recently cloned files should have the extra info
             {
-                E->Release();
-                return NULL;
+                if (traceLevel > 1)
+                    DBGLOG("checkClonedFromRemote: Resolving %s in legacy mode", _lfn);
+                Owned<IDistributedFile> cloneFile = resolveLFN(foreignLfn, cacheIt, false);
+                if (cloneFile)
+                {
+                    Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();
+                    if (cloneFDesc->numParts()==fdesc->numParts())
+                        return cloneFDesc.getClear();
+
+                    DBGLOG(ROXIE_MISMATCH, "File %s cloneFrom(%s) mismatch", _lfn, cloneFrom);
+                }
             }
         }
-        else // Legacy mode - recently cloned files should have the extra info
+        catch (IException *E)
         {
-            SocketEndpoint cloneFrom;
-            cloneFrom.set(fdesc->queryProperties().queryProp("@cloneFrom"));
-            if (cloneFrom.isNull())
-                return NULL;
-            CDfsLogicalFileName lfn;
-            lfn.set(_lfn);
-            lfn.setForeign(cloneFrom, false);
-            if (!connected())
-                return resolveCachedLFN(lfn.get());
-            Owned<IDistributedFile> cloneFile = resolveLFN(lfn.get(), cacheIt, false);
-            if (cloneFile)
-            {
-                Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();
-                if (cloneFDesc->numParts()==fdesc->numParts())
-                    return cloneFDesc.getClear();
-
-                StringBuffer s;
-                DBGLOG(ROXIE_MISMATCH, "File %s cloneFrom(%s) mismatch", _lfn, cloneFrom.getIpText(s).str());
-            }
+            if (traceLevel > 3)
+                EXCLOG(E);
+            E->Release();  // Any failure means act as if no remote info
         }
         return NULL;
     }
@@ -462,8 +507,7 @@ public:
     {
         if (isConnected)
         {
-            if (traceLevel > 1)
-                DBGLOG("Dali lookup %s", logicalName);
+            unsigned start = msTick();
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
             Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, cacheIt);
@@ -474,20 +518,9 @@ public:
                     dfsFile.clear();
             }
             if (cacheIt)
-            {
-                Owned<IFileDescriptor> fd;
-                Owned<IPropertyTree> pt;
-                if (dfsFile)
-                {
-                    fd.setown(dfsFile->getFileDescriptor());
-                    if (fd)
-                        pt.setown(fd->getFileTree());
-                }
-                StringBuffer xpath("Files/");
-                StringBuffer lcname;
-                xpath.append(lcname.append(logicalName).toLowerCase());
-                writeCache(xpath.str(), xpath.str(), pt);
-            }
+                cacheDistributedFile(logicalName, dfsFile);
+            if (traceLevel > 1)
+                DBGLOG("Dali lookup %s returned %s in %u ms", logicalName, dfsFile != NULL ? "match" : "NO match", msTick()-start);
             return dfsFile.getClear();
         }
         else
@@ -496,9 +529,8 @@ public:
 
     virtual IFileDescriptor *resolveCachedLFN(const char *logicalName)
     {
-        StringBuffer xpath("Files/");
-        StringBuffer lcname;
-        xpath.append(lcname.append(logicalName).toLowerCase());
+        StringBuffer xpath("Files/F.");
+        normalizeName(logicalName, xpath);
         Owned<IPropertyTree> pt = readCache(xpath.str());
         if (pt)
         {
@@ -642,6 +674,16 @@ public:
         return getSubscription(id, getPackageMapPath(xpath, id), notifier);
     }
 
+    virtual IDaliPackageWatcher *getSuperFileSubscription(const char *lfn, ISDSSubscription *notifier)
+    {
+        StringBuffer xpathBuf;
+        const char *xpath = getSuperFilePath(xpathBuf, lfn);
+        if (xpath)
+            return getSubscription(lfn, xpath, notifier);
+        else
+            return NULL;
+    }
+
     virtual bool connected() const
     {
         return isConnected;
@@ -709,7 +751,26 @@ public:
             }
         }
     }
+protected:
+    void cacheDistributedFile(const char *logicalName, IDistributedFile *dfsFile)
+    {
+        assertex(isConnected);
+        Owned<IFileDescriptor> fd;
+        if (dfsFile)
+            fd.setown(dfsFile->getFileDescriptor());
+        cacheFileDescriptor(logicalName, fd);
+    }
 
+    void cacheFileDescriptor(const char *logicalName, IFileDescriptor *fd)
+    {
+        assertex(isConnected);
+        Owned<IPropertyTree> pt;
+        if (fd)
+            pt.setown(fd->getFileTree());
+        StringBuffer xpath("Files/F.");
+        normalizeName(logicalName, xpath);
+        writeCache(xpath.str(), xpath.str(), pt);
+    }
 };
 
 class CRoxieDllServer : public CInterface, implements IDllServer

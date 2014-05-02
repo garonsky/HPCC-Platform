@@ -77,6 +77,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/queryfiledetails.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/queryfilelist.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/queryfilelistdone.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/QueriesUsingFile.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/result.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/result_lib.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/result_lib1.xslt
@@ -133,7 +134,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/dropzonefile.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/hpccresourcelist.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dropzonefilelist.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/WUBugReportForm.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/WUZAPInfoForm.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUCopyLogicalFiles.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUDeployWorkunit.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_accountpermissions.xslt

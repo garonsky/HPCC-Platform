@@ -87,7 +87,6 @@ The following debug options are currently supported by the code generator:
 interface ICodegenContextCallback : public IInterface
 {
     virtual void noteCluster(const char *clusterName) = 0;
-    virtual void registerFile(const char * filename, const char * description) = 0;
     virtual bool allowAccess(const char * category) = 0;
 };
 
@@ -143,7 +142,6 @@ extern HQLCPP_API IHqlExpression * ensureIndexable(IHqlExpression * expr);
 
 extern HQLCPP_API bool isChildOf(IHqlExpression * parent, IHqlExpression * child);
 extern HQLCPP_API bool isProjectedInRecord(IHqlExpression * record, IHqlExpression * child);
-extern HQLCPP_API IHqlExpression * queryStripCasts(IHqlExpression * expr);
 
 extern HQLCPP_API IHqlExpression * adjustValue(IHqlExpression * value, __int64 delta);
 extern HQLCPP_API bool matchesConstValue(IHqlExpression * expr, __int64 matchValue);

@@ -698,7 +698,7 @@ CLibXslProcessor::CLibXslProcessor()
     xmlSubstituteEntitiesDefault(1);
     xmlThrDefSaveNoEmptyTags(1);
     xmlLoadExtDtdDefaultValue = 1;
-
+    xsltMaxDepth = 20000;
     xsltSetLoaderFunc(NULL);
     originalLibXsltIncludeHandler = xsltDocDefaultLoader;
     xsltSetLoaderFunc(globalLibXsltIncludeHandler);
@@ -760,7 +760,15 @@ xmlDocPtr libXsltIncludeHandler(const xmlChar * URI, xmlDictPtr dict, int option
 {
     bool mbContainsPath=false;
     MemoryBuffer mb;
-    if (!handler->getInclude((const char *)URI, mb, mbContainsPath))
+    StringBuffer decodedURI;
+    appendDecodedURL(decodedURI, (const char *)URI);
+    if (strchr(decodedURI.str(), '%')) //libxstl seems to double encode
+    {
+        StringBuffer s;
+        appendDecodedURL(s, decodedURI.str());
+        decodedURI.swapWith(s);
+    }
+    if (!handler->getInclude(decodedURI, mb, mbContainsPath))
         return originalLibXsltIncludeHandler(URI, dict, options, NULL, type);
     if (mbContainsPath)
         return originalLibXsltIncludeHandler((const xmlChar *)mb.append((char)0).toByteArray(), dict, options, NULL, type);

@@ -30,6 +30,7 @@
 #include "roxie.hpp"
 #include "roxiedebug.ipp"
 #include "eclrtl.hpp"
+#include "workunit.hpp"
 
 #ifdef _WIN32
 #ifdef CCD_EXPORTS
@@ -118,6 +119,7 @@ extern unsigned myNodeIndex;
 #endif
 
 #define ROXIE_DALI_CONNECT_TIMEOUT 5000
+#define ABORT_POLL_PERIOD 5000
 
 class RemoteActivityId
 {
@@ -358,6 +360,7 @@ extern unsigned socketCheckInterval;
 extern memsize_t defaultMemoryLimit;
 extern unsigned defaultTimeLimit[3];
 extern unsigned defaultWarnTimeLimit[3];
+extern unsigned defaultThorConnectTimeout;
 extern bool pretendAllOpt;
 extern ClientCertificate clientCert;
 extern bool useHardLink;
@@ -370,7 +373,7 @@ extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
 extern bool traceServerSideCache;
-extern bool timeActivities;
+extern bool defaultTimeActivities;
 extern unsigned watchActivityId;
 extern unsigned testSlaveFailure;
 extern unsigned dafilesrvLookupTimeout;
@@ -395,6 +398,7 @@ extern PTreeReaderOptions defaultXmlReadFlags;
 extern bool mergeSlaveStatistics;
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to slaves
 extern bool preloadOnceData;
+extern bool reloadRetriesFailed;
 
 extern unsigned roxiePort;     // If listening on multiple, this is the first. Used for lock cascading
 
@@ -424,6 +428,8 @@ extern unsigned defaultFullKeyedJoinPreload;
 extern unsigned defaultKeyedJoinPreload;
 extern unsigned defaultPrefetchProjectPreload;
 extern bool defaultCheckingHeap;
+
+extern unsigned slaveQueryReleaseDelaySeconds;
 
 extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;
@@ -459,6 +465,7 @@ extern void saveTopology();
 #define LOGGING_TRACELEVELSET   0x10
 #define LOGGING_CHECKINGHEAP    0x20
 #define LOGGING_FLAGSPRESENT    0x40
+#define LOGGING_WUID            0x80
 
 class LogItem : public CInterface
 {
@@ -695,6 +702,19 @@ public:
         }
     }
 
+    void dumpStats(IWorkUnit *wu) const
+    {
+        SpinBlock b(lock);
+        if (cumulative)
+        {
+            for (unsigned i = 0; i < STATS_SIZE; i++)
+            {
+                if (counts[i])
+                    wu->setStatistic("roxie", "workunit", getStatShortName(i), getStatName(i), getStatMeasure(i), cumulative[i], counts[i], 0, false);
+            }
+        }
+    }
+
     void toXML(StringBuffer &reply) const
     {
         SpinBlock b(lock);
@@ -765,11 +785,14 @@ protected:
     unsigned start;
     unsigned ctxTraceLevel;
     mutable StatsCollector stats;
+    mutable ITimeReporter *timeReporter;
     unsigned channel;
 public: // Not very clean but I don't care
     bool intercept;
     bool blind;
     mutable CIArrayOf<LogItem> log;
+private:
+    ContextLogger(const ContextLogger &);  // Disable copy constructor
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -778,8 +801,13 @@ public:
         ctxTraceLevel = traceLevel;
         intercept = false;
         blind = false;
+        timeReporter = createStdTimeReporter();
         start = msTick();
         channel = 0;
+    }
+    ~ContextLogger()
+    {
+        ::Release(timeReporter);
     }
 
     void outputXML(IXmlStreamFlusher &out)
@@ -897,6 +925,11 @@ public:
         stats.dumpStats(*this);
     }
 
+    virtual void dumpStats(IWorkUnit *wu) const
+    {
+        stats.dumpStats(wu);
+    }
+
     virtual bool isIntercepted() const
     {
         return intercept;
@@ -916,6 +949,15 @@ public:
     {
         return ctxTraceLevel;
     }
+    inline ITimeReporter *queryTimer() const
+    {
+        return timeReporter;
+    }
+    void reset()
+    {
+        stats.reset();
+        timer->reset();
+    }
 };
 
 class StringContextLogger : public ContextLogger
@@ -934,7 +976,7 @@ public:
     }
     void set(const char *_id)
     {
-        stats.reset();
+        reset();
         id.set(_id);
     }
 };

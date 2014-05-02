@@ -522,6 +522,27 @@ public:
                 ptreePath.append(*LINK(&root));
             else
                 ptreePath.fill(root, head.str(), tail);
+#define DEBUG_HPCC_11202
+#ifdef DEBUG_HPCC_11202
+            PTree &parent = ptreePath.tos();
+            aindex_t pos = parent.queryChildIndex(&tail);
+            if (pos == NotFound)
+            {
+                StringBuffer msg;
+                msg.append("ConnectionId=").appendf("%"I64F"x", connectionId).append(", xpath=").append(xpath).append(", sessionId=").appendf("%"I64F"x", sessionId).append(", mode=").append(mode).append(", timeout=");
+                if (INFINITE == timeout)
+                    msg.append("INFINITE");
+                else
+                    msg.append(timeout);
+                ERRLOG("Invalid connection: %s", msg.str());
+                ForEachItemIn(i, ptreePath)
+                {
+                    PTree &tree = ptreePath.item(i);
+                    DBGLOG("PTree path item %d = %s", i, tree.queryName());
+                }
+                assertex(false); // stack report may be useful
+            }
+#endif
         }
         ptreePath.append(*LINK(&tail));
     }
@@ -609,10 +630,18 @@ private:
 
 /////////////////
 
+class CQualifiers : public CInterfaceOf<IInterface>
+{
+    StringArray qualifiers;
+public:
+    inline void add(const char *qualifier) { qualifiers.append(qualifier); }
+    inline unsigned count() const { return qualifiers.ordinality(); }
+    inline const char *item(unsigned i) const { return qualifiers.item(i); }
+};
 class CSubscriberContainer : public CSubscriberContainerBase
 {
     StringAttr xpath, fullXpath;
-    StringArray qualifierStack;
+    PointerIArrayOf<CQualifiers> qualifierStack;
     bool sub, sendValue;
     unsigned depth;
 public:
@@ -655,16 +684,24 @@ public:
                 if (!nextSep || startQ < nextSep)
                     break;
 
-                qualifierStack.append(""); // no qualifier for this segment.
+                qualifierStack.append(NULL); // no qualifier for this segment.
             }
 
-            const char *endQ = queryNextUnquoted(startQ, ']');
-            assertex(endQ);
+            Owned<CQualifiers> qualifiers = new CQualifiers;
             strippedXpath.append(startQ-path, path);
-
-            StringAttr qualifier(startQ+1, endQ-startQ-1);
-            qualifierStack.append(qualifier);
-            path = endQ+1;
+            loop
+            {
+                const char *endQ = queryNextUnquoted(startQ+1, ']');
+                if (!endQ)
+                    throw MakeSDSException(SDSExcpt_SubscriptionParseError, "Missing closing brace: %s", xpath.get());
+                StringAttr qualifier(startQ+1, endQ-startQ-1);
+                qualifiers->add(qualifier);
+                path = endQ+1;
+                if ('[' != *path)
+                    break;
+                startQ = path;
+            }
+            qualifierStack.append(qualifiers.getClear());
         }
         fullXpath.set(xpath);
         if (strippedXpath.length()) // some qualifications
@@ -686,36 +723,40 @@ public:
     {
         ForEachItemIn(q, qualifierStack)
         {
-            const char *qualifier = qualifierStack.item(q);
             if (stack.ordinality() <= q+1)
             {
                 // No more stack available (e.g. because deleted below this point)
                 return true;
             }
             PTree &item = stack.item(q+1); // stack +1, top is root unqualified.
-            if (qualifier && '\0' != *qualifier)
+            CQualifiers *qualifiers = qualifierStack.item(q);
+            if (qualifiers)
             {
-                const char *q = qualifier;
-                bool numeric = true;
-                loop
+                for (unsigned q2=0; q2<qualifiers->count(); q2++)
                 {
-                    if ('\0' == *q) break;
-                    else if (!isdigit(*q)) { numeric = false; break; }
-                    else q++;
-                }
-                if (numeric)
-                {
-                    unsigned qnum = atoi(qualifier);
-                    if (!item.queryParent())
+                    const char *qualifier = qualifiers->item(q2);
+                    const char *q = qualifier;
+                    bool numeric = true;
+                    loop
                     {
-                        if (qnum != 1)
+                        if ('\0' == *q) break;
+                        else if (!isdigit(*q)) { numeric = false; break; }
+                        else q++;
+                    }
+                    if (numeric)
+                    {
+                        unsigned qnum = atoi(qualifier);
+                        if (!item.queryParent())
+                        {
+                            if (qnum != 1)
+                                return false;
+                        }
+                        else if (((PTree *)item.queryParent())->findChild(&item) != qnum-1)
                             return false;
                     }
-                    else if (((PTree *)item.queryParent())->findChild(&item) != qnum-1)
+                    else if (!item.checkPattern(qualifier))
                         return false;
                 }
-                else if (!item.checkPattern(qualifier))
-                    return false;
             }
         }
         return true;
@@ -2054,8 +2095,9 @@ bool CPTStack::_fill(IPropertyTree &current, const char *xpath, IPropertyTree &t
         Owned<IPropertyTreeIterator> iter = current.getElements(head.str());
         ForEach (*iter)
         {
-            if (&tail==&iter->query())
+            if (&tail==&iter->query()) // Afaics, this should not be possible (so this test/block should really be removed)
             {
+                ERRLOG("_fill() - tail (%s) found at intermediate level: %s", tail.queryName(), head.str());
                 append(*LINK((PTree *)&iter->query()));
                 append(*LINK((PTree *)&current));
                 return true;
@@ -2072,12 +2114,6 @@ bool CPTStack::_fill(IPropertyTree &current, const char *xpath, IPropertyTree &t
 
 bool CPTStack::fill(IPropertyTree &root, const char *xpath, IPropertyTree &tail)
 {
-    assertex(&root != &tail);
-    if (!xpath || !*xpath)
-    {
-        append(*LINK((PTree *)&root));
-        return true;
-    }
     kill();
     bool res = _fill(root, xpath, tail);
     unsigned elems = ordinality();
@@ -2103,7 +2139,19 @@ StringBuffer &CPTStack::getAbsolutePath(StringBuffer &str)
             IPropertyTree *child = &item(i);
             str.append(child->queryName());
             str.append('[');
-            unsigned pos = parent->queryChildIndex(child);
+            aindex_t pos = parent->queryChildIndex(child);
+#ifdef DEBUG_HPCC_11202
+            if (NotFound == pos)
+            {
+                ERRLOG("Invalid CPTStack detected");
+                ForEachItemIn(i, *this)
+                {
+                    PTree &tree = item(i);
+                    DBGLOG("PTree path item %d = %s", i, tree.queryName());
+                }
+                PrintStackReport();
+            }
+#endif
             str.append(pos+1);
             str.append(']');
             if (++i >= ordinality())
@@ -7187,7 +7235,6 @@ bool CCovenSDSManager::unlock(__int64 connectionId, bool close, StringBuffer &co
 {
     Owned<CServerConnection> connection = getConnection(connectionId);
     if (!connection) return false;
-    StringBuffer str;
     MemoryBuffer connInfo;
     connection->getInfo(connInfo);
     formatConnectionInfo(connInfo, connectionInfo);

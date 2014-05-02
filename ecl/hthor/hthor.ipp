@@ -1064,7 +1064,7 @@ public:
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
 
     //interface roxiemem::IBufferedRowCallback
-    virtual unsigned getPriority() const;
+    virtual unsigned getSpillCost() const;
     virtual bool freeBufferedRows(bool critical);
 
 private:
@@ -1085,7 +1085,7 @@ class CSimpleSorterBase : public CInterface, public ISorter
 {
 public:
     CSimpleSorterBase(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : compare(_compare), finger(0), rowManager(_rowManager),
-        rowsToSort(_rowManager, _initialSize, _commitDelta) {}
+        rowsToSort(_rowManager, _initialSize, _commitDelta, UNKNOWN_ROWSET_ID) {}
     virtual ~CSimpleSorterBase()                            { killSorted(); }
     IMPLEMENT_IINTERFACE;
     virtual bool addRow(const void * next)                  { return rowsToSort.append(next); }
@@ -1106,7 +1106,7 @@ public:
     virtual const DynamicRoxieOutputRowArray & getRowArray()     { return rowsToSort; }
     virtual void flushRows()                                { rowsToSort.flush(); }
     virtual size32_t numCommitted() const                   { return rowsToSort.numCommitted(); }
-    virtual void setActivityId(unsigned _activityId)        { activityId = _activityId; }
+    virtual void setActivityId(unsigned _activityId)        { activityId = _activityId; rowsToSort.setAllocatorId(_activityId); }
 
 protected:
     roxiemem::IRowManager * rowManager;
@@ -1807,7 +1807,7 @@ public:
 
     CHThorDistributionActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDistributionArg &_arg, ThorActivityKind _kind);
     virtual void execute();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return false; }
 };
 
 class CHThorDiskReadActivity;

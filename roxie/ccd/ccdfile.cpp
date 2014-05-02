@@ -502,14 +502,14 @@ static bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned clusterNo, const 
     return strieq(name, pdesc->queryOwner().getClusterGroupName(clusterNo, s));
 }
 
-static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster)
+static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster, bool includeFromCluster)
 {
     UnsignedArray clusterCounts;
     unsigned numCopies = pdesc->numCopies();
     for (unsigned copy = 0; copy < numCopies; copy++)
     {
         unsigned clusterNo = pdesc->copyClusterNum(copy);
-        if (fromCluster && *fromCluster && !isCopyFromCluster(pdesc, clusterNo, fromCluster))
+        if (fromCluster && *fromCluster && isCopyFromCluster(pdesc, clusterNo, fromCluster)!=includeFromCluster)
             continue;
         RemoteFilename r;
         pdesc->getFilename(copy,r);
@@ -538,7 +538,7 @@ static void appendPeerLocations(IPartDescriptor *pdesc, StringArray &locations, 
         if (streq(peerCluster, roxieName))
             peerCluster=NULL;
     }
-    appendRemoteLocations(pdesc, locations, localFileName, peerCluster);
+    appendRemoteLocations(pdesc, locations, localFileName, peerCluster, true);
 }
 
 
@@ -566,6 +566,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
     RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed)
     {
+        cacheFileConnect(f, dafilesrvLookupTimeout);  // set timeout to 10 seconds
         if (f->exists())
         {
             // only check size if specified
@@ -611,20 +612,23 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
             // put the peerRoxieLocations next in the list
             StringArray localLocations;
-            appendPeerLocations(pdesc, localLocations, localLocation);
+            appendRemoteLocations(pdesc, localLocations, localLocation, roxieName, true);  // Adds all locations on the same cluster
             ForEachItemIn(roxie_idx, localLocations)
             {
                 try
                 {
                     const char *remoteName = localLocations.item(roxie_idx);
                     Owned<IFile> remote = createIFile(remoteName);
-                    if (fileUpToDate(remote, size, modified, crc, isCompressed)==FileIsValid)
+                    RoxieFileStatus status = fileUpToDate(remote, size, modified, crc, isCompressed);
+                    if (status==FileIsValid)
                     {
-                        if (miscDebugTraceLevel > 10)
-                            DBGLOG("adding peer roxie location %s", remoteName);
+                        if (miscDebugTraceLevel > 5)
+                            DBGLOG("adding peer location %s", remoteName);
                         ret->addSource(remote.getClear());
                         addedOne = true;
                     }
+                    else if (miscDebugTraceLevel > 10)
+                        DBGLOG("Checked peer roxie location %s, status=%d", remoteName, (int) status);
                 }
                 catch (IException *E)
                 {
@@ -643,13 +647,16 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                         Owned<IFile> remote = createIFile(remoteName);
                         if (traceLevel > 5)
                             DBGLOG("checking remote location %s", remoteName);
-                        if (fileUpToDate(remote, size, modified, crc, isCompressed)==FileIsValid)
+                        RoxieFileStatus status = fileUpToDate(remote, size, modified, crc, isCompressed);
+                        if (status==FileIsValid)
                         {
-                            if (miscDebugTraceLevel > 10)
+                            if (miscDebugTraceLevel > 5)
                                 DBGLOG("adding remote location %s", remoteName);
                             ret->addSource(remote.getClear());
                             addedOne = true;
                         }
+                        else if (miscDebugTraceLevel > 10)
+                            DBGLOG("Checked remote file location %s, status=%d", remoteName, (int) status);
                     }
                     catch (IException *E)
                     {
@@ -664,7 +671,22 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                 if (local->exists())  // Implies local dali and local file out of sync
                     throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
                 else
+                {
+                    if (traceLevel > 2)
+                    {
+                        DBGLOG("Failed to open file at any of the following %d local locations:", localLocations.length());
+                        ForEachItemIn(local_idx, localLocations)
+                        {
+                            DBGLOG("%d: %s", local_idx+1, localLocations.item(local_idx));
+                        }
+                        DBGLOG("Or at any of the following %d remote locations:", remoteLocationInfo.length());
+                        ForEachItemIn(remote_idx, remoteLocationInfo)
+                        {
+                            DBGLOG("%d: %s", remote_idx+1, remoteLocationInfo.item(remote_idx));
+                        }
+                    }
                     throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
+                }
             }
             ret->setRemote(true);
         }
@@ -706,7 +728,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         }
     }
 
-    bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg)
+    bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg, CFflags copyFlags=CFnone)
     {
         bool fileCopied = false;
         IFile *sourceFile;
@@ -753,18 +775,18 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                     {
                         StringBuffer str;
                         str.appendf("doCopyFile %s", sourceFile->queryFilename());
-                        MTimeSection timing(NULL, str.str());
+                        TimeSection timing(str.str());
                         if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true);
+                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, copyFlags);
                         else
-                            sourceFile->copyTo(destFile);
+                            sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
                     }
                     else
                     {
                         if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true);
+                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, copyFlags);
                         else
-                            sourceFile->copyTo(destFile);
+                            sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
                     }
                 }
                 f->setCopying(false);
@@ -822,7 +844,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         return fileCopied;
     }
 
-    bool doCopy(ILazyFileIO *f, bool background, bool displayFirstFileMessage)
+    bool doCopy(ILazyFileIO *f, bool background, bool displayFirstFileMessage, CFflags copyFlags=CFnone)
     {
         if (!f->isRemote())
             f->copyComplete();
@@ -846,7 +868,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             
             tempFile.append(".$$$");
             const char *msg = background ? "Background copy" : "Copy";
-            return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg);
+            return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg, copyFlags);
         }
         return false;  // if we get here there was no file copied
     }
@@ -951,7 +973,7 @@ public:
                 {
                     try
                     {
-                        fileCopied = doCopy(next, true, (fileCopiedCount==0) ? true : false);
+                        fileCopied = doCopy(next, true, (fileCopiedCount==0) ? true : false, CFflush_rdwr);
                         CriticalBlock b(crit);
                         if (fileCopied)
                             fileCopiedCount++;
@@ -1066,6 +1088,7 @@ public:
             if (file == &todo.item(idx))
             {
                 todo.remove(idx);
+                atomic_dec(&numFilesToProcess);    // must decrement counter for SNMP accuracy
             }
         }
     }
@@ -1150,7 +1173,7 @@ public:
                         if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
                         {
                             ret->checkOpen();
-                            doCopy(ret, false, false);
+                            doCopy(ret, false, false, CFflush_rdwr);
                             return ret.getLink();
                         }
 
@@ -1316,8 +1339,16 @@ public:
 ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDescriptor *remotePDesc, RoxieFileType fileType, int numParts, bool startCopy, unsigned channel)
 {
     StringArray remoteLocations;
+    const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
+    if (peerCluster)
+    {
+        if (*peerCluster!='-') // a remote cluster was specified explicitly
+            appendRemoteLocations(pdesc, remoteLocations, NULL, peerCluster, true);  // Add only from specified cluster
+    }
+    else
+        appendRemoteLocations(pdesc, remoteLocations, NULL, roxieName, false);      // Add from any cluster on same dali, other than mine
     if (remotePDesc)
-        appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL);
+        appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
 
     return queryFileCache().lookupFile(id, fileType, pdesc, numParts, replicationLevel[channel], remoteLocations, startCopy);
 }
@@ -1595,10 +1626,10 @@ public:
 
 CRoxieFileCache * fileCache;
 
-class CResolvedFile : public CInterface, implements IResolvedFileCreator
+class CResolvedFile : public CInterface, implements IResolvedFileCreator, implements ISDSSubscription
 {
 protected:
-    const IRoxiePackage *cached;
+    IResolvedFileCache *cached;
     StringAttr lfn;
     StringAttr physicalName;
     Owned<IDistributedFile> dFile; // NULL on copies serialized to slaves. Note that this implies we keep a lock on dali file for the lifetime of this object.
@@ -1613,8 +1644,10 @@ protected:
     PointerIArrayOf<IFileDescriptor> remoteSubFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
     PointerIArrayOf<IDefRecordMeta> diskMeta;
     IArrayOf<IDistributedFile> subDFiles;  // To make sure subfiles get locked too
+    IArrayOf<IResolvedFile> subRFiles;  // To make sure subfiles get locked too
 
     Owned <IPropertyTree> properties;
+    Owned<IDaliPackageWatcher> notifier;
 
     void addFile(const char *subName, IFileDescriptor *fdesc, IFileDescriptor *remoteFDesc)
     {
@@ -1644,6 +1677,22 @@ protected:
         fileSize += base;
     }
 
+    virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    {
+        if (traceLevel > 2)
+            DBGLOG("Superfile %s change detected", lfn.get());
+
+        {
+            CriticalBlock b(lock);
+            if (cached)
+            {
+                cached->removeCache(this);
+                cached = NULL;
+            }
+        }
+        globalPackageSetManager->requestReload();
+    }
+
     // We cache all the file maps/arrays etc here. 
     mutable CriticalSection lock;
     mutable Owned<IFilePartMap> fileMap;
@@ -1653,7 +1702,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* daliHelper, bool cacheIt, bool writeAccess, bool _isSuperFile)
+    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* daliHelper, bool isDynamic, bool cacheIt, bool writeAccess, bool _isSuperFile)
     : lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile)
     {
         cached = NULL;
@@ -1663,6 +1712,9 @@ public:
         {
             if (traceLevel > 5)
                 DBGLOG("Roxie server adding information for file %s", lfn.get());
+            bool tsSet = dFile->getModificationTime(fileTimeStamp);
+            bool csSet = dFile->getFileCheckSum(fileCheckSum);
+            assertex(tsSet); // per Nigel, is always set
             IDistributedSuperFile *superFile = dFile->querySuperFile();
             if (superFile)
             {
@@ -1678,26 +1730,33 @@ public:
                     subDFiles.append(OLINK(sub));
                     addFile(sub.queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
                 }
+                // We have to clone the properties since we don't want to keep the superfile locked
+                properties.setown(createPTreeFromIPT(&dFile->queryAttributes()));
+                if (!isDynamic)
+                {
+                    notifier.setown(daliHelper->getSuperFileSubscription(lfn, this));
+                    dFile.clear();  // We don't lock superfiles, except dynamic ones
+                }
             }
             else // normal file, not superkey
             {
                 isSuper = false;
+                properties.set(&dFile->queryAttributes());
                 Owned<IFileDescriptor> fDesc = dFile->getFileDescriptor();
                 Owned<IFileDescriptor> remoteFDesc;
                 if (daliHelper)
                     remoteFDesc.setown(daliHelper->checkClonedFromRemote(_lfn, fDesc, cacheIt));
                 addFile(dFile->queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
             }
-            bool tsSet = dFile->getModificationTime(fileTimeStamp);
-            bool csSet = dFile->getFileCheckSum(fileCheckSum);
-            assertex(tsSet); // per Nigel, is always set
-            properties.set(&dFile->queryAttributes());
         }
     }
     virtual void beforeDispose()
     {
+        notifier.clear();
         if (cached)
+        {
             cached->removeCache(this);
+        }
     }
     virtual unsigned numSubFiles() const
     {
@@ -2032,6 +2091,14 @@ public:
         return fileSize;
     }
 
+    virtual hash64_t addHash64(hash64_t hashValue) const
+    {
+        hashValue = rtlHash64Data(sizeof(fileTimeStamp), &fileTimeStamp, hashValue);
+        if (fileCheckSum)
+            hashValue = rtlHash64Data(sizeof(fileCheckSum), &fileCheckSum, hashValue);
+        return hashValue;
+    }
+
     virtual void addSubFile(const IResolvedFile *_sub)
     {
         const CResolvedFile *sub = static_cast<const CResolvedFile *>(_sub);
@@ -2039,8 +2106,7 @@ public:
             assertex(sub->fileType==fileType);
         else
             fileType = sub->fileType;
-        if (sub->dFile)
-            subDFiles.append(*LINK(sub->dFile));
+        subRFiles.append((IResolvedFile &) *LINK(_sub));
         ForEachItemIn(idx, sub->subFiles)
         {
             addFile(sub->subNames.item(idx), LINK(sub->subFiles.item(idx)), LINK(sub->remoteSubFiles.item(idx)));
@@ -2063,9 +2129,17 @@ public:
         addSubFile(fdesc.getClear(), NULL);
     }
 
-    virtual void setCache(const IRoxiePackage *cache)
+    virtual void setCache(IResolvedFileCache *cache)
     {
-        assertex (!cached);
+        if (cached)
+        {
+            if (traceLevel > 9)
+                DBGLOG("setCache removing from prior cache %s", queryFileName());
+            if (cache==NULL)
+                cached->removeCache(this);
+            else
+                throwUnexpected();
+        }
         cached = cache;
     }
 
@@ -2089,8 +2163,19 @@ public:
     virtual void remove()
     {
         subFiles.kill();
+        subDFiles.kill();
+        subRFiles.kill();
+        subNames.kill();
+        remoteSubFiles.kill();
+        diskMeta.kill();
         properties.clear();
-        if (dFile)
+        notifier.clear();
+        if (isSuper)
+        {
+            // Because we don't lock superfiles, we need to behave differently
+            UNIMPLEMENTED;
+        }
+        else if (dFile)
         {
             dFile->detach();
         }
@@ -2112,8 +2197,8 @@ public:
     {
         // MORE - this is a little bizarre. We sometimes create a resolvedFile for a file that we are intending to create.
         // This will make more sense if/when we start to lock earlier.
-        if (dFile)
-            return true; // MORE - may need some thought
+        if (dFile || isSuper)
+            return true; // MORE - may need some thought - especially the isSuper case
         else
             return checkFileExists(lfn.get());
     }
@@ -2135,7 +2220,7 @@ public:
 
 public:
     CSlaveDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal)
-        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, false, false, false), channel(header->channel), serverIdx(header->serverIdx), isOpt(_isOpt), isLocal(_isLocal)
+        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, false, false), channel(header->channel), serverIdx(header->serverIdx), isOpt(_isOpt), isLocal(_isLocal)
     {
         // call back to the server to get the info
         IPendingCallback *callback = ROQ->notePendingCallback(*header, lfn); // note that we register before the send to avoid a race.
@@ -2235,13 +2320,13 @@ private:
 
 extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical, bool isSuperFile)
 {
-    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, false, false, isSuperFile);
+    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, true, false, false, isSuperFile);
 }
 
-extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool cacheIt, bool writeAccess)
+extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool isDynamic, bool cacheIt, bool writeAccess)
 {
     const char *kind = dFile ? dFile->queryAttributes().queryProp("@kind") : NULL;
-    return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, cacheIt, writeAccess, false);
+    return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, isDynamic, cacheIt, writeAccess, false);
 }
 
 class CSlaveDynamicFileCache : public CInterface, implements ISlaveDynamicFileCache

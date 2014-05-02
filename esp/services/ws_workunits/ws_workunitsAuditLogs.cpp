@@ -1388,18 +1388,13 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
          if(!strnicmp(path.str(), "/WsWorkunits/res/", strlen("/WsWorkunits/res/")))
          {
             const char *pos = path.str();
-            StringBuffer wuid;
-            nextPathNode(pos, wuid, 2);
-            Owned<IWuWebView> web = createWuWebView(wuid, wuid, getCFD(), true);
-            if (!web)
-                throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit");
+            skipPathNodes(pos, 1);
             MemoryBuffer mb;
-            StringAttr mimetype(mimeTypeFromFileExt(strrchr(pos, '.')));
-            if (!web->getResourceByPath(pos, mb))
-                throw MakeStringException(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot open resource");
+            StringBuffer mimetype;
+            getWuResourceByPath(pos, mb, mimetype);
 
             response->setContent(mb.length(), mb.toByteArray());
-            response->setContentType(mimetype.get());
+            response->setContentType(mimetype.str());
             response->setStatus(HTTP_STATUS_OK);
             response->send();
             return 0;
@@ -1473,6 +1468,17 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
             addToQueryString(xls, "EndDate", endDate);
 
             streamJobQueueListResponse(*ctx, cluster, startDate, endDate, response, xls.str());
+            return 0;
+        }
+        else if(!strnicmp(path.str(), "/WsWorkunits/filesInUse", 28))
+        {
+            StringBuffer xml;
+            wswService->filesInUse.toStr(xml);
+
+            response->setContent(xml);
+            response->setContentType("text/xml");
+            response->setStatus(HTTP_STATUS_OK);
+            response->send();
             return 0;
         }
     }

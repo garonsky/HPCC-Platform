@@ -192,38 +192,50 @@ public:
         line.append(suspendedOnCluster ? 'X' : ' ');
         line.append(query.getSuspended() ? 'S' : ' ');
         line.append(isActive ? 'A' : ' ');
-        line.append(' ').append(queryid);
-        if (!query.getTimeLimit_isNull())
-        {
-            if (line.length() < 34)
-                line.appendN(34 - line.length(), ' ');
-            line.append(' ').append(query.getTimeLimit());
-        }
-        if (!query.getWarnTimeLimit_isNull())
-        {
-            if (line.length() < 41)
-                line.appendN(41 - line.length(), ' ');
-            line.append(' ').append(query.getWarnTimeLimit());
-        }
-        if (query.getPriority())
-        {
-            if (line.length() < 48)
-                line.appendN(48 - line.length(), ' ');
-            line.append(' ').append(query.getPriority());
-        }
-        if (query.getMemoryLimit())
-        {
-            if (line.length() < 53)
-                line.appendN(53 - line.length(), ' ');
-            line.append(' ').append(query.getMemoryLimit());
-        }
+        line.append("  ").append(queryid);
+        if (line.length() < 34)
+            line.appendN(34 - line.length(), ' ');
+        line.append(' ').append(query.getWuid());
         if (query.getComment())
         {
-            if (line.length() < 64)
-                line.appendN(64 - line.length(), ' ');
+            if (line.length() < 51)
+                line.appendN(51 - line.length(), ' ');
             line.append(' ').append(query.getComment());
         }
         fputs(line.append('\n').str(), stdout);
+        StringBuffer metaTags;
+        if (!query.getTimeLimit_isNull())
+            metaTags.append("timeLimit=").append(query.getTimeLimit());
+        if (!query.getWarnTimeLimit_isNull())
+        {
+            if (metaTags.length())
+                metaTags.append(", ");
+            metaTags.append("warnTimeLimit=").append(query.getWarnTimeLimit());
+        }
+        if (query.getPriority())
+        {
+            if (metaTags.length())
+                metaTags.append(", ");
+            metaTags.append("priority=").append(query.getPriority());
+        }
+        if (query.getMemoryLimit())
+        {
+            if (metaTags.length())
+                metaTags.append(", ");
+            metaTags.append("memLimit=").append(query.getMemoryLimit());
+        }
+        if (query.getSnapshot())
+        {
+            if (metaTags.length())
+                metaTags.append(", ");
+            metaTags.append("snapshot=").append(query.getSnapshot());
+        }
+        if (metaTags.length())
+        {
+            fputs("          [", stdout);
+            fputs(metaTags.str(), stdout);
+            fputs("]\n\n", stdout);
+        }
     }
 
     void outputQueryset(IConstWUQuerySetDetail &qs)
@@ -232,9 +244,8 @@ public:
         if (qs.getQuerySetName())
             fprintf(stdout, "\nTarget: %s\n", qs.getQuerySetName());
         fputs("\n", stdout);
-        fputs("                                   Time   Warn        Memory\n", stdout);
-        fputs("Flags Query Id                     Limit  Limit  Pri  Limit      Comment\n", stdout);
-        fputs("----- ---------------------------- ------ ------ ---- ---------- ------------\n", stdout);
+        fputs("Flags Query Id                     WUID             Comment\n", stdout);
+        fputs("----- ---------------------------- ---------------- ------------\n", stdout);
 
         IArrayOf<IConstQuerySetQuery> &queries = qs.getQueries();
         ForEachItemIn(id, queries)
@@ -292,7 +303,7 @@ private:
 class EclCmdQueriesCopy : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000), optDontCopyFiles(false), optOverwrite(false)
+    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000), optDontCopyFiles(false), optOverwrite(false), optAllowForeign(false)
     {
         optTimeLimit = (unsigned) -1;
         optWarnTimeLimit = (unsigned) -1;
@@ -335,6 +346,8 @@ public:
                 continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
                 continue;
+            if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
+                continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
             if (iter.matchOption(optTimeLimit, ECLOPT_TIME_LIMIT))
@@ -348,6 +361,8 @@ public:
             if (iter.matchOption(optComment, ECLOPT_COMMENT))
                 continue;
             if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
+                continue;
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -391,6 +406,7 @@ public:
         req->setDontCopyFiles(optDontCopyFiles);
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
+        req->setAllowForeignFiles(optAllowForeign);
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -400,6 +416,8 @@ public:
             req->setMemoryLimit(optMemoryLimit);
         if (!optPriority.isEmpty())
             req->setPriority(optPriority);
+        if (!optName.isEmpty())
+            req->setDestName(optName);
         if (optComment.get()) //allow empty
             req->setComment(optComment);
 
@@ -436,6 +454,7 @@ public:
             "   -A, --activate         Activate the new query\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   -O, --overwrite        Overwrite existing files\n"
+            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
             "   --timeLimit=<sec>      Value to set for query timeLimit configuration\n"
             "   --warnTimeLimit=<sec>  Value to set for query warnTimeLimit configuration\n"
@@ -444,6 +463,7 @@ public:
             "   --priority=<val>       Set the priority for this query. Value can be LOW,\n"
             "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
             "   --comment=<string>     Set the comment associated with this query\n"
+            "   -n, --name=<val>       Destination query name for the copied query\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -457,6 +477,7 @@ private:
     StringAttr optMemoryLimit;
     StringAttr optPriority;
     StringAttr optComment;
+    StringAttr optName;
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;
@@ -464,6 +485,7 @@ private:
     bool optNoReload;
     bool optOverwrite;
     bool optDontCopyFiles;
+    bool optAllowForeign;
 };
 
 class EclCmdQueriesConfig : public EclCmdCommon

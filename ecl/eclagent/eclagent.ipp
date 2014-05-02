@@ -110,14 +110,6 @@ public:
     {
         ctx->restoreCluster();
     }
-    virtual IRemoteConnection *startPersist(const char * name)
-    {
-        return ctx->startPersist(name);
-    }
-    virtual void finishPersist(IRemoteConnection *persistLock)
-    {
-        ctx->finishPersist(persistLock);
-    }
     virtual bool queryResolveFilesLocally()
     {
         return ctx->queryResolveFilesLocally();
@@ -146,18 +138,6 @@ public:
     { 
         return ctx->queryOutputSerializer();
     }
-    virtual void clearPersist(const char * logicalName)
-    {
-        ctx->clearPersist(logicalName);
-    }
-    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
-    {
-        ctx->updatePersist(persistLock, logicalName, eclCRC, allCRC);
-    }
-    virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC)
-    {
-        ctx->checkPersistMatches(logicalName, eclCRC);
-    }
     virtual void setWorkflowCondition(bool value)
     {
         ctx->setWorkflowCondition(value);
@@ -178,7 +158,7 @@ public:
     {
         return ctx->queryWorkUnit();
     }
-    virtual IWorkUnit *updateWorkUnit()
+    virtual IWorkUnit *updateWorkUnit() const
     {
         return ctx->updateWorkUnit();
     }
@@ -312,6 +292,7 @@ private:
 class EclAgentQueryLibrary : public CInterface
 {
 public:
+    void destroyGraph();
     void updateProgress();
 
 public:
@@ -351,7 +332,7 @@ private:
     friend class EclAgentWorkflowMachine;
 
     Owned<EclAgentWorkflowMachine> workflow;
-    Owned<IWorkUnit> wuWrite;
+    mutable Owned<IWorkUnit> wuWrite;
     Owned<IConstWorkUnit> wuRead;
     Owned<roxiemem::IRowManager> rowManager;
     StringAttr wuid;
@@ -370,7 +351,7 @@ private:
     Owned<IUserDescriptor> standAloneUDesc;
     outputFmts outputFmt;
     unsigned __int64 stopAfter;
-    CriticalSection wusect;
+    mutable CriticalSection wusect;
     StringArray tempFiles;
     CriticalSection tfsect;
     Array persistReadLocks;
@@ -501,17 +482,16 @@ public:
 
     virtual bool fileExists(const char * filename);
     virtual char * getExpandLogicalName(const char * logicalName);
-    virtual void addWuException(const char * text, unsigned code, unsigned severity);
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source);
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort);
     virtual IUserDescriptor *queryUserDescriptor();
     virtual void selectCluster(const char * cluster);
     virtual void restoreCluster();
-    virtual IRemoteConnection *startPersist(const char * name);
-    virtual void finishPersist(IRemoteConnection *persistLock);
-    virtual void clearPersist(const char * logicalName);
-    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
-    virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC);
+
+    IRemoteConnection *startPersist(const char * name);
+    void finishPersist(IRemoteConnection *persistLock);
+    void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
+    void checkPersistMatches(const char * logicalName, unsigned eclCRC);
     virtual void deleteLRUPersists(const char * logicalName, int keep);
     virtual bool queryResolveFilesLocally() { return resolveFilesLocally; }
     virtual bool queryRemoteWorkunit() { return isRemoteWorkunit; }
@@ -576,7 +556,7 @@ public:
     virtual bool isResult(const char * name, unsigned sequence);
     virtual unsigned getWorkflowId();// { return workflow->queryCurrentWfid(); }
     virtual IConstWorkUnit *queryWorkUnit();  // no link
-    virtual IWorkUnit *updateWorkUnit();        // links
+    virtual IWorkUnit *updateWorkUnit() const; // links
     virtual void unlockWorkUnit();      
     virtual void reloadWorkUnit();
     void addTimings();
@@ -641,9 +621,9 @@ public:
     virtual void updateWULogfile();
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
-        return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+        return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
 };
 
@@ -671,6 +651,7 @@ public:
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 };
 
 class EclBoundLoopGraph : public CInterface, implements IHThorBoundLoopGraph
@@ -770,6 +751,7 @@ public:
     virtual const void * queryRow(unsigned whichRow);
     virtual void getLinkedResult(unsigned & count, byte * * & ret);
     virtual const void * getOwnRow(unsigned whichRow);
+    virtual const void * getLinkedRowResult();
 
 protected:
     unsigned id;
@@ -786,6 +768,7 @@ public:
     virtual const void * queryRow(unsigned whichRow);
     virtual void getLinkedResult(unsigned & count, byte * * & ret);
     virtual const void * getOwnRow(unsigned whichRow);
+    virtual const void * getLinkedRowResult();
 
 protected:
     Owned<IEngineRowAllocator> rowsetAllocator;
@@ -805,8 +788,11 @@ public:
 
     virtual void clear();
     virtual IHThorGraphResult * queryResult(unsigned id);
+    virtual IHThorGraphResult * queryGraphLoopResult(unsigned id);
     virtual IHThorGraphResult * createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator);
     virtual IHThorGraphResult * createResult(IEngineRowAllocator * ownedRowsetAllocator);
+    virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator) { throwUnexpected(); }
+
     virtual void setResult(unsigned id, IHThorGraphResult * result);
 
 //interface IEclGraphResults
@@ -818,7 +804,10 @@ public:
     {
         queryResult(id)->getLinkedResult(count, ret);
     }
-
+    virtual const void * getLinkedRowResult(unsigned id)
+    {
+        return queryResult(id)->getLinkedRowResult();
+    }
 protected:
     void ensureAtleast(unsigned id);
 
@@ -938,7 +927,7 @@ public:
     EclSubGraph(IAgentContext & _agent, EclGraph &parent, EclSubGraph * _owner, unsigned subGraphSeqNo, bool enableProbe, CHThorDebugContext * _debugContext, IProbeManager * _probeManager);
     IMPLEMENT_IINTERFACE
 
-    void createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IPropertyTree * xgmml, unsigned * subGraphSeqNo, EclSubGraph * resultsGraph);
+    void createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IPropertyTree * xgmml, unsigned & subGraphSeqNo, EclSubGraph * resultsGraph);
     void execute(const byte * parentExtract);
     void executeChild(const byte * parentExtract, IHThorGraphResults * results, IHThorGraphResults * _graphLoopResults);
     void executeLibrary(const byte * parentExtract, IHThorGraphResults * results);
@@ -975,6 +964,7 @@ public:
 
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
     virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id);
+    virtual const void * getLinkedRowResult(unsigned id);
     inline unsigned __int64 queryId() const
     {
         return id;
@@ -1076,6 +1066,7 @@ public:
 protected:
     IAgentContext * agent;
     CIArrayOf<EclSubGraph> graphs;
+    GraphResults globalResults;
     StringAttr graphName;
     SubGraphMapping subgraphMap;
     Linked<IConstWorkUnit> wu;

@@ -351,7 +351,7 @@ bool FileTransferThread::performTransfer()
 
         msg.append(progress.ordinality());
         ForEachItemIn(i, progress)
-            progress.item(i).serialize(msg);
+            progress.item(i).serializeCore(msg);
 
         msg.append(sprayer.throttleNicSpeed);
         msg.append(sprayer.compressedInput);
@@ -364,6 +364,10 @@ bool FileTransferThread::performTransfer()
         sprayer.srcFormat.serializeExtra(msg, 1);
         sprayer.tgtFormat.serializeExtra(msg, 1);
 
+        ForEachItemIn(i2, progress)
+            progress.item(i2).serializeExtra(msg, 1);
+
+        //NB: Any extra data must be appended at the end...
         if (!catchWriteBuffer(socket, msg))
             throwError1(RFSERR_TimeoutWaitConnect, url.str());
 
@@ -380,7 +384,8 @@ bool FileTransferThread::performTransfer()
                 break;
 
             OutputProgress newProgress;
-            newProgress.deserialize(msg);
+            newProgress.deserializeCore(msg);
+            newProgress.deserializeExtra(msg, 1);
             sprayer.updateProgress(newProgress);
 
             LOG(MCdebugProgress(10000), job, "Update %s: %d %"I64F"d->%"I64F"d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
@@ -1127,6 +1132,7 @@ void FileSprayer::calculateSprayPartition()
         FilePartInfo & cur = sources.item(idx);
         cur.filename.getRemotePath(remoteFilename.clear());
 
+        srcFormat.quotedTerminator = options->getPropBool("@quotedTerminator", true);
         LOG(MCdebugInfoDetail, job, "Partition %d(%s)", idx, remoteFilename.str());
         const SocketEndpoint & ep = cur.filename.queryEndpoint();
         IFormatPartitioner * partitioner = createFormatPartitioner(ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);
@@ -1166,11 +1172,14 @@ void FileSprayer::calculateSprayPartition()
     ForEachItemIn(idx2, partitioners)
         partitioners.item(idx2).getResults(partition);
 
-    // Store discovered CSV record structure into target logical file.
-    StringBuffer recStru;
-    partitioners.item(0).getRecordStructure(recStru);
-    IDistributedFile * target = distributedTarget.get();
-    target->setECL(recStru.str());
+    if (partitioners.ordinality() > 0)
+    {
+        // Store discovered CSV record structure into target logical file.
+        StringBuffer recStru;
+        partitioners.item(0).getRecordStructure(recStru);
+        IDistributedFile * target = distributedTarget.get();
+        target->setECL(recStru.str());
+    }
 
 }
 

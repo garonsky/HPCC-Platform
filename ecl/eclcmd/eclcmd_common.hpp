@@ -65,6 +65,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_OVERWRITE_ENV NULL
 
 #define ECLOPT_DONT_COPY_FILES "--no-files"
+#define ECLOPT_ALLOW_FOREIGN "--allow-foreign"
 
 #define ECLOPT_ACTIVE "--active"
 #define ECLOPT_ALL "--all"
@@ -127,7 +128,6 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PMID "--pmid"
 #define ECLOPT_PMID_S "-pm"
 #define ECLOPT_QUERYID "--queryid"
-
 
 #define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_PROCESS "--process"

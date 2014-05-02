@@ -74,7 +74,6 @@
 # ifdef _HAS_EPOLL_SUPPORT
 #  include <unistd.h>
 #  include <sys/epoll.h>
-//#  define EPOLLTRACE
 #  ifndef EPOLLRDHUP
 //  Centos 5.x bug - epoll.h does not define but its in the kernel
 #   define EPOLLRDHUP 0x2000
@@ -2525,7 +2524,10 @@ bool isInterfaceIp(const IpAddress &ip, const char *ifname)
     ifc.ifc_len = 1024;
     ifc.ifc_buf = buf;
     if(ioctl(fd, SIOCGIFCONF, &ifc) < 0) // query interfaces
+    {
+        close(fd);
         return false;
+    }
     struct ifreq *ifr = ifc.ifc_req;
     unsigned n = ifc.ifc_len/sizeof(struct ifreq);
     bool match = false;
@@ -2562,7 +2564,10 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
     ifc.ifc_len = 1024;
     ifc.ifc_buf = buf;
     if(ioctl(fd, SIOCGIFCONF, &ifc) < 0) // query interfaces
+    {
+        close(fd);
         return false;
+    }
     struct ifreq *ifr = ifc.ifc_req;
     unsigned n = ifc.ifc_len/sizeof(struct ifreq);
     for (int loopback = 0; loopback <= 1; loopback++)
@@ -3074,8 +3079,8 @@ void IpAddress::setNetAddress(size32_t sz,const void *src)
     if (sz==sizeof(unsigned)) { // IPv4
         netaddr[0] = 0;
         netaddr[1] = 0;
-        netaddr[2]=0xffff0000;
         netaddr[3] = *(const unsigned *)src;
+        netaddr[2] = netaddr[3] ? 0xffff0000 : 0; // leave as null if Ipv4 address is null
     }
     else if (!IP4only&&(sz==sizeof(netaddr))) { // IPv6
         memcpy(&netaddr,src,sz);
@@ -4306,7 +4311,7 @@ public:
           LOGERR(err,1,"epoll_create()");
           THROWJSOCKEXCEPTION2(err);
         }
-# if defined(_DEBUG) || defined(EPOLLTRACE)
+# ifdef EPOLLTRACE
         DBGLOG("CSocketEpollThread: creating epoll fd %d", epfd );
 # endif
         try {
@@ -5385,8 +5390,8 @@ void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,u
                     break;
             }
         }
-        delete [] elems;
     }
+    delete [] elems;
 }
 
 void multiConnect(const SocketEndpointArray &eps, PointerIArrayOf<ISocket> &retsockets,unsigned timeout)

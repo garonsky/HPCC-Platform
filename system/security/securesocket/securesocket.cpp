@@ -71,12 +71,27 @@ bool accept_selfsigned = false;
     throw MakeStringException(-1, "SecureSocket Exception Raised in: %s, line %d - %s", __FILE__, __LINE__, err);
 
 
-int pem_passwd_cb(char* buf, int size, int rwflag, void* password)
+static int pem_passwd_cb(char* buf, int size, int rwflag, void* password)
 {
     strncpy(buf, (char*)password, size);
     buf[size - 1] = '\0';
     return(strlen(buf));
 }
+
+static void readBio(BIO* bio, StringBuffer& buf)
+{
+    char readbuf[1024];
+
+    int len = 0;
+    while((len = BIO_read(bio, readbuf, 1024)) > 0)
+    {
+        buf.append(len, readbuf);
+    }
+}
+
+//Use a namespace to prevent clashes with a class of the same name in jhtree
+namespace securesocket
+{
 
 class CStringSet : public CInterface, implements IInterface
 {
@@ -111,7 +126,6 @@ public:
         return (h1 != NULL);
     }
 };
-
 
 class CSecureSocket : public CInterface, implements ISecureSocket
 {
@@ -813,6 +827,7 @@ private:
     bool m_verify;
     bool m_address_match;
     Owned<CStringSet> m_peers;
+    StringAttr password;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -853,11 +868,8 @@ public:
         {
             throw MakeStringException(-1, "ctx can't be created");
         }
-
-        char passwdbuf[128];
-        strcpy(passwdbuf, passphrase);
-
-        SSL_CTX_set_default_passwd_cb_userdata(m_ctx, passwdbuf);
+        password.set(passphrase);
+        SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.sget());
         SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
 
         if(SSL_CTX_use_certificate_file(m_ctx, certfile, SSL_FILETYPE_PEM) <= 0)
@@ -904,12 +916,10 @@ public:
         const char* passphrase = config->queryProp("passphrase");
         if(passphrase && *passphrase)
         {
-            StringBuffer passbuf;
-            decrypt(passbuf, passphrase);
-            char passwdbuf[128];
-            strcpy(passwdbuf, passbuf.str());
-
-            SSL_CTX_set_default_passwd_cb_userdata(m_ctx, passwdbuf);
+            StringBuffer pwd;
+            decrypt(pwd, passphrase);
+            password.set(pwd);
+            SSL_CTX_set_default_passwd_cb_userdata(m_ctx, (void*)password.sget());
             SSL_CTX_set_default_passwd_cb(m_ctx, pem_passwd_cb);
         }
 
@@ -1014,17 +1024,6 @@ public:
         return new CSecureSocket(sockfd, m_ctx, m_verify, m_address_match, m_peers);
     }
 };
-
-void readBio(BIO* bio, StringBuffer& buf)
-{
-    char readbuf[1024];
-
-    int len = 0;
-    while((len = BIO_read(bio, readbuf, 1024)) > 0)
-    {
-        buf.append(len, readbuf);
-    }
-}
 
 class CRsaCertificate : public CInterface, implements ICertificate
 {
@@ -1464,6 +1463,8 @@ public:
     }
 };
 
+}
+
 extern "C" {
 CriticalSection factoryCrit;
 
@@ -1472,12 +1473,12 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketTyp
     CriticalBlock b(factoryCrit);
     if(sockettype == ClientSocket)
     {
-        return new CSecureSocketContext(sockettype);
+        return new securesocket::CSecureSocketContext(sockettype);
     }
     else
     {
         if(server_securesocket_context.get() == NULL)
-            server_securesocket_context.setown(new CSecureSocketContext(sockettype));
+            server_securesocket_context.setown(new securesocket::CSecureSocketContext(sockettype));
         return server_securesocket_context.getLink();
     }
 }
@@ -1487,12 +1488,12 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* c
     CriticalBlock b(factoryCrit);
     if(sockettype == ClientSocket)
     {
-        return new CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype);
+        return new securesocket::CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype);
     }
     else
     {
         if(server_securesocket_context.get() == NULL)
-            server_securesocket_context.setown(new CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype));
+            server_securesocket_context.setown(new securesocket::CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype));
         return server_securesocket_context.getLink();
     }
 }
@@ -1505,19 +1506,19 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(IPropertyTre
     CriticalBlock b(factoryCrit);
     if(sockettype == ClientSocket)
     {
-        return new CSecureSocketContext(config, sockettype);
+        return new securesocket::CSecureSocketContext(config, sockettype);
     }
     else
     {
         if(server_securesocket_context.get() == NULL)
-            server_securesocket_context.setown(new CSecureSocketContext(config, sockettype));
+            server_securesocket_context.setown(new securesocket::CSecureSocketContext(config, sockettype));
         return server_securesocket_context.getLink();
     }
 }       
 
 SECURESOCKET_API ICertificate *createCertificate()
 {
-    return new CRsaCertificate();
+    return new securesocket::CRsaCertificate();
 }
 
 SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate, const char* ca_privkey, const char* ca_passphrase, int days, StringBuffer& certificate)

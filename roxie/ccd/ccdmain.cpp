@@ -71,7 +71,7 @@ unsigned maxLockAttempts = 5;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
 bool traceServerSideCache = false;
-bool timeActivities = true;
+bool defaultTimeActivities = true;
 unsigned watchActivityId = 0;
 unsigned testSlaveFailure = 0;
 unsigned restarts = 0;
@@ -112,11 +112,13 @@ bool checkCompleted = true;
 unsigned preabortKeyedJoinsThreshold = 100;
 unsigned preabortIndexReadsThreshold = 100;
 bool preloadOnceData;
+bool reloadRetriesFailed;
 
 unsigned memoryStatsInterval = 0;
 memsize_t defaultMemoryLimit;
 unsigned defaultTimeLimit[3] = {0, 0, 0};
 unsigned defaultWarnTimeLimit[3] = {0, 5000, 5000};
+unsigned defaultThorConnectTimeout;
 
 unsigned defaultParallelJoinPreload = 0;
 unsigned defaultPrefetchProjectPreload = 10;
@@ -126,6 +128,8 @@ unsigned defaultFullKeyedJoinPreload = 0;
 unsigned defaultKeyedJoinPreload = 0;
 unsigned dafilesrvLookupTimeout = 10000;
 bool defaultCheckingHeap = false;
+
+unsigned slaveQueryReleaseDelaySeconds = 60;
 
 unsigned logQueueLen;
 unsigned logQueueDrop;
@@ -458,6 +462,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 #endif
 
 #ifndef __64BIT__
+    // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
 #endif
     srand( (unsigned)time( NULL ) );
@@ -496,7 +501,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 throw MakeStringException(ROXIE_INVALID_TOPOLOGY, "topology file %s not found", topologyFile.str());
             }
             topology=createPTreeFromXMLString(
-                "<RoxieTopology localSlave='1'>"
+                "<RoxieTopology allFilesDynamic='1' localSlave='1'>"
                 " <RoxieFarmProcess/>"
                 " <RoxieServerProcess netAddress='.'/>"
                 "</RoxieTopology>"
@@ -660,6 +665,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (!blindLogging)
             logExcessiveSeeks = true;
         preloadOnceData = topology->getPropBool("@preloadOnceData", true);
+        reloadRetriesFailed  = topology->getPropBool("@reloadRetriesSuspended", true);
         linuxYield = topology->getPropBool("@linuxYield", false);
         traceSmartStepping = topology->getPropBool("@traceSmartStepping", false);
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
@@ -705,6 +711,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultWarnTimeLimit[0] = (unsigned) topology->getPropInt64("@defaultLowPriorityTimeWarning", 0);
         defaultWarnTimeLimit[1] = (unsigned) topology->getPropInt64("@defaultHighPriorityTimeWarning", 0);
         defaultWarnTimeLimit[2] = (unsigned) topology->getPropInt64("@defaultSLAPriorityTimeWarning", 0);
+        defaultThorConnectTimeout = (unsigned) topology->getPropInt64("@defaultThorConnectTimeout", 60);
 
         defaultXmlReadFlags = topology->getPropBool("@defaultStripLeadingWhitespace", true) ? ptr_ignoreWhiteSpace : ptr_none;
         defaultParallelJoinPreload = topology->getPropInt("@defaultParallelJoinPreload", 0);
@@ -713,7 +720,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultFullKeyedJoinPreload = topology->getPropInt("@defaultFullKeyedJoinPreload", 0);
         defaultKeyedJoinPreload = topology->getPropInt("@defaultKeyedJoinPreload", 0);
         defaultPrefetchProjectPreload = topology->getPropInt("@defaultPrefetchProjectPreload", 10);
-        defaultCheckingHeap = topology->getPropInt("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
+        defaultCheckingHeap = topology->getPropBool("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
+
+        slaveQueryReleaseDelaySeconds = topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60);
+
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = topology->getPropBool("@fieldTranslationEnabled", false);
 
@@ -730,7 +740,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
-        timeActivities = topology->getPropBool("@timeActivities", true);
+        defaultTimeActivities = topology->getPropBool("@timeActivities", true);
         clientCert.certificate.set(topology->queryProp("@certificateFileName"));
         clientCert.privateKey.set(topology->queryProp("@privateKeyFileName"));
         clientCert.passphrase.set(topology->queryProp("@passphrase"));
@@ -864,13 +874,15 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 1);
             for (int i=0; i<numNodes; i++)
             {
+                // Note this code is a little confusing - easy to get the cyclic offset backwards
+                // cyclic offset means node n+offset has copy 2 for channel n, so node n has copy 2 for channel n-offset
                 int channel = i+1;
                 for (int copy=0; copy<numDataCopies; copy++)
                 {
-                    if (channel > numNodes)
-                        channel = channel - numNodes;
+                    if (channel < 1)
+                        channel = channel + numNodes;
                     addChannel(i, channel, copy);
-                    channel = channel + cyclicOffset;
+                    channel = channel - cyclicOffset;
                 }
             }
         }
@@ -884,8 +896,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 int channel = i+1;
                 for (int copy=0; copy<channelsPerNode; copy++)
                 {
-                    channel = channel + copy*numNodes;
                     addChannel(i, channel, copy);
+                    channel += numNodes;
                 }
             }
         }
@@ -911,6 +923,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
+        createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
@@ -1035,6 +1048,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     stopPerformanceMonitor();
     ::Release(globalPackageSetManager);
     globalPackageSetManager = NULL;
+    stopDelayedReleaser();
     cleanupPlugins();
     closeMulticastSockets();
     releaseSlaveDynamicFileCache();

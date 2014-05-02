@@ -36,6 +36,7 @@ ESPrequest AddPackageRequest
     string DaliIp;
     bool GlobalScope(0);
     string SourceProcess;
+    bool AllowForeignFiles(true);
 };
 
 
@@ -157,6 +158,7 @@ ESPrequest ValidatePackageRequest
     bool Active;
     string PMID;
     string QueryIdToVerify;
+    ESParray<string> QueriesToVerify;
     bool CheckDFS;
     bool GlobalScope(0);
 };

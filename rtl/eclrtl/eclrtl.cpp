@@ -122,6 +122,47 @@ ECLRTL_API byte * * rtlLinkRowset(byte * * rowset)
 
 // escape
 
+static bool stripIgnorableCharacters(size32_t & lenResult, UChar * & result, size32_t length, const UChar * in)
+{
+    unsigned numStripped = 0;
+    unsigned lastGood = 0;
+    for (unsigned i=0; i < length; i++)
+    {
+        UChar32 c = in[i];
+        unsigned stripSize = 0;
+        if (U16_IS_SURROGATE(c))
+        {
+            U16_GET(in, 0, i, length, c);
+            if (u_hasBinaryProperty(c, UCHAR_DEFAULT_IGNORABLE_CODE_POINT))
+                stripSize = 2;
+            else
+                i++; // skip the surrogate
+        }
+        else
+        {
+            if (u_hasBinaryProperty(c, UCHAR_DEFAULT_IGNORABLE_CODE_POINT))
+                stripSize = 1;
+        }
+
+        if (stripSize != 0)
+        {
+            if (numStripped == 0)
+                result = (UChar *)rtlMalloc((length-stripSize)*sizeof(UChar));
+
+            //Copy and non ignorable characters skipped up to this point.  (Note result+x is scaled by UChar)
+            memcpy(result + lastGood - numStripped, in+lastGood, (i-lastGood) * sizeof(UChar));
+            lastGood = i+stripSize;
+            numStripped += stripSize;
+            i += (stripSize-1);
+        }
+    }
+    if (numStripped == 0)
+        return false;
+    lenResult = length-numStripped;
+    memcpy(result + lastGood - numStripped, in+lastGood, (length-lastGood) * sizeof(UChar));
+    return true;
+}
+
 void escapeUnicode(unsigned inlen, UChar const * in, StringBuffer & out)
 {
     UCharCharacterIterator iter(in, inlen);
@@ -636,14 +677,6 @@ void rtl_ls82en(size32_t l, char * t, __int64 val)
 //=============================================================================
 // Numeric conversion functions... - unknown length ebcdic target
 
-#define intToUnknownEbcdicStringBody() \
-    unsigned alen = numtostr(astr, val); \
-    rtlStrToEStrX(elen,estr,alen,astr); \
-    char * result = (char *)rtlMalloc(elen); \
-    memcpy(result, estr, elen); \
-    l = elen; \
-    t = result;
-
 #if defined _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4700)
@@ -651,33 +684,29 @@ void rtl_ls82en(size32_t l, char * t, __int64 val)
 void rtl_l42ex(size32_t & l, char * & t, unsigned val)
 {
     char astr[20];
-    char * estr;
-    unsigned elen;
-    intToUnknownEbcdicStringBody();
+    unsigned alen = numtostr(astr, val);
+    rtlStrToEStrX(l,t,alen,astr);
 }
 
 void rtl_l82ex(size32_t & l, char * & t, unsigned __int64 val)
 {
     char astr[40];
-    char * estr;
-    unsigned elen;
-    intToUnknownEbcdicStringBody();
+    unsigned alen = numtostr(astr, val);
+    rtlStrToEStrX(l,t,alen,astr);
 }
 
 void rtl_ls42ex(size32_t & l, char * & t, int val)
 {
     char astr[20];
-    char * estr;
-    unsigned elen;
-    intToUnknownEbcdicStringBody();
+    unsigned alen = numtostr(astr, val);
+    rtlStrToEStrX(l,t,alen,astr);
 }
 
 void rtl_ls82ex(size32_t & l, char * & t, __int64 val)
 {
     char astr[40];
-    char * estr;
-    unsigned elen;
-    intToUnknownEbcdicStringBody();
+    unsigned alen = numtostr(astr, val);
+    rtlStrToEStrX(l,t,alen,astr);
 }
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -799,11 +828,18 @@ double rtlUnicodeToReal(size32_t l, UChar const * t)
 
 //---------------------------------------------------------------------------
 
-void rtlRealToStr(size32_t l, char * t, double val)
+static void truncFixedReal(size32_t l, char * t, StringBuffer & temp)
 {
-    StringBuffer temp;
-    temp.append(val);
+    const char * str = temp.str();
     unsigned len = temp.length();
+    if (len > l)
+    {
+        //If we don't lose significant digits left of the decimal point then truncate the string.
+        const char * dot = strchr(str, '.');
+        if (dot && ((size_t)(dot - str) <= l))
+            len = l;
+    }
+
     if (len > l)
         memset(t,'*',l);
     else
@@ -813,11 +849,52 @@ void rtlRealToStr(size32_t l, char * t, double val)
     }
 }
 
-void rtlRealToStr(size32_t l, char * t, float val)
+static void roundFixedReal(size32_t l, char * t, StringBuffer & temp)
 {
-    StringBuffer temp;
-    temp.append(val);
+    const char * str = temp.str();
     unsigned len = temp.length();
+    if (len > l)
+    {
+        //If we don't lose significant digits left of the decimal point then truncate the string.
+        const char * dot = strchr(str, '.');
+        if (dot && ((size_t)(dot - str) <= l))
+        {
+            len = l;
+            //Unfortunately we now need to potentially round the number which could even lead to
+            //an extra digit, and failure to fit.  Is there a simpler way of handling this?
+            bool decimalIsNext = ((dot - str) == l);
+            char next = decimalIsNext ? dot[1] : str[len];
+            bool rounding = (next >= '5');
+            unsigned cur = len;
+            while ((cur > 0) && rounding)
+            {
+                next = str[cur-1];
+                if (next == '-')
+                    break;
+                if (next != '.')
+                {
+                    if (next != '9')
+                    {
+                        temp.setCharAt(cur-1, next+1);
+                        rounding = false;
+                        break;
+                    }
+                    else
+                        temp.setCharAt(cur-1, '0');
+                }
+                cur--;
+            }
+            if (rounding)
+            {
+                //Ugly, but it is an exceptional case.
+                if (!decimalIsNext)
+                    temp.insert(cur, '1');
+                else
+                    len++; // overflow
+            }
+        }
+    }
+
     if (len > l)
         memset(t,'*',l);
     else
@@ -825,6 +902,26 @@ void rtlRealToStr(size32_t l, char * t, float val)
         memcpy(t,temp.str(),len);
         memset(t+len, ' ', l-len);
     }
+}
+
+void rtlRealToStr(size32_t l, char * t, double val)
+{
+    StringBuffer temp;
+    temp.append(val);
+
+    //This could either truncate or round when converting a real to a string
+    //Rounding is more user friendly, but then (string3)(string)1.99 != (string3)1.99 which is
+    //rather count intuitive.  (That is still true if the value is out of range.)
+    truncFixedReal(l, t, temp);
+}
+
+void rtlRealToStr(size32_t l, char * t, float val)
+{
+    StringBuffer temp;
+    temp.append(val);
+
+    //See comment above
+    truncFixedReal(l, t, temp);
 }
 
 void rtlRealToStrX(size32_t & l, char * & t, double val)
@@ -3125,6 +3222,24 @@ void rtlCodepageToUnicodeXUnescape(unsigned & outlen, UChar * & out, unsigned in
     normalized.extract(0, outlen, out);
 }
 
+void rtlCodepageToUtf8XUnescape(unsigned & outlen, char * & out, unsigned inlen, char const * in, char const * codepage)
+{
+    //If the input contains a character which doesn't exist in its claimed codepage, this will
+    //generate U+FFFD (substitution character). This most likely won't be displayed.
+    UnicodeString raw(in, inlen, codepage);
+    UnicodeString unescaped = raw.unescape();
+    UnicodeString normalized;
+    normalizeUnicodeString(unescaped, normalized);
+
+    UConverter * utf8Conv = queryRTLUnicodeConverter(UTF8_CODEPAGE)->query();
+    UErrorCode err = U_ZERO_ERROR;
+    size32_t outsize = normalized.extract(NULL, 0, utf8Conv, err);
+    err = U_ZERO_ERROR;
+    out = (char *)rtlMalloc(outsize);
+    outsize = normalized.extract(out, outsize, utf8Conv, err);
+    outlen = rtlUtf8Length(outsize, out);
+}
+
 void rtlUnicodeToCodepageX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in, char const * codepage)
 {
     //If the unicode contains a character which doesn't exist in the destination codepage,
@@ -3306,6 +3421,7 @@ void rtlStrToEStrX(unsigned & tlen, char * & tgt, unsigned slen, const char * sr
 
 #define FNV1_64_INIT HASH64_INIT
 #define FNV_64_PRIME I64C(0x100000001b3U)
+#define APPLY_FNV64(hval, next) { hval *= FNV_64_PRIME; hval ^= next; }
 
 
 hash64_t rtlHash64Data(size32_t len, const void *buf, hash64_t hval)
@@ -3315,8 +3431,7 @@ hash64_t rtlHash64Data(size32_t len, const void *buf, hash64_t hval)
 
     while (bp < be) 
     {
-        hval *= FNV_64_PRIME;
-        hval ^= *bp++;
+        APPLY_FNV64(hval, *bp++);
     }
 
     return hval;
@@ -3330,21 +3445,48 @@ hash64_t rtlHash64VStr(const char *str, hash64_t hval)
 
     while ((c = *s++) != 0) 
     {
-        hval *= FNV_64_PRIME;
-        hval ^= c;
+        APPLY_FNV64(hval, c);
     }
 
     return hval;
 }
 
-hash64_t rtlHash64Unicode(unsigned length, UChar const * k, hash64_t initval)
+hash64_t rtlHash64Unicode(unsigned length, UChar const * k, hash64_t hval)
 {
-    return rtlHash64Data(length*2, k, initval);
+    unsigned trimLength = rtlTrimUnicodeStrLen(length, k);
+    for (unsigned i=0; i < trimLength; i++)
+    {
+        //Handle surrogate pairs correctly, but still hash the utf16 representation
+        const byte * cur = reinterpret_cast<const byte *>(&k[i]);
+        UChar32 c = k[i];
+        if (U16_IS_SURROGATE(c))
+        {
+            U16_GET(k, 0, i, length, c);
+            if (!u_hasBinaryProperty(c, UCHAR_DEFAULT_IGNORABLE_CODE_POINT))
+            {
+                APPLY_FNV64(hval, cur[0]);
+                APPLY_FNV64(hval, cur[1]);
+                APPLY_FNV64(hval, cur[2]);
+                APPLY_FNV64(hval, cur[3]);
+            }
+            //Skip the surrogate pair
+            i++;
+        }
+        else
+        {
+            if (!u_hasBinaryProperty(c, UCHAR_DEFAULT_IGNORABLE_CODE_POINT))
+            {
+                APPLY_FNV64(hval, cur[0]);
+                APPLY_FNV64(hval, cur[1]);
+            }
+        }
+    }
+    return hval;
 }
 
 hash64_t rtlHash64VUnicode(UChar const * k, hash64_t initval)
 {
-    return rtlHash64Data(rtlUnicodeStrlen(k)*2, k, initval);
+    return rtlHash64Unicode(rtlUnicodeStrlen(k), k, initval);
 }
 
 
@@ -3354,6 +3496,7 @@ hash64_t rtlHash64VUnicode(UChar const * k, hash64_t initval)
 
 #define FNV1_32_INIT HASH32_INIT
 #define FNV_32_PRIME 0x1000193
+#define APPLY_FNV32(hval, next) { hval *= FNV_32_PRIME; hval ^= next; }
 
 
 unsigned rtlHash32Data(size32_t len, const void *buf, unsigned hval)
@@ -3363,8 +3506,7 @@ unsigned rtlHash32Data(size32_t len, const void *buf, unsigned hval)
 
     while (bp < be) 
     {
-        hval *= FNV_32_PRIME;
-        hval ^= *bp++;
+        APPLY_FNV32(hval, *bp++);
     }
 
     return hval;
@@ -3378,21 +3520,48 @@ unsigned rtlHash32VStr(const char *str, unsigned hval)
 
     while ((c = *s++) != 0) 
     {
-        hval *= FNV_32_PRIME;
-        hval ^= c;
+        APPLY_FNV32(hval, c);
     }
 
     return hval;
 }
 
-unsigned rtlHash32Unicode(unsigned length, UChar const * k, unsigned initval)
+unsigned rtlHash32Unicode(unsigned length, UChar const * k, unsigned hval)
 {
-    return rtlHash32Data(length*2, k, initval);
+    unsigned trimLength = rtlTrimUnicodeStrLen(length, k);
+    for (unsigned i=0; i < trimLength; i++)
+    {
+        //Handle surrogate pairs correctly, but still hash the utf16 representation
+        const byte * cur = reinterpret_cast<const byte *>(&k[i]);
+        UChar32 c = k[i];
+        if (U16_IS_SURROGATE(c))
+        {
+            U16_GET(k, 0, i, length, c);
+            if (!u_hasBinaryProperty(c, UCHAR_DEFAULT_IGNORABLE_CODE_POINT))
+            {
+                APPLY_FNV32(hval, cur[0]);
+                APPLY_FNV32(hval, cur[1]);
+                APPLY_FNV32(hval, cur[2]);
+                APPLY_FNV32(hval, cur[3]);
+            }
+            //Skip the surrogate pair
+            i++;
+        }
+        else
+        {
+            if (!u_hasBinaryProperty(c, UCHAR_DEFAULT_IGNORABLE_CODE_POINT))
+            {
+                APPLY_FNV32(hval, cur[0]);
+                APPLY_FNV32(hval, cur[1]);
+            }
+        }
+    }
+    return hval;
 }
 
 unsigned rtlHash32VUnicode(UChar const * k, unsigned initval)
 {
-    return rtlHash32Data(rtlUnicodeStrlen(k)*2, k, initval);
+    return rtlHash32Unicode(rtlUnicodeStrlen(k), k, initval);
 }
 
 
@@ -3475,8 +3644,14 @@ unsigned rtlHashString( unsigned length, const char *_k, unsigned initval)
 
 unsigned rtlHashUnicode(unsigned length, UChar const * k, unsigned initval)
 {
-    //Would make more sense to trim here.
-    return rtlHashData(length*2, k, initval);
+    unsigned trimLength = rtlTrimUnicodeStrLen(length, k);
+    //Because of the implementation of HASH we need to strip ignoreable code points instead of skipping them
+    size32_t tempLength;
+    rtlDataAttr temp;
+    if (stripIgnorableCharacters(tempLength, temp.refustr(), trimLength, k))
+        return rtlHashData(tempLength*2, temp.getustr(), initval);
+
+    return rtlHashData(trimLength*sizeof(UChar), k, initval);
 }
 
 unsigned rtlHashVStr(const char * k, unsigned initval)
@@ -3486,7 +3661,7 @@ unsigned rtlHashVStr(const char * k, unsigned initval)
 
 unsigned rtlHashVUnicode(UChar const * k, unsigned initval)
 {
-    return rtlHashData(rtlTrimVUnicodeStrLen(k)*2, k, initval);
+    return rtlHashUnicode(rtlTrimVUnicodeStrLen(k), k, initval);
 }
 
 #define GETWORDNC(k,n) ((GETBYTE0(n)+GETBYTE1(n)+GETBYTE2(n)+GETBYTE3(n))&0xdfdfdfdf)
@@ -3561,7 +3736,7 @@ unsigned rtlCrcVStr( const char * k, unsigned initval)
 
 unsigned rtlCrcVUnicode(UChar const * k, unsigned initval)
 {
-    return crc32((char const *)k, rtlUnicodeStrlen(k)*2, initval);
+    return rtlCrcUnicode(rtlUnicodeStrlen(k), k, initval);
 }
 
 //---------------------------------------------------------------------------
@@ -4543,17 +4718,30 @@ ECLRTL_API void rtlUtf8SpaceFill(unsigned tlen, char * tgt, unsigned offset)
 
 ECLRTL_API unsigned rtlHash32Utf8(unsigned length, const char * k, unsigned initval)
 {
-    return rtlHash32Data(rtlUtf8Size(length, k), k, initval);
+    //These need to hash the same way as a UNICODE string would => convert to UNICODE
+    //It would be hard to optimize to hash the string without performing the conversion.
+    size32_t tempLength;
+    rtlDataAttr temp;
+    rtlUtf8ToUnicodeX(tempLength, temp.refustr(), length, k);
+    return rtlHash32Unicode(tempLength, temp.getustr(), initval);
 }
 
 ECLRTL_API unsigned rtlHashUtf8(unsigned length, const char * k, unsigned initval)
 {
-    return rtlHashData(rtlUtf8Size(length, k), k, initval);
+    //These need to hash the same way as a UNICODE string would => convert to UNICODE
+    size32_t tempLength;
+    rtlDataAttr temp;
+    rtlUtf8ToUnicodeX(tempLength, temp.refustr(), length, k);
+    return rtlHashUnicode(tempLength, temp.getustr(), initval);
 }
 
 ECLRTL_API hash64_t rtlHash64Utf8(unsigned length, const char * k, hash64_t initval)
 {
-    return rtlHash64Data(rtlUtf8Size(length, k), k, initval);
+    //These need to hash the same way as a UNICODE string would => convert to UNICODE
+    size32_t tempLength;
+    rtlDataAttr temp;
+    rtlUtf8ToUnicodeX(tempLength, temp.refustr(), length, k);
+    return rtlHash64Unicode(tempLength, temp.getustr(), initval);
 }
 
 unsigned rtlCrcUtf8(unsigned length, const char * k, unsigned initval)
@@ -5676,6 +5864,47 @@ bool RtlCInterface::Release(void) const
 }
 
 //---------------------------------------------------------------------------
+
+class RtlRowStream : implements IRowStream, public RtlCInterface
+{
+public:
+    RtlRowStream(size32_t _count, byte * * _rowset) : count(_count), rowset(_rowset)
+    {
+        rtlLinkRowset(rowset);
+        cur = 0;
+    }
+    ~RtlRowStream()
+    {
+        rtlReleaseRowset(count, rowset);
+    }
+    RTLIMPLEMENT_IINTERFACE
+
+    virtual const void *nextRow()
+    {
+        if (cur >= count)
+            return NULL;
+        byte * ret = rowset[cur];
+        cur++;
+        rtlLinkRow(ret);
+        return ret;
+    }
+    virtual void stop()
+    {
+        cur = count;
+    }
+
+protected:
+    size32_t cur;
+    size32_t count;
+    byte * * rowset;
+
+};
+
+ECLRTL_API IRowStream * createRowStream(size32_t count, byte * * rowset)
+{
+    return new RtlRowStream(count, rowset);
+}
+
 
 
 #if 0

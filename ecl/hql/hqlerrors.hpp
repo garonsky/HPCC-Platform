@@ -423,6 +423,8 @@
 #define ERR_PluginNoScripting       2391
 #define ERR_ZERO_SIZE_VIRTUAL       2392
 #define ERR_BAD_JOINGROUP_FIELD     2393
+#define ERR_CANNOT_ACCESS_CONTAINER 2394
+#define ERR_RESULT_IGNORED_SCOPE    2395
 
 #define ERR_ASSERTION_FAILS         100000
 
@@ -472,6 +474,7 @@
 #define HQLERR_PrefixJoinRequiresEquality       3132
 #define HQLERR_AtmostFollowUnknownSubstr        3133
 #define HQLERR_AtmostLegacyMismatch             3134
+#define HQLERR_PropertyArgumentNotConstant      3135
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
@@ -508,6 +511,7 @@
 #define HQLERR_PrefixJoinRequiresEquality_Text  "Global JOIN with no required equalities requires ALL"
 #define HQLERR_AtmostFollowUnknownSubstr_Text   "ATMOST [1..*] on an unknown length string must be last in the optional list"
 #define HQLERR_AtmostLegacyMismatch_Text        "Legacy JOIN condition on field[1..*] should be included in the optional fields"
+#define HQLERR_PropertyArgumentNotConstant_Text "The argument to attribute '%s' must be a constant"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

@@ -903,6 +903,32 @@ StringBuffer &CDfsLogicalFileName::makeFullnameQuery(StringBuffer &query, DfsXml
     return query.append("[@name=\"").append(queryTail()).append("\"]");
 }
 
+StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) const
+{
+    const char *s=get(true);    // skip foreign
+    bool first=true;
+    loop
+    {
+        const char *e=strstr(s,"::");
+        if (!e)
+        {
+            if (!streq(".", s))
+                lfnNodeName.append(s);
+            break;
+        }
+        if (0 != strncmp(".", s, e-s))
+        {
+            if (!first)
+                lfnNodeName.append('_');
+            else
+                first = false;
+            lfnNodeName.append(e-s,s);
+        }
+        s = e+2;
+    }
+    return lfnNodeName;
+}
+
 bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
 {
     SocketEndpoint nullep;
@@ -1567,7 +1593,7 @@ void filterParts(IPropertyTree *file,UnsignedArray &partslist)
 #define SORT_NOCASE  2
 #define SORT_NUMERIC 4
 
-inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterlo,const char *namefilterhi,IPropertyTree *item)
+inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterlo,const char *namefilterhi,StringArray& unknownAttributes, IPropertyTree *item)
 {
 
     if (!item)
@@ -1579,6 +1605,14 @@ inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterl
         if (namefilterlo&&(strcmp(namefilterlo,n)>0))
             return;
         if (namefilterhi&&(strcmp(namefilterhi,n)<0))
+            return;
+    }
+    ForEachItemIn(i, unknownAttributes) {
+        const char *attribute = unknownAttributes.item(i);
+        if (!attribute || !*attribute)
+            continue;
+        const char *attrValue = item->queryProp(attribute);
+        if (attrValue && *attrValue)
             return;
     }
     item->Link();
@@ -1602,7 +1636,7 @@ public:
         : buf(0x100000*100,0x10000,true)
     {
     }
-    void dosort(IPropertyTreeIterator &iter,const char *sortorder, const char *namefilterlo,const char *namefilterhi, IArrayOf<IPropertyTree> &results)
+    void dosort(IPropertyTreeIterator &iter,const char *sortorder, const char *namefilterlo,const char *namefilterhi, StringArray& unknownAttributes, IArrayOf<IPropertyTree> &results)
     {
         StringBuffer sk;
         const char *s = sortorder;
@@ -1630,7 +1664,7 @@ public:
             s++;
         }
         ForEach(iter)
-            filteredAdd(sortvalues,namefilterlo,namefilterhi,&iter.query());
+            filteredAdd(sortvalues,namefilterlo,namefilterhi,unknownAttributes,&iter.query());
         nv = sortvalues.ordinality();
         nk = sortkeys.ordinality();
         vals = (char **)calloc(sizeof(char *),nv*nk);
@@ -1678,9 +1712,19 @@ public:
                 char *&v2 = vals[i2*nk+i];
                 if (!v2)
                     getkeyval(i2,i,v2);
+                if (!v1 || !v2)
+                    return 0;
                 int ret;
                 if (mod&SORT_NUMERIC)
-                    ret = (int)(_atoi64(v1)-_atoi64(v2));
+                {
+                    __int64 ret0 = _atoi64(v1)-_atoi64(v2);
+                    if (ret0 > 0)
+                        ret = 1;
+                    else if (ret0 < 0)
+                        ret = -1;
+                    else
+                        ret = 0;
+                }
                 else if (mod&SORT_NOCASE)
                     ret = stricmp(v1,v2);
                 else
@@ -1711,6 +1755,7 @@ IRemoteConnection *getSortedElements( const char *basexpath,
                                      const char *sortorder,
                                      const char *namefilterlo,
                                      const char *namefilterhi,
+                                     StringArray& unknownAttributes,
                                      IArrayOf<IPropertyTree> &results)
 {
     Owned<IRemoteConnection> conn = querySDS().connect(basexpath, myProcessSession(), 0, SDS_LOCK_TIMEOUT);
@@ -1719,17 +1764,8 @@ IRemoteConnection *getSortedElements( const char *basexpath,
     Owned<IPropertyTreeIterator> iter = conn->getElements(xpath);
     if (!iter)
         return NULL;
-    if (namefilterlo&&!*namefilterlo)
-        namefilterlo = NULL;
-    if (namefilterhi&&!*namefilterhi)
-        namefilterhi = NULL;
-    StringBuffer nbuf;
-    cSort sort;
-    if (sortorder&&*sortorder)
-        sort.dosort(*iter,sortorder,namefilterlo,namefilterhi,results);
-    else
-        ForEach(*iter)
-            filteredAdd(results,namefilterlo,namefilterhi,&iter->query());
+
+    sortElements(iter, sortorder, namefilterlo,namefilterhi,unknownAttributes, results);
     return conn.getClear();
 }
 
@@ -1894,18 +1930,21 @@ void sortElements(IPropertyTreeIterator* elementsIter,
                     const char *sortOrder,
                     const char *nameFilterLo,
                     const char *nameFilterHi,
+                    StringArray& unknownAttributes,
                     IArrayOf<IPropertyTree> &sortedElements)
 {
     if (nameFilterLo&&!*nameFilterLo)
         nameFilterLo = NULL;
     if (nameFilterHi&&!*nameFilterHi)
         nameFilterHi = NULL;
-    cSort sort;
     if (sortOrder && *sortOrder)
-        sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,sortedElements);
+    {
+        cSort sort;
+        sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,unknownAttributes, sortedElements);
+    }
     else
         ForEach(*elementsIter)
-            filteredAdd(sortedElements,nameFilterLo,nameFilterHi,&elementsIter->query());
+            filteredAdd(sortedElements,nameFilterLo,nameFilterHi,unknownAttributes, &elementsIter->query());
 };
 
 IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
@@ -1915,7 +1954,8 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
                                      const char *owner,
                                      __int64 *hint,
                                      IArrayOf<IPropertyTree> &results,
-                                     unsigned *total)
+                                     unsigned *total,
+                                     bool checkConn)
 {
     if ((pagesize==0) || !elementsPager)
         return NULL;
@@ -1932,11 +1972,12 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
         elem.setown(QUERYINTERFACE(pagedElementsCache->get(owner,*hint),CPECacheElem)); // NB: removes from cache in process, added back at end
         postfilter = elem->postFilter; // reuse cached postfilter
     }
-    if (!elem)
+    else
+    {
         elem.setown(new CPECacheElem(owner, postfilter));
-    if (!elem->conn)
         elem->conn.setown(elementsPager->getElements(elem->totalres));
-    if (!elem->conn)
+    }
+    if (checkConn && !elem->conn)
         return NULL;
     unsigned n;
     if (total)
@@ -1986,7 +2027,9 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
             results.append(item);
         }
     }
-    IRemoteConnection *ret = elem->conn.getLink();
+    IRemoteConnection *ret = NULL;
+    if (elem->conn)
+        ret = elem->conn.getLink();
     if (hint) {
         *hint = elem->hint;
         pagedElementsCache->add(elem.getClear());
@@ -2836,9 +2879,8 @@ public:
                 gotlocal = false;
             if (gotlocal)
             {
-                if (!write) // MORE - this means the dali access checks not happening... maybe that's ok?
+                if (!write && !onlylocal) // MORE - this means the dali access checks not happening... maybe that's ok?
                     dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write)); // MORE - if dFile is not null then arguably exists should be true
-                // do I want to touch the dfile if I am writing to local file system only??
                 Owned<IFile> file = getPartFile(0,0);
                 if (file.get())
                 {
@@ -2849,12 +2891,22 @@ public:
         }
         if (!onlylocal)
         {
-            dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
-            if (dfile.get())
+            if (lfn.isExternal())
             {
+                Owned<IFileDescriptor> fDesc = createExternalFileDescriptor(lfn.get());
+                dfile.setown(queryDistributedFileDirectory().createNew(fDesc, true));
+                Owned<IFile> file = getPartFile(0,0);
+                if (file.get())
+                    fileExists = file->exists();
                 if (write && lfn.isExternal()&&(dfile->numParts()==1))   // if it is writing to an external file then don't return distributed
                     dfile.clear();
                 return true;
+            }
+            else
+            {
+                dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
+                if (dfile.get())
+                    return true;
             }
             // MORE - should we create the IDistributedFile here ready for publishing (and/or to make sure it's locked while we write)?
             StringBuffer physicalPath;

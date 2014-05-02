@@ -243,7 +243,6 @@ void checkFile(IChecker *checker,IDistributedFile *file)
         checker->add("getFileCheckSum",csum);
     else
         checker->add("getFileCheckSum","nochecksum");
-    checker->add("isSubFile",file->isSubFile()?1:0);
     StringBuffer clustname;
     checker->add("queryClusterName(0)",file->getClusterName(0,clustname).str());
     for (unsigned i=0;i<np;i++) {
@@ -466,6 +465,8 @@ class DaliTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testDFSRemoveSuperSub);
 // This test requires access to an external IP with dafilesrv running
 //        CPPUNIT_TEST(testDFSRename3);
+        CPPUNIT_TEST(testDFSAddFailReAdd);
+        CPPUNIT_TEST(testDFSRetrySuperLock);
         CPPUNIT_TEST(testDFSHammer);
     CPPUNIT_TEST_SUITE_END();
 
@@ -956,6 +957,19 @@ public:
     {
         setupDFS("trans");
 
+        unsigned timeout = 1000; // 1s
+
+        /* Make the meta info of one of the subfiles mismatch the rest, as subfiles are promoted through
+         * the super files, this should _not_ cause an issue, as no single super file will contain
+         * mismatched subfiles.
+        */
+        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, timeout);
+        assertex(sub1);
+        sub1->lockProperties();
+        sub1->queryAttributes().setPropBool("@local", true);
+        sub1->unlockProperties();
+        sub1.clear();
+
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
 
         // ===============================================================================
@@ -965,7 +979,6 @@ public:
         };
         bool delsub = false;
         bool createonlyone = true;
-        unsigned timeout = 1000; // 1s
         // ===============================================================================
         StringArray outlinked;
 
@@ -1032,18 +1045,18 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub1") == 0 && "promote failed, outlinked expected to be sub1");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
         }
 
-        logctx.CTXLOG("Promote ([1,2], 4, 3) - fifth iteration, two in-files");
-        dir.promoteSuperFiles(3, sfnames, "regress::trans::sub1,regress::trans::sub2", delsub, createonlyone, user, timeout, outlinked);
+        logctx.CTXLOG("Promote ([2,3], 4, 3) - fifth iteration, two in-files");
+        dir.promoteSuperFiles(3, sfnames, "regress::trans::sub2,regress::trans::sub3", delsub, createonlyone, user, timeout, outlinked);
         {
             Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, NULL, timeout);
             ASSERT(sfile1.get() && "promote failed, super1 doesn't exist");
             ASSERT(sfile1->numSubFiles() == 2 && "promote failed, super1 should have two subfiles");
-            ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub1") == 0 && "promote failed, wrong name for sub1");
-            ASSERT(strcmp(sfile1->querySubFile(1).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
+            ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub1");
+            ASSERT(strcmp(sfile1->querySubFile(1).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub2");
             Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, NULL, timeout);
             ASSERT(sfile2.get() && "promote failed, super2 doesn't exist");
             ASSERT(sfile2->numSubFiles() == 1 && "promote failed, super2 should have one subfile");
@@ -1054,9 +1067,9 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub3");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub2") == 0 && "promote failed, outlinked expected to be sub2");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
-            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, false, NULL, timeout);
+            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, false, false, NULL, timeout);
             ASSERT(sub2.get() && "promote failed, sub2 was physically deleted");
         }
     }
@@ -1583,6 +1596,158 @@ public:
         ASSERT(NULL == sfile->querySubFileNamed("regress::clearadd::sub1") && "regress::clearadd::sub1, should NOT be a subfile of super1");
         ASSERT(NULL == sfile->querySubFileNamed("regress::clearadd::sub4") && "regress::clearadd::sub4, should NOT be a subfile of super1");
         ASSERT(1 == sfile->numSubFiles() && "regress::clearadd::super1 should contain 1 subfile");
+    }
+
+    void testDFSAddFailReAdd()
+    {
+        setupDFS("addreadd");
+
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
+
+        logctx.CTXLOG("Creating super1 and supet2, adding sub1 and sub2 to super1 and sub3 to super2");
+        Owned<IDistributedSuperFile> sfile = dir.createSuperFile("regress::addreadd::super1", user, false, false, transaction);
+        sfile->addSubFile("regress::addreadd::sub1", false, NULL, false, transaction);
+        sfile->addSubFile("regress::addreadd::sub2", false, NULL, false, transaction);
+        sfile.clear();
+        Owned<IDistributedSuperFile> sfile2 = dir.createSuperFile("regress::addreadd::super2", user, false, false, transaction);
+        sfile2->addSubFile("regress::addreadd::sub3", false, NULL, false, transaction);
+        sfile2.clear();
+
+        class CShortLock : implements IThreaded
+        {
+            StringAttr fileName;
+            unsigned secDelay;
+            CThreaded threaded;
+        public:
+            CShortLock(const char *_fileName, unsigned _secDelay) : fileName(_fileName), secDelay(_secDelay), threaded("CShortLock", this) { }
+            ~CShortLock()
+            {
+                threaded.join();
+            }
+            virtual void main()
+            {
+                Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
+
+                if (!file)
+                {
+                    PROGLOG("File %s not found", fileName.get());
+                    return;
+                }
+                PROGLOG("Locked file: %s, sleeping (before unlock) for %d secs", fileName.get(), secDelay);
+
+                MilliSleep(secDelay * 1000);
+
+                PROGLOG("Unlocking file: %s", fileName.get());
+            }
+            void start() { threaded.start(); }
+        };
+
+        /* Tests transaction failing, due to lock and retrying after having partial success */
+
+        CShortLock sL("regress::addreadd::sub2", 30); // the 2nd subfile of super1
+        sL.start();
+
+        transaction.setown(createDistributedFileTransaction(user)); // disabled, auto-commit
+        logctx.CTXLOG("Starting transaction");
+        transaction->start();
+
+        logctx.CTXLOG("Adding contents of regress::addreadd::super1 to regress::addreadd::super2, within transaction");
+        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super2"));
+        sfile->addSubFile("regress::addreadd::super1", false, NULL, true, transaction); // add contents of super1 to super2
+        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super1"));
+        sfile->removeSubFile(NULL, false, false, transaction); // clears super1
+        sfile.clear();
+
+        try
+        {
+            transaction->commit();
+        }
+        catch (IException *e)
+        {
+            StringBuffer eStr;
+            e->errorMessage(eStr);
+            CPPUNIT_ASSERT_MESSAGE(eStr.str(), 0);
+            e->Release();
+        }
+        transaction.clear();
+        sfile.setown(dir.lookupSuperFile("regress::addreadd::super2", user));
+        ASSERT(3 == sfile->numSubFiles() && "regress::addreadd::super2 should contain 3 subfiles");
+        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub1") && "regress::addreadd::sub1, should be a subfile of super2");
+        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub2") && "regress::addreadd::sub2, should be a subfile of super2");
+        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub3") && "regress::addreadd::sub3, should be a subfile of super2");
+        sfile.setown(dir.lookupSuperFile("regress::addreadd::super1", user));
+        ASSERT(0 == sfile->numSubFiles() && "regress::addreadd::super1 should contain 0 subfiles");
+    }
+
+    void testDFSRetrySuperLock()
+    {
+        setupDFS("retrysuperlock");
+
+        logctx.CTXLOG("Creating regress::retrysuperlock::super1 and regress::retrysuperlock::sub1");
+        Owned<IDistributedSuperFile> sfile = dir.createSuperFile("regress::retrysuperlock::super1", user, false, false);
+        sfile->addSubFile("regress::retrysuperlock::sub1", false, NULL, false);
+        sfile.clear();
+
+        class CShortLock : implements IThreaded
+        {
+            StringAttr fileName;
+            unsigned secDelay;
+            CThreaded threaded;
+        public:
+            CShortLock(const char *_fileName, unsigned _secDelay) : fileName(_fileName), secDelay(_secDelay), threaded("CShortLock", this) { }
+            ~CShortLock()
+            {
+                threaded.join();
+            }
+            virtual void main()
+            {
+                Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
+
+                if (!file)
+                {
+                    PROGLOG("File %s not found", fileName.get());
+                    return;
+                }
+                PROGLOG("Locked file: %s, sleeping (before unlock) for %d secs", fileName.get(), secDelay);
+
+                MilliSleep(secDelay * 1000);
+
+                PROGLOG("Unlocking file: %s", fileName.get());
+            }
+            void start() { threaded.start(); }
+        };
+
+        /* Tests transaction failing, due to lock and retrying after having partial success */
+
+        CShortLock sL("regress::retrysuperlock::super1", 15);
+        sL.start();
+
+        sfile.setown(dir.lookupSuperFile("regress::retrysuperlock::super1", user));
+        if (sfile)
+        {
+            logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1");
+            sfile->removeSubFile(NULL, false, false);
+            logctx.CTXLOG("SUCCEEDED");
+        }
+        // put it back, for next test
+        sfile->addSubFile("regress::retrysuperlock::sub1", false, NULL, false);
+        sfile.clear();
+
+        // try again, this time in transaction
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
+        logctx.CTXLOG("Starting transaction");
+        transaction->start();
+
+        sfile.setown(transaction->lookupSuperFile("regress::retrysuperlock::super1"));
+        if (sfile)
+        {
+            logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1 with transaction");
+            sfile->removeSubFile(NULL, false, false, transaction);
+            logctx.CTXLOG("SUCCEEDED");
+        }
+        sfile.clear();
+        logctx.CTXLOG("Committing transaction");
+        transaction->commit();
     }
 
     void testDFSRename2()

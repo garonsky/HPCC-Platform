@@ -594,6 +594,7 @@ public:
             {
                 keySize = ki->keySize();
                 keyedSize = ki->keyedSize();
+                assertex(keySize);
                 keyBuffer = (char *) malloc(keySize);
             }
             else
@@ -2543,6 +2544,8 @@ public:
         {
             IKeyIndex *ki = _keyset->queryPart(0);
             keySize = ki->keySize();
+            if (!keySize)
+                throw MakeStringException(0, "Invalid key size 0 in key %s", ki->queryFileName());
             keyedSize = ki->keyedSize();
             numkeys = _keyset->numParts();
         }
@@ -2566,6 +2569,7 @@ public:
         unsigned i;
         for (i = 0; i < numkeys; i++)
         {
+            assertex(keySize);
             if (!keyBuffer) keyBuffer = (char *) malloc(keySize);
             segs.setLow(0, keyBuffer);
             loop
@@ -2605,6 +2609,7 @@ public:
                         fixedValue = NULL;
                         break;
                     }
+                    assertex(sortFieldOffset);
                     void *fixedValue = malloc(sortFieldOffset);
                     memcpy(fixedValue, keyBuffer, sortFieldOffset);
                     fixedArray.append(fixedValue);
@@ -2627,6 +2632,7 @@ public:
                     }
 #endif
                     // Now advance segments 0 through sortFromSeg-1 to next legal value...
+                    assertex(keySize);
                     char *nextBuffer = (char *) malloc(keySize);
                     memcpy(nextBuffer, keyBuffer, keySize);
                     keyBuffer = nextBuffer;
@@ -2764,6 +2770,8 @@ public:
 
     virtual unsigned __int64 getCount()
     {
+        assertex (!sortFieldOffset);  // we should have avoided using a stepping merger for precheck of limits, both for efficiency and because this code won't work
+                                      // as the sequence numbers are not in sequence
         unsigned __int64 ret = 0;
         if (resetPending)
             resetSort(NULL, 0, 0); // This is slightly suboptimal
@@ -2779,6 +2787,8 @@ public:
 
     virtual unsigned __int64 checkCount(unsigned __int64 max)
     {
+        assertex (!sortFieldOffset);  // we should have avoided using a stepping merger for precheck of limits, both for efficiency and because this code won't work
+                                      // as the sequence numbers are not in sequence
         unsigned __int64 ret = 0;
         if (resetPending)
             resetSort(NULL, 0, 0); // this is a little suboptimal as we will not bail out early
@@ -2787,13 +2797,11 @@ public:
             unsigned key = mergeheap[i];
             keyBuffer = buffers[key];
             keyCursor = cursors[key];
-            ret += CKeyLevelManager::checkCount(max);
-            if (max)
-            {
-                if (ret > max)
-                    return ret;
-                max -= ret;
-            }
+            unsigned __int64 thisKeyCount = CKeyLevelManager::checkCount(max);
+            ret += thisKeyCount;
+            if (thisKeyCount > max)
+                return ret;
+            max -= thisKeyCount;
         }
         return ret;
     }
@@ -2823,6 +2831,7 @@ public:
             mb.read(keyno);
             keyNoArray.append(keyno);
             keyCursor = keyset->queryPart(keyno)->getCursor(ctx);
+            assertex(keySize);
             keyBuffer = (char *) malloc(keySize);
             cursorArray.append(*keyCursor);
             keyCursor->deserializeCursorPos(mb, keyBuffer);

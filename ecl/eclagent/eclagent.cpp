@@ -70,6 +70,7 @@ static const char XMLHEADER[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 //#define DEFAULT_REALTHOR_HOST "localhost"
 #define PERSIST_LOCK_TIMEOUT 10000
+#define PERSIST_LOCK_SLEEP 5000
 
 #define ABORT_CHECK_INTERVAL 30     // seconds
 #define ABORT_DEADMAN_INTERVAL (60*5)  // seconds
@@ -705,7 +706,7 @@ const char *EclAgent::loadResource(unsigned id)
     return reinterpret_cast<const char *>(dll->getResource(id));  // stays loaded as long as dll stays loaded
 }
 
-IWorkUnit *EclAgent::updateWorkUnit()
+IWorkUnit *EclAgent::updateWorkUnit() const
 {
     CriticalBlock block(wusect);
     if (!wuWrite)
@@ -1482,11 +1483,6 @@ char * EclAgent::getExpandLogicalName(const char * logicalName)
     return lfn.detach();
 }
 
-void EclAgent::addWuException(const char * text, unsigned code, unsigned severity)
-{
-    addException((WUExceptionSeverity)severity, "user", code, text, NULL, 0, 0, false, false);
-}
-
 void EclAgent::addWuException(const char * text, unsigned code, unsigned severity, char const * source)
 {
     addException((WUExceptionSeverity)severity, source, code, text, NULL, 0, 0, false, false);
@@ -2065,6 +2061,8 @@ void EclAgent::runProcess(IEclProcess *process)
     memsize_t memLimitBytes = (memsize_t)memLimitMB * 1024 * 1024;
     roxiemem::setTotalMemoryLimit(allowHugePages, memLimitBytes, 0, NULL);
 
+    rowManager->setActivityTracking(queryWorkUnit()->getDebugValueBool("traceRoxiePeakMemory", false));
+
     if (debugContext)
         debugContext->checkBreakpoint(DebugStateReady, NULL, NULL);
 
@@ -2079,12 +2077,18 @@ void EclAgent::runProcess(IEclProcess *process)
     ForEachItemIn(i, queryLibraries)
         queryLibraries.item(i).updateProgress();
 
-    if (rowManager)
-        rowManager->getMemoryUsage();//Causes statistics to be written to logfile
+    ForEachItemIn(i2, queryLibraries)
+        queryLibraries.item(i2).destroyGraph();
 
-#ifdef _DEBUG_LEAKS
-    rowManager.clear();//Early release of rowManager, so activity IDs of leaked blocks are available
-#endif
+    if (rowManager)
+    {
+        WorkunitUpdate wu = updateWorkUnit();
+        WuStatisticTarget statsTarget(wu, "eclagent");
+        rowManager->reportPeakStatistics(statsTarget, 0);
+        rowManager->getMemoryUsage();//Causes statistics to be written to logfile
+    }
+
+    rowManager.clear(); // Must go before the allocatorCache
     allocatorMetaCache.clear(); //release meta before libraries unloaded
     queryLibraries.kill();
 
@@ -2277,7 +2281,6 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     }
     else if(!agent.isPersistUptoDate(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC, thisPersist->isFile))
     {
-        // We used to call agent.clearPersist(logicalName) here - but that means if the persist rebuild fails, we forget WHY we wanted to.
         // New persist model allows dependencies to be executed AFTER checking if the persist is up to date
         if (agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
             doExecuteItemDependencies(item, wfid);
@@ -2504,11 +2507,15 @@ bool EclAgent::checkPersistUptoDate(const char * logicalName, unsigned eclCRC, u
 bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat)
 {
     LOG(MCrunlock, unknownJob, "Waiting to change persist lock to %s for %s", (mode == RTM_LOCK_WRITE) ? "write" : "read", name);
+    //When converting a read lock to a write lock so the persist can be rebuilt hold onto the lock as short as
+    //possible.  Otherwise lots of workunits each trying to convert read locks to write locks will mean
+    //that the read lock is never released by all the workunits at the same time, so no workunit can progress.
+    unsigned timeout = repeat ? PERSIST_LOCK_TIMEOUT : 0;
     loop
     {
         try
         {
-            persistLock->changeMode(mode, PERSIST_LOCK_TIMEOUT);
+            persistLock->changeMode(mode, timeout);
             reportProgress("Changed persist lock");
             return true;
         }
@@ -2523,6 +2530,8 @@ bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mo
             reportProgress("Failed to convert persist lock"); // gives a chance to abort
             return false;
         }
+        //This is only executed when converting write->read.  There is significant doubt whether the changeMode()
+        //can ever fail - and whether the execution can ever get here.
         reportProgress("Waiting to convert persist lock"); // gives a chance to abort
     }
 }
@@ -2602,7 +2611,7 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
 
         //failed to get a write lock, so release our read lock
         persistLock.clear();
-        MilliSleep(getRandom()%2000);
+        MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
         persistLock.setown(getPersistReadLock(logicalName));
     }
     setRunning();
@@ -2620,18 +2629,6 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
     if (errText.length())
         logException(ExceptionSeverityInformation, 0, errText.str(), false);
     return false;
-}
-
-void EclAgent::clearPersist(const char * logicalName)
-{
-    StringBuffer lfn, crcName, eclName;
-    expandLogicalName(lfn, logicalName);
-    crcName.append(lfn).append("$crc");
-    eclName.append(lfn).append("$eclcrc");
-
-    setResultInt(crcName,(unsigned)-2,0);
-    setResultInt(eclName,(unsigned)-2,0);
-    LOG(MCrunlock, unknownJob, "Recalculate persistent value %s", logicalName);
 }
 
 void EclAgent::updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
@@ -2705,61 +2702,58 @@ void EclAgent::deleteLRUPersists(const char * logicalName, int keep)
     assertex(tail);
     StringBuffer head(tail-logicalName+1, logicalName);
     head.append("p*");                                  // Multi-mode persist names end with __pNNNNNNN
-    loop  // Until we manage to delete without things changing beneath us...
+restart:     // If things change beneath us as we are deleting, repeat the process
+    IArrayOf<IPropertyTree> persists;
+    Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(head,queryUserDescriptor(),false,false,NULL);
+    ForEach(*iter)
     {
-        IArrayOf<IPropertyTree> persists;
-        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(head,queryUserDescriptor(),false,false,NULL);
-        ForEach(*iter)
+        IPropertyTree &pt = iter->query();
+        const char *name = pt.queryProp("@name");
+        if (stricmp(name, logicalName) == 0)   // Don't include the one we are intending to recreate in the LRU list (keep value does not include it)
+            continue;
+        if (pt.getPropBool("@persistent", false))
         {
-            IPropertyTree &pt = iter->query();
-            const char *name = pt.queryProp("@name");
-            if (stricmp(name, logicalName) == 0)   // Don't include the one we are intending to recreate in the LRU list (keep value does not include it)
-                continue;
-            if (pt.getPropBool("@persistent", false))
+            // Paranoia - check as far as we can that it really is another instance of this persist
+            tail = strrchr(name, '_');     // Locate the trailing double-underbar
+            assertex(tail);
+            tail++;
+            bool crcSuffix = (*tail++=='p');
+            while (crcSuffix && *tail)
             {
-                // Paranoia - check as far as we can that it really is another instance of this persist
-                tail = strrchr(name, '_');     // Locate the trailing double-underbar
-                assertex(tail);
+                if (!isdigit(*tail))
+                    crcSuffix = false;
                 tail++;
-                bool crcSuffix = (*tail++=='p');
-                while (crcSuffix && *tail)
-                {
-                    if (!isdigit(*tail))
-                        crcSuffix = false;
-                    tail++;
-                }
-                if (crcSuffix)
-                    persists.append(*LINK(&pt));
             }
+            if (crcSuffix)
+                persists.append(*LINK(&pt));
         }
-        if (persists.ordinality() > keep)
+    }
+    if (persists.ordinality() > keep)
+    {
+        persists.sort(comparePersistAccess);
+        while (persists.ordinality() > keep)
         {
-            persists.sort(comparePersistAccess);
-            while (persists.ordinality() > keep)
+            Owned<IPropertyTree> oldest = &persists.popGet();
+            const char *oldAccessTime = oldest->queryProp("@accessed");
+            VStringBuffer goer("~%s", oldest->queryProp("@name"));   // Make sure we don't keep adding the scope
+            Owned<IRemoteConnection> persistLock = getPersistReadLock(goer);
+            while (!changePersistLockMode(persistLock, RTM_LOCK_WRITE, goer, false))
             {
-                Owned<IPropertyTree> oldest = &persists.popGet();
-                const char *oldAccessTime = oldest->queryProp("@accessed");
-                VStringBuffer goer("~%s", oldest->queryProp("@name"));   // Make sure we don't keep adding the scope
-                Owned<IRemoteConnection> persistLock = getPersistReadLock(goer);
-                while (!changePersistLockMode(persistLock, RTM_LOCK_WRITE, goer, false))
-                {
-                    persistLock.clear();
-                    MilliSleep(getRandom()%2000);
-                    persistLock.setown(getPersistReadLock(goer));
-                }
-                Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
-                if (!f)
-                    continue; // Persist has been deleted since last checked - repeat the whole process
-                const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
-                if (oldAccessTime && newAccessTime && !streq(oldAccessTime, newAccessTime))
-                    continue; // Persist has been accessed since last checked - repeat the whole process
-                else if (newAccessTime && !oldAccessTime)
-                    continue; // Persist has been accessed since last checked - repeat the whole process
-                DBGLOG("Deleting LRU persist %s (last accessed at %s)", goer.str(), oldAccessTime);
-                f->detach();
+                persistLock.clear();
+                MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
+                persistLock.setown(getPersistReadLock(goer));
             }
+            Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
+            if (!f)
+                goto restart; // Persist has been deleted since last checked - repeat the whole process
+            const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
+            if (oldAccessTime && newAccessTime && !streq(oldAccessTime, newAccessTime))
+                goto restart; // Persist has been accessed since last checked - repeat the whole process
+            else if (newAccessTime && !oldAccessTime)
+                goto restart; // Persist has been accessed since last checked - repeat the whole process
+            DBGLOG("Deleting LRU persist %s (last accessed at %s)", goer.str(), oldAccessTime);
+            f->detach();
         }
-        break;
     }
 }
 
@@ -3009,13 +3003,8 @@ char * EclAgent::getDaliServers()
 
 void EclAgent::addTimings()
 {
-    StringBuffer str;
     WorkunitUpdate w = updateWorkUnit();
-    for (unsigned i = 0; i < timer->numSections(); i++)
-    {
-        timer->getSection(i, str.clear());
-        w->setTimerInfo(str.str(), NULL, (unsigned)(timer->getTime(i)/1000000), timer->getCount(i), (unsigned)timer->getMaxTime(i));
-    }
+    updateWorkunitTimings(w, timer, "eclagent");
 }
 
 // eclagent abort monitoring

@@ -392,7 +392,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
 {
     bool ret = true;
     unsigned needActInit = 0;
-    Owned<IThorActivityIterator> iter = getTraverseIterator();
+    Owned<IThorActivityIterator> iter = getConnectedIterator();
     ForEach(*iter)
     {
         CGraphElementBase &element = (CGraphElementBase &)iter->query();
@@ -426,7 +426,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             assertex(!parentExtractSz || NULL!=parentExtract);
             msg.append(parentExtractSz);
             msg.append(parentExtractSz, parentExtract);
-            Owned<IThorActivityIterator> iter = getTraverseIterator();
+            Owned<IThorActivityIterator> iter = getConnectedIterator();
             ForEach(*iter)
             {
                 CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
@@ -452,7 +452,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
             if (queryOwner() && !isGlobal())
             {
                 // initialize any for which no data was sent
-                Owned<IThorActivityIterator> iter = getTraverseIterator();
+                Owned<IThorActivityIterator> iter = getConnectedIterator();
                 ForEach(*iter)
                 {
                     CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
@@ -530,7 +530,7 @@ void CSlaveGraph::start()
 void CSlaveGraph::connect()
 {
     CriticalBlock b(progressCrit);
-    Owned<IThorActivityIterator> iter = getTraverseIterator();
+    Owned<IThorActivityIterator> iter = getConnectedIterator();
     ForEach(*iter)
         iter->query().doconnect();
 }
@@ -708,7 +708,7 @@ bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
         if (collect)
         {
             unsigned sPos = mb.length();
-            Owned<IThorActivityIterator> iter = getTraverseIterator();
+            Owned<IThorActivityIterator> iter = getConnectedIterator();
             ForEach (*iter)
             {
                 CGraphElementBase &element = iter->query();
@@ -749,7 +749,7 @@ void CSlaveGraph::serializeDone(MemoryBuffer &mb)
     unsigned cPos = mb.length();
     unsigned count=0;
     mb.append(count);
-    Owned<IThorActivityIterator> iter = getTraverseIterator();
+    Owned<IThorActivityIterator> iter = getConnectedIterator();
     ForEach (*iter)
     {
         CGraphElementBase &element = iter->query();
@@ -953,12 +953,11 @@ public:
 
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
 
-    virtual void addWuException(const char * text, unsigned code, unsigned severity)
+    virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source)
     {
         DBGLOG("%s", text);
         Owned<IThorException> e = MakeThorException(code, "%s", text);
-        e->setAction(tea_warning);
-        e->setOrigin("user");
+        e->setOrigin(source);
         e->setAction(tea_warning);
         e->setSeverity((WUExceptionSeverity)severity);
         job.fireException(e);
@@ -1020,6 +1019,11 @@ public:
         else
             foreignNode.set(globals->queryProp("@DALISERVERS"));
         return ::getGlobalUniqueIds(num, &foreignNode);
+    }
+    virtual bool allowDaliAccess() const
+    {
+        // NB. includes access to foreign Dalis.
+        return globals->getPropBool("Debug/@slaveDaliClient");
     }
 };
 

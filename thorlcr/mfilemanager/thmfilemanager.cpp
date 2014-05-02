@@ -323,6 +323,8 @@ public:
         {
             if (!dlfn.setValidate(scopedName.str()))
                 throw MakeStringException(99, "Cannot publish %s, invalid logical name", scopedName.str());
+            if (dlfn.isForeign())
+                throw MakeStringException(99, "Cannot publish to a foreign Dali: %s", scopedName.str());
             efile.setown(queryDistributedFileDirectory().lookup(dlfn, job.queryUserDescriptor(), true));
             if (efile)
             {
@@ -397,8 +399,8 @@ public:
             }
         }
         Owned<IFileDescriptor> desc;
-        if (efile.get() && !temporary && dlfn.isExternal())
-            desc.setown(efile->getFileDescriptor());
+        if (!temporary && dlfn.isExternal())
+            desc.setown(createExternalFileDescriptor(dlfn.get()));
         else
         {
             desc.setown(createFileDescriptor());
@@ -508,6 +510,7 @@ public:
                         if (p == partOffset)
                             p += job.querySlaves();
                         IPartDescriptor *partDesc = fileDesc.queryPart(p);
+                        CDateTime createTime, modifiedTime;
                         unsigned c=0;
                         for (; c<partDesc->numCopies(); c++)
                         {
@@ -520,6 +523,15 @@ public:
                                 ensureDirectoryForFile(path.str());
                                 OwnedIFile iFile = createIFile(path.str());
                                 OwnedIFileIO iFileIO = iFile->open(IFOcreate);
+                                iFileIO.clear();
+                                // ensure copies have matching datestamps, as they would do normally (backupnode expects it)
+                                if (partDesc->numCopies() > 1)
+                                {
+                                    if (0 == c)
+                                        iFile->getTime(&createTime, &modifiedTime, NULL);
+                                    else
+                                        iFile->setTime(&createTime, &modifiedTime, NULL);
+                                }
                             }
                             catch (IException *e)
                             {

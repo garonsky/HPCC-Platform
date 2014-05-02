@@ -383,6 +383,10 @@ struct CClusterInfo: public CInterface, implements IClusterInfo
                     {
                         mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
                     }
+                    if (mspec.defaultCopies>1 && mspec.defaultReplicateDir.isEmpty())
+                    {
+                        mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
+                    }
                     return; // ok
                 }
                 name.clear();
@@ -426,10 +430,14 @@ public:
             StringBuffer defaultDir;
             GroupType groupType;
             group.setown(resolver->lookup(name.get(), defaultDir, groupType));
+            // MORE - common some of this with checkClusterName?
             if (mspec.defaultBaseDir.isEmpty())
             {
                 mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
-                // MORE - work out why this code pulled out of checkClusterName
+            }
+            if (mspec.defaultCopies>1 && mspec.defaultReplicateDir.isEmpty())
+            {
+                mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
             }
         }
         else
@@ -2111,6 +2119,134 @@ ISuperFileDescriptor *createSuperFileDescriptor(IPropertyTree *tree)
 IFileDescriptor *createFileDescriptor()
 {
     return new CFileDescriptor(NULL,NULL,0);
+}
+
+static IFileDescriptor *_createExternalFileDescriptor(const char *_logicalname, bool lookup, CDateTime *modTime)
+{
+    CDfsLogicalFileName logicalname;
+    logicalname.set(_logicalname);
+    //authentication already done
+    SocketEndpoint ep;
+    Owned<IGroup> group;
+    if (!logicalname.getEp(ep))
+    {
+        StringBuffer grp;
+        if (logicalname.getGroupName(grp).length()==0)
+            throw MakeStringException(-1,"missing node in external file name (%s)",logicalname.get());
+        group.setown(queryNamedGroupStore().lookup(grp.str()));
+        if (!group)
+            throw MakeStringException(-1,"cannot resolve node %s in external file name (%s)",grp.str(),logicalname.get());
+        ep = group->queryNode(0).endpoint();
+    }
+
+    bool iswin=false;
+    bool usedafs;
+    switch (getDaliServixOs(ep))
+    {
+    case DAFS_OSwindows:
+        iswin = true;
+        // fall through
+    case DAFS_OSlinux:
+    case DAFS_OSsolaris:
+        usedafs = ep.port||!ep.isLocal();
+        break;
+    default:
+#ifdef _WIN32
+        iswin = true;
+#else
+        iswin = false;
+#endif
+        usedafs = false;
+        break;
+    }
+
+    //rest is local path
+    Owned<IFileDescriptor> fileDesc = createFileDescriptor();
+    StringBuffer dir;
+    StringBuffer tail;
+    IException *e=NULL;
+    if (!logicalname.getExternalPath(dir,tail,iswin,&e))
+    {
+        if (e)
+            throw e;
+        return NULL;
+    }
+    fileDesc->setDefaultDir(dir.str());
+    unsigned n = group.get()?group->ordinality():1;
+    StringBuffer partname;
+    bool moddtset = false;
+    for (unsigned i=0;i<n;i++)
+    {
+        if (group.get())
+            ep = group->queryNode(i).endpoint();
+        partname.clear();
+        partname.append(dir);
+        const char *s = tail.str();
+        bool isspecial = (*s=='>');
+        if (isspecial)
+            partname.append(s);
+        else
+        {
+            while (*s)
+            {
+                if (memicmp(s,"$P$",3)==0)
+                {
+                    partname.append(i+1);
+                    s += 3;
+                }
+                else if (memicmp(s,"$N$",3)==0)
+                {
+                    partname.append(n);
+                    s += 3;
+                }
+                else
+                    partname.append(*(s++));
+            }
+        }
+        if (!ep.port&&usedafs)
+            ep.port = getDaliServixPort();
+        RemoteFilename rfn;
+        rfn.setPath(ep,partname.str());
+        if (modTime&&!isspecial&&(memcmp(partname.str(),"/$/",3)!=0)&&(memcmp(partname.str(),"\\$\\",3)!=0)) // don't get date on external data
+        {
+            try
+            {
+                Owned<IFile> file = createIFile(rfn);
+                CDateTime dt;
+                if (file&&file->getTime(NULL,&dt,NULL))
+                {
+                    if (!moddtset||(dt.compareDate(*modTime)>0))
+                    {
+                        modTime->set(dt);
+                        moddtset = true;
+                    }
+                }
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e,"CDistributedFileDirectory::createExternal");
+                e->Release();
+            }
+        }
+        if (lookup)
+        {
+            OwnedIFile iFile = createIFile(rfn);
+            if (!iFile->exists())
+                return NULL; // >=1 part does not exist.
+        }
+        fileDesc->setPart(i,rfn);
+    }
+    fileDesc->queryPartDiskMapping(0).defaultCopies = DFD_NoCopies;
+    return fileDesc.getClear();
+}
+
+IFileDescriptor *createExternalFileDescriptor(const char *logicalname)
+{
+    return _createExternalFileDescriptor(logicalname, false, NULL);
+}
+IFileDescriptor *getExternalFileDescriptor(const char *logicalname, CDateTime *modTime)
+{
+    return _createExternalFileDescriptor(logicalname, true, modTime);
 }
 
 inline void moveProp(IPropertyTree *to,IPropertyTree *from,const char *name)

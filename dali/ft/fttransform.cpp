@@ -92,7 +92,8 @@ size32_t CTransformer::read(size32_t maxLength, void * buffer)
 bool CTransformer::setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length, bool compressedInput, const char *decryptKey)
 {
     CTransformerBase::setPartition(remoteInputName, _startOffset, _length);
-    input.setown(inputFile->open(IFOread));
+    // could be cache for local, nocache for mirror
+    input.setown(inputFile->open(IFOread,IFEnocache));
     if (compressedInput) {                          
         Owned<IExpander> expander;
         if (decryptKey&&*decryptKey) {
@@ -503,7 +504,8 @@ void TransferServer::sendProgress(OutputProgress & curProgress)
 {
     MemoryBuffer msg;
     msg.setEndian(__BIG_ENDIAN);
-    curProgress.serialize(msg.clear().append(false));
+    curProgress.serializeCore(msg.clear().append(false));
+    curProgress.serializeExtra(msg, 1);
     if (!catchWriteBuffer(masterSocket, msg))
         throwError(RFSERR_TimeoutWaitMaster);
 
@@ -618,7 +620,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     for (unsigned i = 0; i < numProgress; i++)
     {
         OutputProgress & next = *new OutputProgress;
-        next.deserialize(msg);
+        next.deserializeCore(msg);
         progress.append(next);
     }
     if (msg.remaining())
@@ -636,6 +638,9 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
         srcFormat.deserializeExtra(msg, 1);
         tgtFormat.deserializeExtra(msg, 1);
     }
+
+    ForEachItemIn(i1, progress)
+        progress.item(i1).deserializeExtra(msg, 1);
 
     LOG(MCdebugProgress, unknownJob, "throttle(%d), transferBufferSize(%d)", throttleNicSpeed, transferBufferSize);
     PROGLOG("compressedInput(%d), compressedOutput(%d), copyCompressed(%d)", compressedInput?1:0, compressOutput?1:0, copyCompressed?1:0);
@@ -819,7 +824,8 @@ processedProgress:
                 throw MakeOsException(GetLastError(), "Failed to create directory for file: %s", localFilename.str());
 
             OwnedIFile outFile = createIFile(localFilename.str());
-            OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone);
+            // if we want spray to not fill page cache use IFEnocache
+            OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone,IFEnocache);
             if (!outio)
                 throwError1(DFTERR_CouldNotCreateOutput, localFilename.str());
             if (compressOutput) {
@@ -908,7 +914,8 @@ processedProgress:
                         curProgress.compressedPartSize = output->size();
                         curProgress.hasCompressed = true;
                     }
-                    curProgress.serialize(msg.clear().append(false));
+                    curProgress.serializeCore(msg.clear().append(false));
+                    curProgress.serializeExtra(msg, 1);
                     if (!catchWriteBuffer(masterSocket, msg))
                         throwError(RFSERR_TimeoutWaitMaster);
                 }

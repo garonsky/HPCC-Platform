@@ -384,7 +384,7 @@ public:
         Owned<IPropertyTree> query = resolveQueryAlias(querySet, queryname, true);
         if (!query)
             throw MakeStringException(PACKAGE_QUERY_NOT_FOUND, "Query %s not found", queryname);
-        Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL);
+        Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL, true);
         Owned<IWorkUnitFactory> wufactory = getWorkUnitFactory(NULL, NULL);
         Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(query->queryProp("@wuid"), false);
 
@@ -415,7 +415,7 @@ public:
         }
     }
 
-    virtual bool validate(const char *queryToCheck, StringArray &warn, StringArray &err, 
+    virtual bool validate(StringArray &queriesToCheck, StringArray &warn, StringArray &err, 
         StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
     {
         bool isValid = true;
@@ -446,10 +446,26 @@ public:
                     referencedPackages.setValue(baseId, true);
             }
         }
-        StringBuffer xpath("Query");
-        if (queryToCheck && *queryToCheck)
-            xpath.appendf("[@id='%s']", queryToCheck);
-        Owned<IPropertyTreeIterator> queries = qs->getElements(xpath);
+        Owned<IPropertyTree> tempQuerySet=createPTree();
+        Owned<IPropertyTreeIterator> queries;
+        if (queriesToCheck.length())
+        {
+            ForEachItemIn(i, queriesToCheck)
+            {
+                VStringBuffer xpath("Query[@id='%s']", queriesToCheck.item(i));
+                Owned<IPropertyTree> queryEntry = qs->getPropTree(xpath);
+                if (queryEntry)
+                    tempQuerySet->addPropTree("Query", queryEntry.getClear());
+                else
+                {
+                    VStringBuffer msg("Query %s not found in %s queryset", queriesToCheck.item(i), querySet.sget());
+                    err.append(msg);
+                }
+            }
+            queries.setown(tempQuerySet->getElements("Query"));
+        }
+        else
+            queries.setown(qs->getElements("Query"));
         if (!queries->first())
         {
             warn.append("No Queries found");
@@ -462,7 +478,7 @@ public:
             const char *queryid = queries->query().queryProp("@id");
             if (queryid && *queryid)
             {
-                Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL);
+                Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL, true);
                 Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(queries->query().queryProp("@wuid"), false);
 
                 StringArray libnames, unresolvedLibs;
