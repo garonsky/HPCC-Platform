@@ -109,6 +109,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(JAVAEMBED "Create a package with ONLY the javaembed plugin" OFF)
   option(SQLITE3EMBED "Create a package with ONLY the sqlite3embed plugin" OFF)
   option(KAFKA "Create a package with ONLY the kafkaembed plugin" OFF)
+  option(MAKE_CONFIGURATOR "Build Configurator" ON)
+  option(CONFIGURATOR_LIB "Build Configurator static library (.a)" OFF)
+  option(CONFIGURATOR_QT_UI "Build Configurator with QT based UI" OFF)
+
+  if (CONFIGURATOR_QT_UI OR CONFIGURATOR_LIB )
+        set( MAKE_CONFIGURATOR ON )
+  endif()
+
+  if ( (CONFIGURATOR_QT_UI AND CONFIGURATOR_LIB) )
+        MESSAGE( FATAL_ERROR "Only 1 type of configurator target possible" )
+  endif()
 
   if (APPLE OR WIN32)
       option(USE_TBB "Enable Threading Building Block support" OFF)
