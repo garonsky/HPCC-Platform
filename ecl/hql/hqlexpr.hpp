@@ -362,7 +362,7 @@ enum _node_operator {
         no_countdict,
         no_any,
         no_existsdict,
-    no_unused101,
+        no_quantile,
     no_unused25,
     no_unused28,  
     no_unused29,
@@ -876,8 +876,8 @@ public:
         bool includeJavadoc;
     };
 
-    HqlParseContext(IEclRepository * _eclRepository, IPropertyTree * _archive)
-    : archive(_archive), eclRepository(_eclRepository)
+    HqlParseContext(IEclRepository * _eclRepository, ICodegenContextCallback *_codegenCtx, IPropertyTree * _archive)
+    : archive(_archive), eclRepository(_eclRepository), codegenCtx(_codegenCtx)
     {
         expandCallsWhenBound = DEFAULT_EXPAND_CALL;
         ignoreUnknownImport = false;
@@ -916,6 +916,7 @@ public:
     bool expandCallsWhenBound;
     bool ignoreUnknownImport;
     bool aborting;
+    Linked<ICodegenContextCallback> codegenCtx;
 
 private:
     bool checkBeginMeta();
@@ -933,7 +934,7 @@ private:
 class HqlDummyParseContext : public HqlParseContext
 {
 public:
-    HqlDummyParseContext() : HqlParseContext(NULL, NULL) {}
+    HqlDummyParseContext() : HqlParseContext(NULL, NULL, NULL) {}
 };
 
 

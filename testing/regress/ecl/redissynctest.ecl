@@ -115,13 +115,13 @@ sleep(INTEGER duration) := Std.System.Debug.Sleep(duration * 1000);
 
 SEQUENTIAL(
     myRedis.Exists('str2'),
-    myRedis.Expire('str2', , 1000),/*\ms*/
+    myRedis.Expire('str2', , 900),/*\ms*/
     sleep(2),
     myRedis.Exists('str2'),
 
     myRedis.SetString('str3', str),
     myRedis.Exists('str3'),
-    myRedis.Expire('str3', , 1000),/*\ms*/
+    myRedis.Expire('str3', , 900),/*\ms*/
     myRedis.Persist('str3'),
     sleep(2),
     myRedis.Exists('str3')
@@ -160,14 +160,14 @@ SEQUENTIAL(
     OUTPUT(SUM(NOFOLD(s1 + s2), a))//answer = (x+x/2)*N, in this case 300.
     );
 
-//Test some authentication exceptions
+//Test some exceptions
 myRedis4 := RedisServer(server);
-STRING noauth := 'Redis Plugin: server authentication failed - NOAUTH Authentication required.';
-STRING opNotPerm :=  'Redis Plugin: server authentication failed - ERR operation not permitted';
+STRING noauth := 'Redis Plugin: ERROR - authentication for 127.0.0.1:6379 failed : NOAUTH Authentication required.';
+STRING opNotPerm :=  'Redis Plugin: ERROR - authentication for 127.0.0.1:6379 failed : ERR operation not permitted';
 ds1 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis4.GetString('authTest' + (string)COUNTER)));
 SEQUENTIAL(
     myRedis.FlushDB();
-    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = noauth OR FAILMESSAGE = opNotPerm, 'Auth Failed', 'Unexpected Error')))));
+    OUTPUT(CATCH(ds1, ONFAIL(TRANSFORM({ STRING value }, SELF.value := IF(FAILMESSAGE = noauth OR FAILMESSAGE = opNotPerm, 'Auth Failed', 'Unexpected Error - ' + FAILMESSAGE)))));
     );
 
 ds2 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetString('authTest' + (string)COUNTER)));
@@ -181,6 +181,16 @@ ds3 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis5.GetSt
 SEQUENTIAL(
     myRedis.FlushDB();
     OUTPUT(CATCH(ds3, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
+    );
+
+ds4 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := redis.GetString('option' + (string)COUNTER, 'blahblahblah')));
+SEQUENTIAL(
+    OUTPUT(CATCH(ds4, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
+    );
+
+ds5 := DATASET(NOFOLD(1), TRANSFORM({string value}, SELF.value := myRedis.GetString('maxDB' + (string)COUNTER, 16)));
+SEQUENTIAL(
+    OUTPUT(CATCH(ds5, ONFAIL(TRANSFORM({ STRING value }, SELF.value := FAILMESSAGE))));
     );
 
 myRedis.FlushDB();

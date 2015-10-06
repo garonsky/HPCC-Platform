@@ -221,7 +221,7 @@ void clientSetRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime)
 struct sRFTM        
 {
     CTimeMon *timemon;
-    sRFTM() {  timemon = maxReceiveTime?new CTimeMon(maxReceiveTime):NULL; }
+    sRFTM(unsigned limit) {  timemon = limit ? new CTimeMon(limit) : NULL; }
     ~sRFTM() { delete timemon; }
 };
 
@@ -536,7 +536,7 @@ static void flush(ISocket *socket)
 inline void receiveBuffer(ISocket * socket, MemoryBuffer & tgt, unsigned numtries=1, size32_t maxsz=0x7fffffff)
     // maxsz is a guess at a resonable upper max to catch where protocol error
 {
-    sRFTM tm;
+    sRFTM tm(maxReceiveTime);
     size32_t gotLength = receiveBufferSize(socket, numtries,tm.timemon);
     if (gotLength) {
         size32_t origlen = tgt.length();
@@ -855,12 +855,7 @@ class CRemoteBase: public CInterface
     bool                    useSSL;
     void connectSocket(SocketEndpoint &ep)
     {
-#ifdef _DEBUG
-        StringBuffer sb;
-        ep.getUrlStr(sb);
-        DBGLOG("Client connecting %sto dafilesrv %s", useSSL?"SECURE ":"", sb.str());
-#endif
-        sRFTM tm;
+        sRFTM tm(maxConnectTime);
         // called in CConnectionTable::crit
         unsigned retries = 3;
         if (ep.equals(lastfailep)) {
@@ -3098,6 +3093,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
         Owned<ISocket> socket;
         StringAttr peerName;
         Owned<IAuthenticatedUser> user;
+        MemoryBuffer msg;
         bool selecthandled;
         size32_t left;
         IArrayOf<IFileIO>   openfiles;      // kept in sync with handles
@@ -3142,6 +3138,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
             }
             parent = _parent;
             left = 0;
+            msg.setEndian(__BIG_ENDIAN);
             selecthandled = false;
             touch();
         }
@@ -3172,8 +3169,6 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
             size32_t avail = (size32_t)socket->avail_read();
             if (avail)
                 touch();
-            MemoryBuffer msg;
-            msg.setEndian(__BIG_ENDIAN);
             if (left==0)
             {
                 try
@@ -3232,19 +3227,22 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
                     EXCLOG(e,"notifySelected(3)");
                     e->Release();
                     toread = left;
+                    msg.clear();
                 }
             }
             if (TF_TRACE_FULL)
                 PROGLOG("notifySelected %d,%d",toread,left);
-            if ((left!=0)&&(avail==0)) {
+            if ((left!=0)&&(avail==0))
+            {
                 WARNLOG("notifySelected: Closing mid packet, %d remaining", left);
                 toread = left;
+                msg.clear();
             }
             left -= toread;
             if (left==0)
             {
                 // DEBUG
-                parent->notify(this, msg);
+                parent->notify(this, msg); // consumes msg
             }
             return false;
         }
@@ -3761,6 +3759,7 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer
 
         struct cCommandProcessorParams
         {
+            cCommandProcessorParams() { msg.setEndian(__BIG_ENDIAN); }
             CRemoteClientHandler *client;
             MemoryBuffer msg;
         };
@@ -5177,7 +5176,8 @@ public:
             PROGLOG("notify %d", msg.length());
         if (msg.length())
         {
-            PROGLOG("notify CRemoteClientHandler(%p), msg length=%u", _client, msg.length());
+            if (TF_TRACE_FULL)
+                PROGLOG("notify CRemoteClientHandler(%p), msg length=%u", _client, msg.length());
             cCommandProcessor::cCommandProcessorParams params;
             params.client = client.getClear();
             params.msg.swapWith(msg);

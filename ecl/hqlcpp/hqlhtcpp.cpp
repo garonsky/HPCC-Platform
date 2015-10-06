@@ -6539,6 +6539,9 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_map:
                 result = doBuildActivityCase(ctx, expr, isRoot);
                 break;
+            case no_quantile:
+                result = doBuildActivityQuantile(ctx, expr);
+                break;
             case no_chooseds:
             case no_choose:
                 result = doBuildActivityChoose(ctx, expr, isRoot);
@@ -6706,7 +6709,12 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityAggregate(ctx, expr);
                 break;
             case no_metaactivity:
-                result = doBuildActivityMetaActivity(ctx, expr);
+                if (expr->hasAttribute(pullAtom))
+                    result = doBuildActivityPullActivity(ctx, expr);
+                else if (expr->hasAttribute(traceAtom))
+                    result = doBuildActivityTraceActivity(ctx, expr);
+                else
+                    throwUnexpected();
                 break;
             case no_choosen:
                 result = doBuildActivityFirstN(ctx, expr);
@@ -10389,8 +10397,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     else if (filename->getOperator()==no_pipe)
         pipe = filename->queryChild(0);
 
-    if (pipe)
-        checkPipeAllowed();
+    if (pipe && expr->hasAttribute(_disallowed_Atom))
+        throwError(HQLERR_PipeNotAllowed);
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     ThorActivityKind kind = TAKdiskwrite;
@@ -11324,8 +11332,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDictionaryWorkunitWrite(BuildC
 
 ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IHqlExpression * expr)
 {
-    checkPipeAllowed();
-
+    if (expr->hasAttribute(_disallowed_Atom))
+        throwError(HQLERR_PipeNotAllowed);
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * pipe = expr->queryChild(1);
     IHqlExpression * output = expr->queryAttribute(outputAtom);
@@ -11479,7 +11487,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
     compareName.append("compare").append(sideText);
 
     assertex(dataset.querySide() == no_activetable);
-    bool noNeedToSort = isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true);
+    bool noNeedToSort = isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true, true);
     if (userPreventsSort(noSortAttr, side))
         noNeedToSort = true;
 
@@ -12174,9 +12182,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (joinInfo.hasOptionalEqualities())
         flags.append("|JFlimitedprefixjoin");
 
-    if (isAlreadySorted(dataset1, joinInfo.queryLeftSort(), true, true) || userPreventsSort(noSortAttr, no_left))
+    if (isAlreadySorted(dataset1, joinInfo.queryLeftSort(), true, true, false) || userPreventsSort(noSortAttr, no_left))
         flags.append("|JFleftSortedLocally");
-    if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true) || userPreventsSort(noSortAttr, no_right))
+    if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true, false) || userPreventsSort(noSortAttr, no_right))
         flags.append("|JFrightSortedLocally");
     if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
     if (isSmartJoin || expr->hasAttribute(unstableAtom))
@@ -15729,7 +15737,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySectionInput(BuildCtx & ctx, I
 
 //---------------------------------------------------------------------------
 
-ABoundActivity * HqlCppTranslator::doBuildActivityMetaActivity(BuildCtx & ctx, IHqlExpression * expr)
+ABoundActivity * HqlCppTranslator::doBuildActivityPullActivity(BuildCtx & ctx, IHqlExpression * expr)
 {
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, expr->queryChild(0));
     if (targetHThor())
@@ -15744,6 +15752,53 @@ ABoundActivity * HqlCppTranslator::doBuildActivityMetaActivity(BuildCtx & ctx, I
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
 
+    return instance->getBoundActivity();
+}
+
+ABoundActivity * HqlCppTranslator::doBuildActivityTraceActivity(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+    assertex(expr->hasAttribute(traceAtom));
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtrace, expr, "Trace");
+
+    buildActivityFramework(instance);
+    buildInstancePrefix(instance);
+
+    IHqlExpression *keepLimit = queryAttributeChild(expr, keepAtom, 0);
+    if (keepLimit)
+        doBuildUnsignedFunction(instance->startctx, "getKeepLimit", keepLimit);
+
+    IHqlExpression *skip = queryAttributeChild(expr, skipAtom, 0);
+    if (skip)
+        doBuildUnsignedFunction(instance->startctx, "getSkip", skip);
+
+    IHqlExpression *sample = queryAttributeChild(expr, sampleAtom, 0);
+    if (sample)
+        doBuildUnsignedFunction(instance->startctx, "getSample", sample);
+
+    IHqlExpression *named = queryAttributeChild(expr, namedAtom, 0);
+    if (named)
+        doBuildVarStringFunction(instance->startctx, "getName", named);
+
+    HqlExprAttr invariant;
+    OwnedHqlExpr cond = extractFilterConditions(invariant, expr, dataset, options.spotCSE, queryOptions().spotCseInIfDatasetConditions);
+
+    //Base class returns true, so only generate if no non-invariant conditions
+    if (cond)
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual bool isValid(const void * _self)");
+        funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
+
+        bindTableCursor(funcctx, dataset, "self");
+        buildReturn(funcctx, cond);
+    }
+    if (invariant)
+        doBuildBoolFunction(instance->startctx, "canMatchAny", invariant);
+
+    buildInstanceSuffix(instance);
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
     return instance->getBoundActivity();
 }
 
@@ -16532,6 +16587,99 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
     return instance->getBoundActivity();
 }
 
+ABoundActivity * HqlCppTranslator::doBuildActivityQuantile(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKquantile, expr, "Quantile");
+    buildActivityFramework(instance);
+    buildInstancePrefix(instance);
+
+    IHqlExpression * number = expr->queryChild(1);
+    IHqlExpression * sortlist = expr->queryChild(2);
+    IHqlExpression * transform = expr->queryChild(3);
+    IHqlExpression * score = queryAttributeChild(expr, scoreAtom, 0);
+    IHqlExpression * skew = queryAttributeChild(expr, skewAtom, 0);
+    IHqlExpression * dedupAttr = expr->queryAttribute(dedupAtom);
+    IHqlExpression * range = queryAttributeChild(expr, rangeAtom, 0);
+
+    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
+
+    buildCompareClass(instance->nestedctx, "compare", sortlist, DatasetReference(dataset));
+
+    doBuildUnsigned64Function(instance->startctx, "getNumDivisions", number);
+
+    if (skew)
+        doBuildFunction(instance->startctx, doubleType, "getSkew", skew);
+
+    if (range)
+    {
+        Owned<ITypeInfo> setType = makeSetType(makeIntType(8, false));
+        doBuildFunction(instance->startctx, setType, "getRange", range);
+    }
+
+    if (score)
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual unsigned __int64 getScore(const void * _self)");
+        funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
+        bindTableCursor(funcctx, dataset, "self");
+        buildReturn(funcctx, score);
+    }
+
+    IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
+    IHqlExpression * selSeq = querySelSeq(expr);
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, unsigned __int64 counter)");
+        if (counter)
+            associateCounter(funcctx, counter, "counter");
+        buildTransformBody(funcctx, transform, dataset, NULL, instance->dataset, selSeq);
+    }
+
+    buildClearRecordMember(instance->createctx, "", dataset);
+
+    //If a dataset is sorted by all fields then it is impossible to determine if the original order
+    //was preserved - so mark the sort as potentially unstable (to reduce memory usage at runtime)
+    bool unstable = expr->hasAttribute(unstableAtom);
+    if (options.optimizeSortAllFields &&
+        allFieldsAreSorted(expr->queryRecord(), sortlist, dataset->queryNormalizedSelector(), options.optimizeSortAllFieldsStrict))
+        unstable = true;
+
+    StringBuffer flags;
+    if (expr->hasAttribute(firstAtom))
+        flags.append("|TQFfirst");
+    if (expr->hasAttribute(lastAtom))
+        flags.append("|TQFlast");
+    if (isAlreadySorted(dataset, sortlist, false, false, false))
+        flags.append("|TQFsorted|TQFlocalsorted");
+    else if (isAlreadySorted(dataset, sortlist, true, false, false))
+        flags.append("|TQFlocalsorted");
+    if (score)
+        flags.append("|TQFhasscore");
+    if (range)
+        flags.append("|TQFhasrange");
+    if (skew)
+        flags.append("|TQFhasskew");
+    if (dedupAttr)
+        flags.append("|TQFdedup");
+    if (unstable)
+        flags.append("|TQFunstable");
+    if (!number->queryValue())
+        flags.append("|TQFvariabledivisions");
+    if (!transformReturnsSide(expr, no_left, 0))
+        flags.append("|TQFneedtransform");
+
+    if (flags.length())
+        instance->classctx.addQuotedF("virtual unsigned getFlags() { return %s; }", flags.str()+1);
+
+    buildInstanceSuffix(instance);
+
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
+    return instance->getBoundActivity();
+}
+
 //---------------------------------------------------------------------------
 
 void HqlCppTranslator::doBuildXmlReadMember(ActivityInstance & instance, IHqlExpression * expr, const char * functionName, bool & usesContents)
@@ -16973,6 +17121,26 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
         return doBuildActivityCreateRow(ctx, row, true);
     }
 
+    if (values->isConstant())
+    {
+        CHqlBoundExpr bound;
+        if (doBuildConstantDatasetInlineTable(expr, bound, FormatNatural))
+        {
+            OwnedHqlExpr constDataset = bound.getTranslatedExpr();
+
+            Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKlinkedrawiterator, expr, "LinkedRawIterator");
+            instance->graphLabel.set("Inline Dataset");
+            instance->setImplementationClass(newLibraryConstantRawIteratorArgId);
+            buildActivityFramework(instance);
+
+            buildInstancePrefix(instance);
+            instance->addConstructorParameter(constDataset);
+            buildInstanceSuffix(instance);
+
+            return instance->getBoundActivity();
+        }
+    }
+
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
 
     //-----------------
@@ -16989,47 +17157,25 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     IHqlExpression * self = selfCursor->querySelector();
 
     unsigned maxRows = values->numChildren();
-    bool done = false;
-    if (values->isConstant())
+    if (maxRows)
     {
-        CHqlBoundExpr bound;
-        if (doBuildDatasetInlineTable(funcctx, expr, bound, FormatNatural))
+        StringBuffer s;
+        BuildCtx switchctx(funcctx);
+        switchctx.addQuotedCompound("switch (row)");
+
+        unsigned row;
+        for (row = 0; row < maxRows; row++)
         {
-            OwnedHqlExpr whichRow = createVariable("row", LINK(unsignedType));
-            BuildCtx subctx(funcctx);
-            OwnedHqlExpr test = createValue(no_ge, makeBoolType(), LINK(whichRow), getSizetConstant(maxRows));
-            subctx.addFilter(test);
-            buildReturn(subctx, queryZero());
-            OwnedHqlExpr ds = bound.getTranslatedExpr();
-            OwnedHqlExpr thisRow = createRowF(no_selectnth, LINK(ds), adjustValue(whichRow, 1), createAttribute(noBoundCheckAtom), NULL);
-            buildAssign(funcctx, self, thisRow);
-            buildReturnRecordSize(funcctx, selfCursor);
-            done = true;
+            BuildCtx casectx(switchctx);
+            casectx.addQuotedCompound(s.clear().append("case ").append(row).append(":"));
+
+            IHqlExpression * cur = values->queryChild(row);
+            OwnedHqlExpr rowValue = createRow(no_createrow, LINK(cur));
+            buildAssign(casectx, self, rowValue);
+            buildReturnRecordSize(casectx, selfCursor);
         }
     }
-
-    if (!done)
-    {
-        if (maxRows)
-        {
-            StringBuffer s;
-            BuildCtx switchctx(funcctx);
-            switchctx.addQuotedCompound("switch (row)");
-
-            unsigned row;
-            for (row = 0; row < maxRows; row++)
-            {
-                BuildCtx casectx(switchctx);
-                casectx.addQuotedCompound(s.clear().append("case ").append(row).append(":"));
-
-                IHqlExpression * cur = values->queryChild(row);
-                OwnedHqlExpr rowValue = createRow(no_createrow, LINK(cur));
-                buildAssign(casectx, self, rowValue);
-                buildReturnRecordSize(casectx, selfCursor);
-            }
-        }
-        funcctx.addReturn(queryZero());
-    }
+    funcctx.addReturn(queryZero());
 
     OwnedHqlExpr rowsExpr = getSizetConstant(maxRows);
     doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);

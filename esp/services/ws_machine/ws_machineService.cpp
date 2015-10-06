@@ -22,6 +22,7 @@
 #include "workunit.hpp"
 #include "roxiecommlibscm.hpp"
 #include "componentstatus.hpp"
+#include "rmtssh.hpp"
 
 #ifndef eqHoleCluster
 #define eqHoleCluster  "HoleCluster"
@@ -1120,15 +1121,18 @@ void Cws_machineEx::buildPreflightCommand(IEspContext& context, CMachineInfoThre
         if (!process.getName() || !*process.getName())
             continue;
 
-        if (idx < 1)
-            preflightCommand.appendf(" -n=%s", process.getName());
+        StringBuffer procName;
+        if (streq(process.getType(), eqThorSlaveProcess))
+            procName.appendf("thorslave_%s_%d,%s_slave_%d", process.getName(), process.getProcessNumber(), process.getName(), process.getProcessNumber());
+        else if (streq(process.getType(), eqThorMasterProcess))
+            procName.appendf("%s,%s_master", process.getName(), process.getName());
         else
-            preflightCommand.appendf(",%s", process.getName());
+            procName.append(process.getName());
 
-        if (process.getType() && streq(process.getType(), eqThorMasterProcess))
-            preflightCommand.append("_master");
-        else if (process.getType() && streq(process.getType(), eqThorSlaveProcess))
-            preflightCommand.appendf("_slave_%d", process.getProcessNumber());
+        if (idx < 1)
+            preflightCommand.appendf(" -n=%s", procName.str());
+        else
+            preflightCommand.appendf(",%s", procName.str());
 
         if (!process.getDependencies().empty())
             checkDependency = true;
@@ -1148,12 +1152,6 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
     try
     {
         StringBuffer command(sCommand);
-        StringBuffer cmdLine;
-#ifdef _WIN32
-//Keep this Windows block for now
-#ifndef CHECK_LINUX_COMMAND
-#define popen  _popen
-#define pclose _pclose
         StringBuffer userId;
         StringBuffer password;
         bool bLinux;
@@ -1181,87 +1179,33 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
             password.clear().append(sPassword);
         }
 
-        // Use psexec as default remote control program
-        if (bLinux)
-        {
-            if (!checkFileExists(".\\plink.exe"))
-                throw MakeStringException(ECLWATCH_PLINK_NOT_INSTALLED, "Invalid ESP installation: missing plink.exe to execute the remote program!");
 
-            command.replace('\\', '/');//replace all '\\' by '/'
-
-            /*
-             note that if we use plink (cmd line ssh client) for the first time with a computer,
-             it generates the following message:
-
-             The server's host key is not cached in the registry. You have no guarantee that the
-             server is the computer you think it is.  The server's key fingerprint is:
-             1024 aa:bb:cc:dd:ee:ff:gg:hh:ii:jj:kk:ll:mm:nn:oo:pp
-             If you trust this host, enter "y" to add the key to
-             PuTTY's cache and carry on connecting.  If you want to carry on connecting just once,
-             without adding the key to the cache, enter "n".If you do not trust this host, press
-             Return to abandon the connection.
-
-             To get around this, we pipe "n" to plink without using its -batch parameter.  We need
-             help from cmd.exe to do this though...
-            */
-            cmdLine.appendf("cmd /c \"echo y | .\\plink.exe -ssh -l %s -pw %s %s sudo bash -c '%s' 2>&1\"",  environmentConfData.m_user.str(), password.str(), sAddress, command.str());
-        }
-        else
-        {
-            if (!checkFileExists(".\\psexec.exe"))
-                throw MakeStringException(ECLWATCH_PSEXEC_NOT_INSTALLED, "Invalid ESP installation: missing psexec.exe to execute the remote program!");
-
-            cmdLine.appendf(".\\psexec \\\\%s -u %s -p %s %s cmd /c %s 2>&1", sAddress, userId.str(), password.str(), "", command.str());
-        }
-#else
-        if (os == MachineOsLinux)
-        {
-            command.replace('\\', '/');//replace all '\\' by '/'
-            cmdLine.appendf("ssh -o StrictHostKeyChecking=no -o ConnectTimeout=%d %s '%s' 2>&1", m_SSHConnectTimeoutSeconds, sAddress, command.str());
-        }
-        else
-        {
-            response.append("Remote execution from Linux to Windows is not supported!");
-            exitCode = 1;
-        }
-#endif
-#else
-        if (os == MachineOsLinux)
-        {
-            command.replace('\\', '/');//replace all '\\' by '/'
-            cmdLine.appendf("ssh -o StrictHostKeyChecking=no -o ConnectTimeout=%d %s '%s' 2>&1", m_SSHConnectTimeoutSeconds, sAddress, command.str());
-        }
-        else
-        {
-            response.append("Remote execution from Linux to Windows is not supported!");
-            exitCode = 1;
-        }
-#endif
-
-        if (cmdLine.length() < 1)
+        // make sure there actually is something in command before we run a remote connection
+        if (command.length() < 1)
             return exitCode;
 
-        exitCode = invokeProgram(cmdLine, response);
-        int len = response.length();
-        if (len > 0 && response.charAt(--len) == '\n') //remove \n at the end
-           response.setLength(len);
-
-        if (response.length() > 0)
-            response.insert(0, "Response: ");
-        else
-            response.append("No response received.\n");
-
-        if (exitCode < 0)
-            response.insert(0, "Failed in executing Machine Information command.\n");
-        else
-            response.insert(0, "Machine Information command(s) has been executed.\n");
+        IFRunSSH * connection = createFRunSSH();
+        connection->init(command.str(),NULL,userId.str(),password.str(),m_SSHConnectTimeoutSeconds,0);
+        connection->exec(sAddress,NULL,true);
     }
+    // CFRunSSH uses a MakeStringExceptionDirect throw to pass code and result string
     catch(IException* e)
     {
+        exitCode = e->errorCode();
+        // errorCode == -1 on successful CFRunSSH execution
+        if(exitCode == -1)
+            exitCode = 0;
         StringBuffer buf;
         e->errorMessage(buf);
         response.append(buf.str());
-        exitCode = e->errorCode();
+        int len = response.length();
+        if (len > 0 && response.charAt(--len) == '\n') // strip newline
+            response.setLength(len);
+        // on successful connection
+        if (response.length() && !exitCode)
+            response.insert(0,"Response: ");
+        else if (!exitCode)
+            response.insert(0, "No response recieved.\n");
         e->Release();
     }
 #ifndef NO_CATCHALL
@@ -1487,6 +1431,14 @@ bool Cws_machineEx::readStorageSpace(const char *line, StringBuffer& title, __in
     return true;
 }
 
+void Cws_machineEx::buildProcessPath(StringBuffer &processPath, const char * processName, CMachineInfoThreadParam * pParam)
+{
+    if (environmentConfData.m_pidPath.charAt(environmentConfData.m_pidPath.length() - 1) != pParam->m_machineData.getPathSep())
+        processPath.setf("%s%c%s:", environmentConfData.m_pidPath.str(), pParam->m_machineData.getPathSep(), processName);
+    else
+        processPath.setf("%s%s:", environmentConfData.m_pidPath.str(), processName);
+}
+
 void Cws_machineEx::readProcessData(const char* response, CMachineInfoThreadParam* pParam)
 {
     if (!response || !*response)
@@ -1499,19 +1451,44 @@ void Cws_machineEx::readProcessData(const char* response, CMachineInfoThreadPara
         if (!process.getName() || !*process.getName())
             continue;
 
-        StringBuffer processData, processPath;
-        if (environmentConfData.m_pidPath.charAt(environmentConfData.m_pidPath.length() - 1) != pParam->m_machineData.getPathSep())
-            processPath.appendf("%s%c%s", environmentConfData.m_pidPath.str(), pParam->m_machineData.getPathSep(), process.getName());
+        StringBuffer procName, catError, processPath, processData;
+        if (streq(process.getType(), eqThorSlaveProcess))
+        {
+            procName.appendf("thorslave_%s_%d", process.getName(), process.getProcessNumber());
+            buildProcessPath(processPath,procName.str(),pParam);
+            catError.setf("cat: %s",processPath.str());
+            catError.insert(catError.length()-1,".pid");
+            if (!strstr(response,catError.str()))
+                readALineFromResult(response, processPath.str(), processData, true);
+            else
+            {
+                procName.setf("%s_slave_%d", process.getName(), process.getProcessNumber());
+                buildProcessPath(processPath,procName.str(),pParam);
+                readALineFromResult(response, processPath.str(), processData, true);
+            }
+        }
+        else if (streq(process.getType(), eqThorMasterProcess))
+        {
+            procName.appendf("%s", process.getName());
+            buildProcessPath(processPath,procName.str(),pParam);
+            catError.setf("cat: %s",processPath.str());
+            catError.insert(catError.length()-1,".pid");
+            if (!strstr(response,catError.str()))
+                readALineFromResult(response, processPath.str(), processData, true);
+            else
+            {
+                procName.setf("%s_master", process.getName());
+                buildProcessPath(processPath,procName.str(),pParam);
+                readALineFromResult(response, processPath.str(), processData, true);
+            }
+        }
         else
-            processPath.appendf("%s%s", environmentConfData.m_pidPath.str(), process.getName());
+        {
+            procName.append(process.getName());
+            buildProcessPath(processPath,procName.str(),pParam);
+            readALineFromResult(response, processPath.str(), processData, true);
+        }
 
-        if (process.getType() && streq(process.getType(), eqThorMasterProcess))
-            processPath.append("_master");
-        else if (process.getType() && streq(process.getType(), eqThorSlaveProcess))
-            processPath.appendf("_slave_%d", process.getProcessNumber());
-        processPath.append(":");
-
-        readALineFromResult(response, processPath.str(), processData, true);
         if (processData.length() < 1)
         {
             DBGLOG("Information for process %s not found", processPath.str());

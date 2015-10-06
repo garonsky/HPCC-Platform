@@ -7466,6 +7466,268 @@ IRoxieServerActivityFactory *createRoxieServerSortActivityFactory(unsigned _id, 
 
 //=====================================================================================================
 
+static int compareUint64(const void * _left, const void * _right)
+{
+    const unsigned __int64 left = *static_cast<const unsigned __int64 *>(_left);
+    const unsigned __int64 right = *static_cast<const unsigned __int64 *>(_right);
+    if (left < right)
+        return -1;
+    if (left > right)
+        return -1;
+    return 0;
+}
+
+class CRoxieServerQuantileActivity : public CRoxieServerActivity
+{
+protected:
+    Owned<ISortAlgorithm> sorter;
+    IHThorQuantileArg &helper;
+    ConstPointerArray sorted;
+    ICompare *compare;
+    unsigned flags;
+    double skew;
+    unsigned __int64 numDivisions;
+    bool rangeIsAll;
+    size32_t rangeSize;
+    rtlDataAttr rangeValues;
+    bool calculated;
+    bool processedAny;
+    bool anyThisGroup;
+    bool eof;
+    unsigned curQuantile;
+    unsigned curIndex;
+    unsigned curIndexExtra;
+    unsigned skipSize;
+    unsigned skipExtra;
+    unsigned prevIndex;
+
+public:
+    CRoxieServerQuantileActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _flags)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorQuantileArg &)basehelper), flags(_flags)
+    {
+        compare = helper.queryCompare();
+        skew = 0.0;
+        numDivisions = 0;
+        calculated = false;
+        processedAny = false;
+        anyThisGroup = false;
+        eof = false;
+        rangeIsAll = true;
+        rangeSize = 0;
+        curQuantile = 0;
+        prevIndex = 0;
+        curIndex = 0;
+        curIndexExtra = 0;
+        skipSize = 0;
+        skipExtra = 0;
+        if (flags & TQFunstable)
+            sorter.setown(createQuickSortAlgorithm(compare));
+        else
+            sorter.setown(createMergeSortAlgorithm(compare));
+    }
+
+    virtual void reset()
+    {
+        sorter->reset();
+        calculated = false;
+        processedAny = false;
+        anyThisGroup = false;
+        CRoxieServerActivity::reset();
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        skew = helper.getSkew();
+        numDivisions = helper.getNumDivisions();
+        //Check for -ve integer values and treat as out of range
+        if ((__int64)numDivisions < 1)
+            numDivisions = 1;
+        if (flags & TQFhasrange)
+            helper.getRange(rangeIsAll, rangeSize, rangeValues.refdata());
+        else
+        {
+            rangeIsAll = true;
+            rangeSize = 0;
+        }
+        if (rangeSize)
+        {
+            //Sort the range items into order to allow quick comparison
+            qsort(rangeValues.getdata(), rangeSize / sizeof(unsigned __int64), sizeof(unsigned __int64), compareUint64);
+        }
+        calculated = false;
+        processedAny = false;
+        anyThisGroup = false;
+        eof = false;
+        curQuantile = 0;
+        prevIndex = 0;
+        curIndex = 0;
+        curIndexExtra = 0;
+    }
+
+    virtual bool needsAllocator() const { return true; }
+
+    virtual const void * nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities);
+        if (eof)
+            return NULL;
+
+        const void * ret = NULL;
+        for(;;)
+        {
+            if (!calculated)
+            {
+                if (flags & TQFlocalsorted)
+                {
+                    for (;;)
+                    {
+                        const void * next = input->nextInGroup();
+                        if (!next)
+                            break;
+                        sorted.append(next);
+                    }
+                }
+                else
+                {
+                    sorter->prepare(input);
+                    sorter->getSortedGroup(sorted);
+                }
+
+                if (sorted.ordinality() == 0)
+                {
+                    if (processedAny)
+                    {
+                        eof = true;
+                        return NULL;
+                    }
+
+                    //Unusual case 0 rows - add a default row instead
+                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                    size32_t thisSize = helper.createDefault(rowBuilder);
+                    sorted.append(rowBuilder.finalizeRowClear(thisSize));
+                }
+
+                calculated = true;
+                processedAny = true;
+                anyThisGroup = false;
+                curQuantile = 0;
+                curIndex = 0;
+                curIndexExtra = (numDivisions-1) / 2;   // to ensure correctly rounded up
+                prevIndex = curIndex-1; // Ensure it doesn't match
+                skipSize = (sorted.ordinality() / numDivisions);
+                skipExtra = (sorted.ordinality() % numDivisions);
+            }
+
+            if (isQuantileIncluded(curQuantile))
+            {
+                if (!(flags & TQFdedup) || (prevIndex != curIndex))
+                {
+                    const void * lhs = sorted.item(curIndex);
+                    if (flags & TQFneedtransform)
+                    {
+                        unsigned outSize;
+                        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                        try
+                        {
+                            outSize = helper.transform(rowBuilder, lhs, curQuantile);
+                        }
+                        catch (IException *E)
+                        {
+                            throw makeWrappedException(E);
+                        }
+
+                        if (outSize)
+                            ret = rowBuilder.finalizeRowClear(outSize);
+                    }
+                    else
+                    {
+                        LinkRoxieRow(lhs);
+                        ret = lhs;
+                    }
+                    prevIndex = curIndex; // even if output was skipped?
+                }
+            }
+
+            curIndex += skipSize;
+            curIndexExtra += skipExtra;
+            if (curIndexExtra >= numDivisions)
+            {
+                curIndex++;
+                curIndexExtra -= numDivisions;
+            }
+            //Ensure the current index always stays valid.
+            if (curIndex >= sorted.ordinality())
+                curIndex = sorted.ordinality()-1;
+            curQuantile++;
+            if (curQuantile > numDivisions)
+            {
+                sorted.kill();
+                sorter->reset();
+                calculated = false; // ready for next group
+            }
+
+            if (ret)
+            {
+                anyThisGroup = true;
+                processed++;
+                return ret;
+            }
+
+            if (curQuantile > numDivisions)
+            {
+                if (anyThisGroup)
+                    return NULL;
+            }
+        }
+    }
+
+    bool isQuantileIncluded(unsigned quantile) const
+    {
+        if (quantile == 0)
+            return (flags & TQFfirst) != 0;
+        if (quantile == numDivisions)
+            return (flags & TQFlast) != 0;
+        if (rangeIsAll)
+            return true;
+        //Compare against the list of ranges provided
+        //MORE: Since the list is sorted should only need to compare the next (and allow for dups)
+        unsigned rangeNum = rangeSize / sizeof(unsigned __int64);
+        const unsigned __int64 * ranges = static_cast<const unsigned __int64 *>(rangeValues.getdata());
+        for (unsigned i = 0; i < rangeNum; i++)
+        {
+            if (ranges[i] == quantile)
+                return true;
+        }
+        return false;
+    }
+};
+
+class CRoxieServerQuantileActivityFactory : public CRoxieServerActivityFactory
+{
+    unsigned flags;
+
+public:
+    CRoxieServerQuantileActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+        Owned<IHThorQuantileArg> quantileHelper = (IHThorQuantileArg *) helperFactory();
+        flags = quantileHelper->getFlags();
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerQuantileActivity(this, _probeManager, flags);
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerQuantileActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+{
+    return new CRoxieServerQuantileActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
+
+//=====================================================================================================
+
 class CRoxieServerSortedActivity : public CRoxieServerActivity
 {
     IHThorSortedArg &helper;
@@ -18350,6 +18612,227 @@ IRoxieServerActivityFactory *createRoxieServerCatchActivityFactory(unsigned _id,
 
 //=================================================================================
 
+class CRoxieServerPullActivity : public CRoxieServerActivity
+{
+    ConstPointerArray buff;
+    bool started;
+    unsigned index;
+
+public:
+    CRoxieServerPullActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager)
+    {
+        started = false;
+        index = 0;
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        started = false;
+        index = 0;
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+    }
+
+    virtual void reset()
+    {
+        while (buff.isItem(index))
+            ReleaseRoxieRow(buff.item(index++));
+        buff.kill();
+        started = false;
+        index = 0;
+        CRoxieServerActivity::reset();
+    }
+
+    virtual const void *nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities);
+        if (!started)
+            pullInput();
+        if (buff.isItem(index))
+        {
+            const void * next = buff.item(index++);
+            if (next)
+                processed++;
+            return next;
+        }
+        return NULL;
+    }
+
+protected:
+    void pullInput()
+    {
+        bool EOGseen = false;
+        loop
+        {
+            const void * next = input->nextInGroup();
+            buff.append(next);
+            if (next == NULL)
+            {
+                if (EOGseen)
+                    break;
+                EOGseen = true;
+            }
+            else
+                EOGseen = false;
+        }
+        started = true;
+    }
+};
+
+class CRoxieServerPullActivityFactory : public CRoxieServerActivityFactory
+{
+public:
+    CRoxieServerPullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerPullActivity(this, _probeManager);
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerPullActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+{
+    return new CRoxieServerPullActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
+//=================================================================================
+
+class CRoxieServerTraceActivity : public CRoxieServerActivity
+{
+public:
+    CRoxieServerTraceActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorTraceArg &) basehelper),
+          keepLimit(0), skip(0), sample(0)
+    {
+        assertex(meta.hasXML());
+        traceEnabled = defaultTraceEnabled && !isBlind();
+    }
+
+    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    {
+        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
+        if (ctx)
+            traceEnabled = ctx->queryOptions().traceEnabled && !isBlind();
+    }
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        if (traceEnabled && helper.canMatchAny())
+        {
+            keepLimit = helper.getKeepLimit();
+            if (keepLimit==(unsigned) -1)
+                keepLimit = ctx->queryOptions().traceLimit;
+            skip = helper.getSkip();
+            sample = helper.getSample();
+            if (sample)
+                sample--;
+            name.setown(helper.getName());
+            if (!name)
+                name.set("Row");
+        }
+        else
+            keepLimit = 0;
+    }
+    virtual void stop(bool aborting)
+    {
+        name.clear();
+        CRoxieServerActivity::stop(aborting);
+    }
+
+    virtual bool isPassThrough()
+    {
+        return true;
+    }
+
+    virtual const void *nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities);
+        const void *row = input->nextInGroup();
+        if (row)
+        {
+            onTrace(row);
+            processed++;
+        }
+        return row;
+    }
+    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    {
+        // MORE - will need rethinking once we rethink the nextSteppedGE interface for global smart-stepping.
+        ActivityTimer t(totalCycles, timeActivities);
+        const void * row = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        if (row)
+        {
+            onTrace(row);
+            processed++;
+        }
+        return row;
+    }
+
+    virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector)
+    {
+        return input->gatherConjunctions(collector);
+    }
+    virtual void resetEOF()
+    {
+        input->resetEOF();
+    }
+    IInputSteppingMeta * querySteppingMeta()
+    {
+        return input->querySteppingMeta();
+    }
+
+protected:
+    void onTrace(const void *row)
+    {
+        if (keepLimit && helper.isValid(row))
+        {
+            if (skip)
+                skip--;
+            else if (sample)
+                sample--;
+            else
+            {
+                CommonXmlWriter xmlwrite(XWFnoindent);
+                meta.toXML((const byte *) row, xmlwrite);
+                CTXLOG("TRACE: <%s>%s<%s>", name.get(), xmlwrite.str(), name.get());
+                keepLimit--;
+                sample = helper.getSample();
+                if (sample)
+                    sample--;
+            }
+        }
+    }
+    OwnedRoxieString name;
+    IHThorTraceArg &helper;
+    unsigned keepLimit;
+    unsigned skip;
+    unsigned sample;
+    bool traceEnabled;
+};
+
+class CRoxieServerTraceActivityFactory : public CRoxieServerActivityFactory
+{
+public:
+    CRoxieServerTraceActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerTraceActivity(this, _probeManager);
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerTraceActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+{
+    return new CRoxieServerTraceActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
+
+//=================================================================================
+
 class CRoxieServerCaseActivity : public CRoxieServerActivity
 {
     IHThorCaseArg &helper;
@@ -20648,7 +21131,7 @@ public:
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true));
             bool isSimple = (datafile && datafile->getNumParts()==1 && !_queryFactory.queryOptions().disableLocalOptimizations);
             if (isLocal || isSimple)
             {
@@ -20726,7 +21209,7 @@ public:
             if ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) == 0)
             {
                 OwnedRoxieString fileName(helper->getFileName());
-                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true);
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -21805,7 +22288,7 @@ public:
         {
             bool isOpt = (flags & TIRoptional) != 0;
             OwnedRoxieString indexName(indexHelper->getFileName());
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -21838,7 +22321,7 @@ public:
             if ((indexHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename)) == 0)
             {
                 OwnedRoxieString indexName(indexHelper->getFileName());
-                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit(), true);
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -22814,7 +23297,7 @@ public:
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fname,
                                                                         (fetchContext->getFetchFlags() & FFdatafileoptional) != 0,
                                                                         true, true,
-                                                                        _queryFactory.queryWorkUnit()));
+                                                                        _queryFactory.queryWorkUnit(), true));
             if (datafile)
                 map.setown(datafile->getFileMap());
         }
@@ -22837,7 +23320,7 @@ public:
             if ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) == 0)
             {
                 OwnedRoxieString fileName(fetchContext->getFileName());
-                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit());
+                Owned<const IResolvedFile> temp = queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true);
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -22880,17 +23363,17 @@ public:
             {
                 fileName.set(queryNodeFileName(_graphNode, kind));
                 indexName.set(queryNodeIndexName(_graphNode, kind));
-                if (indexName && !allFilesDynamic)
+                if (indexName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
-                    indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
+                    indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
                     if (indexfile)
                         keySet.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, isLocal ? queryFactory.queryChannel() : 0, false));
                 }
-                if (fileName && !allFilesDynamic)
+                if (fileName && !allFilesDynamic && !queryFactory.isDynamic())
                 {
                     bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isOpt']/@value");
-                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit()));
+                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
                     if (datafile)
                     {
                         if (isLocal)
@@ -22924,13 +23407,13 @@ public:
             Owned<const IResolvedFile> temp;
             if (fileName.length())
             {
-                temp.setown(queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit()));
+                temp.setown(queryFactory.queryPackage().lookupFileName(fileName, true, true, false, queryFactory.queryWorkUnit(), true));
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
             if (indexName.length())
             {
-                temp.setown(queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit()));
+                temp.setown(queryFactory.queryPackage().lookupFileName(indexName, true, true, false, queryFactory.queryWorkUnit(), true));
                 if (temp)
                     addXrefFileInfo(reply, temp);
             }
@@ -23818,9 +24301,9 @@ public:
 
     void processCompletedGroups()
     {
-        loop
+        CriticalBlock c(groupsCrit);
+        while (groups.ordinality())
         {
-            CriticalBlock c(groupsCrit); 
             if (!groups.head()->complete())
                 break;
             Owned<CJoinGroup> head = groups.dequeue();
@@ -23839,8 +24322,6 @@ public:
             }
             else
                 doJoinGroup(head);
-            if (!groups.ordinality())
-                break;
         }
     }
 
@@ -24442,7 +24923,7 @@ public:
         {
             bool isOpt = (joinFlags & JFindexoptional) != 0;
             OwnedRoxieString indexFileName(helper->getIndexFileName());
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, queryFactory.queryWorkUnit()));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, queryFactory.queryWorkUnit(), true));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -24461,7 +24942,7 @@ public:
         if (!isHalfKeyed && !variableFetchFileName)
         {
             bool isFetchOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode, _kind), isFetchOpt, true, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode, _kind), isFetchOpt, true, true, _queryFactory.queryWorkUnit(), true));
             if (datafile)
             {
                 if (isLocal)

@@ -614,18 +614,27 @@ protected:
                 const char *name = super.queryProp("@id");
                 if (name)
                 {
-                    const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL);
-                    if (resolved)
+                    try
                     {
-                        files.append(*const_cast<IResolvedFile *>(resolved));
-                        doPreload(0, resolved);
-                        Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
-                        ForEach(*it)
+                        const IResolvedFile *resolved = lookupFileName(name, false, true, true, NULL, true);
+                        if (resolved)
                         {
-                            unsigned channelNo = it->query().getPropInt("@channel", 0);
-                            assertex(channelNo);
-                            doPreload(channelNo, resolved);
+                            files.append(*const_cast<IResolvedFile *>(resolved));
+                            doPreload(0, resolved);
+                            Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
+                            ForEach(*it)
+                            {
+                                unsigned channelNo = it->query().getPropInt("@channel", 0);
+                                assertex(channelNo);
+                                doPreload(channelNo, resolved);
+                            }
                         }
+                    }
+                    catch (IException *E)
+                    {
+                        VStringBuffer msg("Failed to preload file %s for package node %s", name, queryId());
+                        EXCLOG(E, msg.str());
+                        E->Release();
                     }
                 }
             }
@@ -666,10 +675,10 @@ public:
         return lookupElements(xpath.str(), "MemIndex");
     }
 
-    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu) const
+    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool useCache, bool cacheResult, IConstWorkUnit *wu, bool ignoreForeignPrefix) const
     {
         StringBuffer fileName;
-        expandLogicalFilename(fileName, _fileName, wu, false, !wu);
+        expandLogicalFilename(fileName, _fileName, wu, false, ignoreForeignPrefix);
         if (traceLevel > 5)
             DBGLOG("lookupFileName %s", fileName.str());
 
@@ -713,7 +722,9 @@ public:
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         // filename by now may be a local filename, or a dali one
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, false, !resolveLocally(), true);
+        bool onlyLocal = fileNameServiceDali.isEmpty();
+        bool onlyDFS = !resolveLocally() && !onlyLocal;
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, onlyLocal, onlyDFS, true);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);

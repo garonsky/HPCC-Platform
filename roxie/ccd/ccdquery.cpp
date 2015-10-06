@@ -296,6 +296,8 @@ QueryOptions::QueryOptions()
     skipFileFormatCrcCheck = false;
     stripWhitespaceFromStoredDataset = ((ptr_ignoreWhiteSpace & defaultXmlReadFlags) != 0);
     timeActivities = defaultTimeActivities;
+    traceEnabled = defaultTraceEnabled;
+    traceLimit = defaultTraceLimit;
     allSortsMaySpill = false; // No global default for this
 }
 
@@ -321,6 +323,8 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     skipFileFormatCrcCheck = other.skipFileFormatCrcCheck;
     stripWhitespaceFromStoredDataset = other.stripWhitespaceFromStoredDataset;
     timeActivities = other.timeActivities;
+    traceEnabled = other.traceEnabled;
+    traceLimit = other.traceLimit;
     allSortsMaySpill = other.allSortsMaySpill;
 }
 
@@ -356,6 +360,8 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(skipFileFormatCrcCheck, wu, "skipFileFormatCrcCheck");
     updateFromWorkUnit(stripWhitespaceFromStoredDataset, wu, "stripWhitespaceFromStoredDataset");
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
+    updateFromWorkUnit(traceEnabled, wu, "traceEnabled");
+    updateFromWorkUnit(traceLimit, wu, "traceLimit");
     updateFromWorkUnit(allSortsMaySpill, wu, "allSortsMaySpill");
 }
 
@@ -401,6 +407,8 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(skipFileFormatCrcCheck, ctx, "_SkipFileFormatCrcCheck", "@skipFileFormatCrcCheck");
         updateFromContext(stripWhitespaceFromStoredDataset, ctx, "_StripWhitespaceFromStoredDataset", "@stripWhitespaceFromStoredDataset");
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
+        updateFromContext(traceEnabled, ctx, "@traceEnabled", "_TraceEnabled");
+        updateFromContext(traceLimit, ctx, "@traceLimit", "_TraceLimit");
         // Note: allSortsMaySpill is not permitted at context level (too late anyway, unless I refactored)
     }
 }
@@ -696,7 +704,9 @@ protected:
         case TAKpipewrite:
             return createRoxieServerPipeWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), isRootAction(node));
         case TAKpull:
-            throwUnexpected(); //code generator strips for non-thor
+            return createRoxieServerPullActivityFactory(id, subgraphId, *this, helperFactory, kind);
+        case TAKtrace:
+            return createRoxieServerTraceActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKlinkedrawiterator:
             return createRoxieServerLinkedRawIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKremoteresult:
@@ -741,6 +751,8 @@ protected:
             return createRoxieServerWorkUnitReadActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKxmlparse:
             return createRoxieServerXmlParseActivityFactory(id, subgraphId, *this, helperFactory, kind);
+        case TAKquantile:
+            return createRoxieServerQuantileActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKregroup:
             return createRoxieServerRegroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKcombine:
@@ -1122,7 +1134,7 @@ public:
                                     if (indexName)
                                     {
                                         bool isOpt = pretendAllOpt || node.getPropBool("att[@name='_isIndexOpt']/@value");
-                                        const IResolvedFile *indexFile = package.lookupFileName(indexName, isOpt, true, true, wu);
+                                        const IResolvedFile *indexFile = package.lookupFileName(indexName, isOpt, true, true, wu, true);
                                         if (indexFile)
                                         {
                                             hashValue = indexFile->addHash64(hashValue);
@@ -1136,7 +1148,7 @@ public:
                                         if (!node.getPropBool("att[@name='_isSpill']/@value") && !node.getPropBool("att[@name='_isSpillGlobal']/@value"))
                                         {
                                             bool isOpt = pretendAllOpt || node.getPropBool("att[@name='_isOpt']/@value");
-                                            const IResolvedFile *dataFile = package.lookupFileName(fileName, isOpt, true, true, wu);
+                                            const IResolvedFile *dataFile = package.lookupFileName(fileName, isOpt, true, true, wu, true);
                                             if (dataFile)
                                             {
                                                 hashValue = dataFile->addHash64(hashValue);

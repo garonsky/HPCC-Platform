@@ -156,6 +156,8 @@ public:
     {
         PyEval_RestoreThread(threadState);
         script.clear();
+        module.clear();
+        lru.clear();
     }
 
     inline PyObject * importFunction(size32_t lenChars, const char *utf)
@@ -328,7 +330,9 @@ public:
     PyObject *getNamedTupleType(const RtlTypeInfo *type)
     {
         // It seems the customized namedtuple types leak, and they are slow to create, so take care to reuse
-        CriticalBlock b(lock);  // Not sure if this is really needed, as we have effectively locked out other threads using the GIL
+        // Note - we do not need (and must not have) a lock protecting this. It is protected by the Python GIL,
+        // and if we add our own lock we are liable to deadlock as the code within Py_CompileStringFlags may
+        // temporarily release then re-acquire the GIL.
         if (!namedtuple)
         {
             namedtupleTypes.setown(PyDict_New());
@@ -369,7 +373,9 @@ public:
     }
     PyObject *compileScript(const char *text)
     {
-        CriticalBlock b(lock);  // Not sure if this is really needed, as we have effectively locked out other threads using the GIL
+        // Note - we do not need (and must not have) a lock protecting this. It is protected by the Python GIL,
+        // and if we add our own lock we are liable to deadlock as the code within Py_CompileStringFlags may
+        // temporarily release then re-acquire the GIL.
         if (!compiledScripts)
             compiledScripts.setown(PyDict_New());
         OwnedPyObject code;
@@ -377,7 +383,6 @@ public:
         if (!code)
         {
             code.setown(Py_CompileString(text, "", Py_eval_input));
-
             if (!code)
             {
                 PyErr_Clear();
@@ -412,7 +417,6 @@ protected:
     OwnedPyObject namedtuple;      // collections.namedtuple
     OwnedPyObject namedtupleTypes; // dictionary of return values from namedtuple()
     OwnedPyObject compiledScripts; // dictionary of previously compiled scripts
-    CriticalSection lock;
 } globalState;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -452,6 +456,17 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     }
 #endif
     return true;
+}
+
+static void checkThreadContext()
+{
+    if (!threadContext)
+    {
+        if (!globalState.isInitialized())
+            rtlFail(0, "Python not initialized");
+        threadContext = new PythonThreadContext;
+        threadHookChain = addThreadTermFunc(releaseContext);
+    }
 }
 
 PyObject *PythonThreadContext::getNamedTupleType(const RtlTypeInfo *type)
@@ -1178,8 +1193,8 @@ private:
 class PythonRowStream : public CInterfaceOf<IRowStream>
 {
 public:
-    PythonRowStream(PythonThreadContext *_sharedCtx, PyObject *result, IEngineRowAllocator *_resultAllocator)
-    : sharedCtx(_sharedCtx), resultIterator(NULL)
+    PythonRowStream(PyObject *result, IEngineRowAllocator *_resultAllocator)
+    : resultIterator(NULL)
     {
         // NOTE - the caller should already have the GIL lock before creating me
         if (!result || result == Py_None)
@@ -1188,9 +1203,19 @@ public:
         checkPythonError();
         resultAllocator.set(_resultAllocator);
     }
+    ~PythonRowStream()
+    {
+        if (resultIterator)
+        {
+            checkThreadContext();
+            GILBlock b(threadContext->threadState);
+            resultIterator.clear();
+        }
+    }
     virtual const void *nextRow()
     {
-        GILBlock b(sharedCtx->threadState);
+        checkThreadContext();
+        GILBlock b(threadContext->threadState);
         if (!resultIterator)
             return NULL;
         OwnedPyObject row = PyIter_Next(resultIterator);
@@ -1202,12 +1227,13 @@ public:
     }
     virtual void stop()
     {
+        checkThreadContext();
+        GILBlock b(threadContext->threadState);
         resultAllocator.clear();
         resultIterator.clear();
     }
 
 protected:
-    PythonThreadContext *sharedCtx;
     Linked<IEngineRowAllocator> resultAllocator;
     OwnedPyObject resultIterator;
 };
@@ -1275,7 +1301,7 @@ public:
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
-        return new PythonRowStream(sharedCtx, result, _resultAllocator);
+        return new PythonRowStream(result, _resultAllocator);
     }
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
     {
@@ -1466,6 +1492,17 @@ public:
     ~Python27EmbedScriptContext()
     {
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
+
 
     virtual void importFunction(size32_t lenChars, const char *text)
     {
@@ -1508,6 +1545,17 @@ public:
     ~Python27EmbedImportContext()
     {
     }
+    virtual IInterface *bindParamWriter(IInterface *esdl, const char *esdlservice, const char *esdltype, const char *name)
+    {
+        return NULL;
+    }
+    virtual void paramWriterCommit(IInterface *writer)
+    {
+    }
+    virtual void writeResult(IInterface *esdl, const char *esdlservice, const char *esdltype, IInterface *writer)
+    {
+    }
+
 
     virtual void importFunction(size32_t lenChars, const char *utf)
     {
@@ -1544,17 +1592,15 @@ public:
     }
     virtual IEmbedFunctionContext *createFunctionContextEx(ICodeContext * ctx, unsigned flags, const char *options)
     {
-        if (!threadContext)
-        {
-            if (!globalState.isInitialized())
-                rtlFail(0, "Python not initialized");
-            threadContext = new PythonThreadContext;
-            threadHookChain = addThreadTermFunc(releaseContext);
-        }
+        checkThreadContext();
         if (flags & EFimport)
             return new Python27EmbedImportContext(threadContext, options);
         else
             return new Python27EmbedScriptContext(threadContext, options);
+    }
+    virtual IEmbedServiceContext *createServiceContext(const char *service, unsigned flags, const char *options)
+    {
+        throwUnexpected();
     }
 };
 

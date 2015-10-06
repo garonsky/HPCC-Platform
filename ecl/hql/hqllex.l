@@ -256,6 +256,8 @@ xpathseq      ([^}\r\n])+
 %x COMMENT
 %x CPP
 %x SLSL
+%x PGPHEADER
+%x PGPSIGN
 %%
 
 "/*"                { setupdatepos; BEGIN(COMMENT); lexer->inComment = true; }
@@ -279,6 +281,16 @@ xpathseq      ([^}\r\n])+
                         assertex(!lexer->inComment); 
                         lexer->reportError(returnToken, ERR_COMMENT_NOTSTARTED,"Comment is not started: \"*/\" is illegal");
                     }                   
+
+"-----BEGIN PGP SIGNED MESSAGE-----"    { setupdatepos; BEGIN(PGPHEADER); lexer->inSignature = true; lexer->checkSignature(); }
+<PGPHEADER>^\n                          { setupdatepos; BEGIN(0); lexer->updateNewline(); lexer->inSignature = false; }
+<PGPHEADER>[^\n]+                       { updatepos1; }
+<PGPHEADER>\n                           { updatepos1; lexer->updateNewline(); }
+"-----BEGIN PGP SIGNATURE-----"         { setupdatepos; BEGIN(PGPSIGN); lexer->inSignature = true; }
+<PGPSIGN>"-----END PGP SIGNATURE-----"  { updatepos1; BEGIN(0); lexer->inSignature = false; } 
+<PGPSIGN>[^\n]+                         { updatepos1; }
+<PGPSIGN>\n                             { updatepos1; lexer->updateNewline(); }
+
 
 \r                  { updatepos1; }
 \n                  { 
@@ -848,6 +860,7 @@ PROJECT             { RETURNSYM(PROJECT); }
 PROXYADDRESS        { RETURNSYM(PROXYADDRESS); }
 PULL                { RETURNSYM(PULL); }
 PULLED              { RETURNSYM(PULLED); }
+QUANTILE            { RETURNSYM(QUANTILE); }
 QUOTE               { RETURNSYM(QUOTE); }
 RANGE               { RETURNSYM(RANGE); }
 RANK                { RETURNSYM(RANK); }
@@ -881,6 +894,7 @@ ROWDIFF             { RETURNSYM(ROWDIFF); }
 RULE                { RETURNSYM(RULE); }
 SAMPLE              { RETURNSYM(SAMPLE); }
 SCAN                { RETURNSYM(SCAN); }
+SCORE               { RETURNSYM(SCORE); }
 SECTION             { RETURNSYM(SECTION); }
 SELF                { RETURNSYM(SELF); }
 SEPARATOR           { RETURNSYM(SEPARATOR); }
@@ -926,6 +940,7 @@ TOJSON              { RETURNSYM(TOJSON); }
 TOPN                { RETURNSYM(TOPN); }
 TOUNICODE           { RETURNSYM(TOUNICODE); }
 TOXML               { RETURNSYM(TOXML); }
+TRACE               { RETURNSYM(TRACE); }
 TRANSFER            { RETURNSYM(TRANSFER); }
 TRANSFORM           { RETURNHARD(TRANSFORM); }
 TRIM                { RETURNSYM(TRIM); }

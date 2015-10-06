@@ -342,6 +342,7 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     moduleName = _containerScope->queryId();
     forceResult = false;
     parsingTemplateAttribute = false;
+    inSignedModule = false;
 
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
 
@@ -367,6 +368,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
     for (unsigned i=0;i<parent.defaultScopes.length();i++)
         defaultScopes.append(*LINK(&parent.defaultScopes.item(i)));
     sourcePath.set(parent.sourcePath);
+    inSignedModule = parent.inSignedModule;
     errorHandler = lookupCtx.errs;
     moduleName = containerScope->queryId();
 
@@ -430,6 +432,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     moduleName = NULL;
     resolveSymbols = true;
     lastpos = 0;
+    inSignedModule = false;
     
     containerScope = _containerScope;
     globalScope = _globalScope;
@@ -921,6 +924,8 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         }
         args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
     }
+    if (!checkAllowed(errpos, "cpp", "Embedded code"))
+        args.append(*createExprAttribute(_disallowed_Atom));
     if (attribs)
         attribs->unwindList(args, no_comma);
     Linked<ITypeInfo> type = current_type;
@@ -2885,7 +2890,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
         return;
     }
 
-    HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx);
+    HqlGramCtx * parentCtx = new HqlGramCtx(lookupCtx, inSignedModule);
     saveContext(*parentCtx, true);
     Owned<IHqlScope> newScope = createForwardScope(queryGlobalScope(), parentCtx, lookupCtx.queryParseContext());
     IHqlExpression * newScopeExpr = queryExpression(newScope);
@@ -2908,7 +2913,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
         switch (next)
         {
         case ASSIGN:
-            if ((sharedSymbolKind != 0) && prevId && (endNesting == 0))
+            if ((sharedSymbolKind != 0) && !sharedSymbolName && prevId && (endNesting == 0))
             {
                 sharedSymbolName = prevId;
             }
@@ -3605,6 +3610,8 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         attrs->unwindList(attrArray,no_comma);
     
     bool hasEntrypoint = false;
+    bool foldSeen = false;
+    bool nofoldSeen = false;
     unsigned count = attrArray.length();
     if (count>0)
     {
@@ -3727,10 +3734,13 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
             {
                 //backward compatibility
             }
+            else if (name == foldAtom)
+                foldSeen = true;
+            else if (name == nofoldAtom)
+                nofoldSeen = true;
             else // unsupported
                 reportWarning(CategorySyntax,WRN_SVC_UNSUPPORTED_ATTR, errpos.pos, "Unsupported service attribute: '%s'; ignored", str(name));
         }
-
         // check attribute conflicts
         int apiAttrs = 0;
         if (rtlApi) apiAttrs++;
@@ -3738,6 +3748,12 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         if (bcdApi) apiAttrs++;
         if (apiAttrs>1)
             reportWarning(CategorySyntax, ERR_SVC_ATTRCONFLICTS, errpos.pos, "Attributes eclrtl, bcd, c are conflict: only 1 can be used at a time");
+    }
+    if (foldSeen && !nofoldSeen)
+    {
+        // Check that we are allowed to fold...
+        if (!checkAllowed(errpos, "foldextern", "FOLD attribute"))
+            attrs = createComma(attrs, createAttribute(_disallowed_Atom));
     }
 
     if (!hasEntrypoint)
@@ -5769,6 +5785,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
         return createValue(no_sortlist, makeSortListType(NULL), items);
     return NULL;
 }
+
 
 IHqlExpression * HqlGram::createDistributeCond(IHqlExpression * leftDs, IHqlExpression * rightDs, const attribute & err, const attribute & seqAttr)
 {
@@ -9018,6 +9035,20 @@ void HqlGram::checkDerivedCompatible(IIdAtom * name, IHqlExpression * scope, IHq
     }
 }
 
+bool HqlGram::checkAllowed(const attribute & errpos, const char *category, const char *description)
+{
+    if (lookupCtx.queryParseContext().codegenCtx && !lookupCtx.queryParseContext().codegenCtx->allowAccess(category, inSignedModule))
+    {
+        if (!inSignedModule && lookupCtx.queryParseContext().codegenCtx->allowAccess(category, true))
+            reportWarning(CategorySecurity, WRN_REQUIRES_SIGNED, errpos.pos, "%s is only permitted in a signed module", description);
+        else
+            reportWarning(CategorySecurity, WRN_DISALLOWED, errpos.pos, "%s is not permitted by your security settings", description);
+        return false;
+    }
+    return true;
+}
+
+
 bool HqlGram::okToAddSideEffects(IHqlExpression * expr)
 {
     switch (expr->getOperator())
@@ -10649,6 +10680,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case PROJECT: msg.append("PROJECT"); break;
     case PULL: msg.append("PULL"); break;
     case PULLED: msg.append("PULLED"); break;
+    case QUANTILE: msg.append("QUANTILE"); break;
     case QUOTE: msg.append("QUOTE"); break;
     case RANDOM: msg.append("RANDOM"); break;
     case RANGE: msg.append("RANGE"); break;
@@ -10680,6 +10712,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case RULE: msg.append("RULE"); break;
     case SAMPLE: msg.append("SAMPLE"); break;
     case SCAN: msg.append("SCAN"); break;
+    case SCORE: msg.append("SCORE"); break;
     case SECTION: msg.append("SECTION"); break;
     case SELF: msg.append("SELF"); break;
     case SEPARATOR: msg.append("SEPARATOR"); break;
@@ -10728,6 +10761,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case TOPN: msg.append("TOPN"); break;
     case TOUNICODE: msg.append("TOUNICODE"); break;
     case TOXML: msg.append("TOXML"); break;
+    case TRACE: msg.append("TRACE"); break;
     case TRANSFER: msg.append("TRANSFER"); break;
     case TRANSFORM: msg.append("TRANSFORM"); break;
     case TRIM: msg.append("TRIM"); break;
@@ -10903,7 +10937,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, TRACE, QUANTILE, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,

@@ -257,12 +257,15 @@ CActivityBase *createChildThroughNormalizeSlave(CGraphElementBase *container);
 CActivityBase *createWhenSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container);
+CActivityBase *createTraceSlave(CGraphElementBase *container);
 
 
 class CGenericSlaveGraphElement : public CSlaveGraphElement
 {
     bool wuidread2diskread; // master decides after interrogating result and sneaks in info before slave creates
     StringAttr wuidreadFilename;
+    Owned<CActivityBase> nullActivity;
+    CriticalSection nullActivityCs;
 public:
     CGenericSlaveGraphElement(CGraphBase &_owner, IPropertyTree &xgmml) : CSlaveGraphElement(_owner, xgmml)
     {
@@ -286,6 +289,18 @@ public:
                 mb.read(wuidreadFilename);
         }
         haveCreateCtx = true;
+    }
+    virtual CActivityBase *queryActivity()
+    {
+        if (hasNullInput)
+        {
+            CriticalBlock b(nullActivityCs);
+            if (!nullActivity)
+                nullActivity.setown(createNullSlave(this));
+            return nullActivity;
+        }
+        else
+            return activity;
     }
     virtual CActivityBase *factory(ThorActivityKind kind)
     {
@@ -350,6 +365,9 @@ public:
                 break;
             case TAKsorted:
                 ret = createSortedSlave(this);
+                break;
+            case TAKtrace:
+                ret = createTraceSlave(this);
                 break;
             case TAKdedup:
                 if (queryGrouped())

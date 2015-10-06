@@ -167,6 +167,7 @@ protected:
     unsigned spillPriority;
     CThorSpillableRowArray rows;
     OwnedIFile spillFile;
+    bool mmRegistered;
 
     bool spillRows()
     {
@@ -185,9 +186,21 @@ protected:
         rows.kill(); // no longer needed, readers will pull from spillFile. NB: ok to kill array as rows is never written to or expanded
         return true;
     }
-    void clearSpillingCallback()
+    inline void addSpillingCallback()
     {
-        activity.queryJob().queryRowManager()->removeRowBuffer(this);
+        if (!mmRegistered)
+        {
+            mmRegistered = true;
+            activity.queryJob().queryRowManager()->addRowBuffer(this);
+        }
+    }
+    inline void clearSpillingCallback()
+    {
+        if (mmRegistered)
+        {
+            mmRegistered = false;
+            activity.queryJob().queryRowManager()->removeRowBuffer(this);
+        }
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -195,9 +208,10 @@ public:
     CSpillableStreamBase(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriorirty)
         : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf, _preserveNulls), preserveNulls(_preserveNulls), spillPriority(_spillPriorirty)
     {
-    	assertex(inRows.isFlushed());
+        assertex(inRows.isFlushed());
         rows.swap(inRows);
         useCompression = false;
+        mmRegistered = false;
     }
     ~CSpillableStreamBase()
     {
@@ -213,9 +227,30 @@ public:
     }
     virtual bool freeBufferedRows(bool critical)
     {
+        if (spillFile) // i.e. if spilt already. NB: this is thread-safe, as 'spillFile' only set by spillRows() call below and can't be called on multiple threads concurrently.
+            return false;
         CThorArrayLockBlock block(rows);
         return spillRows();
     }
+friend class CRowsLockBlock;
+};
+
+class CRowsLockBlock
+{
+    CSpillableStreamBase &owner;
+public:
+    inline CRowsLockBlock(CSpillableStreamBase &_owner) : owner(_owner)
+    {
+        owner.rows.lock();
+        clearCB = false;
+    }
+    inline ~CRowsLockBlock()
+    {
+        owner.rows.unlock();
+        if (clearCB)
+            owner.clearSpillingCallback();
+    }
+    bool clearCB;
 };
 
 // NB: Shared/spillable, holds all rows in mem until needs to spill.
@@ -235,12 +270,12 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
         {
             pos = 0;
             outputOffset = (offset_t)-1;
-            owner->rows.registerWriteCallback(*this);
+            owner->rows.registerWriteCallback(*this); // NB: CStream constructor called within rows lock
         }
         ~CStream()
         {
             spillStream.clear(); // NB: clear stream 1st
-            owner->rows.unregisterWriteCallback(*this);
+            owner->rows.safeUnregisterWriteCallback(*this);
             owner.clear();
         }
     // IRowStream
@@ -248,10 +283,10 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
         {
             if (spillStream)
                 return spillStream->nextRow();
-            CThorArrayLockBlock block(owner->rows);
+            CRowsLockBlock block(*owner);
             if (owner->spillFile) // i.e. has spilt
             {
-                owner->clearSpillingCallback();
+                block.clearCB = true;
                 assertex(((offset_t)-1) != outputOffset);
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (owner->preserveNulls)
@@ -262,12 +297,15 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
             }
             else if (pos == owner->rows.numCommitted())
             {
-                owner->clearSpillingCallback();
+                owner->rows.unregisterWriteCallback(*this); // no longer needed
                 return NULL;
             }
             return owner->rows.get(pos++);
         }
-        virtual void stop() { }
+        virtual void stop()
+        {
+            owner->rows.safeUnregisterWriteCallback(*this); // no longer needed
+        }
     // IWritePosCallback
         virtual rowidx_t queryRecordNumber()
         {
@@ -286,21 +324,18 @@ public:
     CSharedSpillableRowSet(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls, unsigned _spillPriority)
         : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls, _spillPriority)
     {
-        activity.queryJob().queryRowManager()->addRowBuffer(this);
+        addSpillingCallback();
     }
     IRowStream *createRowStream()
     {
+        CRowsLockBlock block(*this);
+        if (spillFile) // already spilled?
         {
-            // already spilled?
-            CThorArrayLockBlock block(rows);
-            if (spillFile)
-            {
-                clearSpillingCallback();
-                unsigned rwFlags = DEFAULT_RWFLAGS;
-                if (preserveNulls)
-                    rwFlags |= rw_grouped;
-                return ::createRowStream(spillFile, rowIf, rwFlags);
-            }
+            block.clearCB = true;
+            unsigned rwFlags = DEFAULT_RWFLAGS;
+            if (preserveNulls)
+                rwFlags |= rw_grouped;
+            return ::createRowStream(spillFile, rowIf, rwFlags);
         }
         return new CStream(*this);
     }
@@ -326,7 +361,7 @@ public:
         // a small amount of rows to read from swappable rows
         roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
         readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId(), inRows.queryDefaultMaxSpillCost()));
-        activity.queryJob().queryRowManager()->addRowBuffer(this);
+        addSpillingCallback();
     }
     ~CSpillableStream()
     {
@@ -345,10 +380,10 @@ public:
             return spillStream->nextRow();
         if (pos == numReadRows)
         {
-            CThorArrayLockBlock block(rows);
+            CRowsLockBlock block(*this);
             if (spillFile)
             {
-                clearSpillingCallback();
+                block.clearCB = true;
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (preserveNulls)
                     rwFlags |= rw_grouped;
@@ -359,13 +394,16 @@ public:
             }
             rowidx_t available = rows.numCommitted();
             if (0 == available)
+            {
+                block.clearCB = true;
                 return NULL;
+            }
             rowidx_t fetch = (available >= granularity) ? granularity : available;
             // consume 'fetch' rows
             rows.readBlock(readRows, fetch);
             if (available == fetch)
             {
-                clearSpillingCallback();
+                block.clearCB = true;
                 rows.kill();
             }
             numReadRows = fetch;
@@ -376,7 +414,10 @@ public:
         ++pos;
         return row;
     }
-    virtual void stop() { }
+    virtual void stop()
+    {
+        clearSpillingCallback();
+    }
 };
 
 //====
@@ -803,12 +844,12 @@ bool CThorExpandingRowArray::binaryInsert(const void *row, ICompare &compare, bo
     binary_vec_insert_stable(row, rows, numRows, compare); // takes ownership of row
     if (dropLast)
     {
-    	// last row falls out, i.e. release last row and don't increment numRows
-    	dbgassertex(numRows); // numRows must be >=1 for dropLast
-    	ReleaseThorRow(rows[numRows]);
+        // last row falls out, i.e. release last row and don't increment numRows
+        dbgassertex(numRows); // numRows must be >=1 for dropLast
+        ReleaseThorRow(rows[numRows]);
     }
     else
-    	++numRows;
+        ++numRows;
     return true;
 }
 
@@ -1163,11 +1204,21 @@ void CThorExpandingRowArray::deserializeExpand(size32_t sz, const void *data)
 
 void CThorSpillableRowArray::registerWriteCallback(IWritePosCallback &cb)
 {
-    CThorArrayLockBlock block(*this);
     writeCallbacks.append(cb); // NB not linked to avoid circular dependency
 }
 
 void CThorSpillableRowArray::unregisterWriteCallback(IWritePosCallback &cb)
+{
+    writeCallbacks.zap(cb);
+}
+
+void CThorSpillableRowArray::safeRegisterWriteCallback(IWritePosCallback &cb)
+{
+    CThorArrayLockBlock block(*this);
+    writeCallbacks.append(cb); // NB not linked to avoid circular dependency
+}
+
+void CThorSpillableRowArray::safeUnregisterWriteCallback(IWritePosCallback &cb)
 {
     CThorArrayLockBlock block(*this);
     writeCallbacks.zap(cb);
@@ -1898,7 +1949,7 @@ class cMultiThorResourceMutex: public CSimpleInterface, implements ILargeMemLimi
     Owned<cMultiThorResourceMutexThread> thread;
     Owned<IDaliMutex> mutex;
     bool stopping;
-    Linked<ICommunicator> clusterComm;
+    Linked<ICommunicator> nodeComm;
     CSDSServerStatus *status;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -1906,8 +1957,8 @@ public:
     {
         status = _status;
         stopping = false;
-        clusterComm.set(&queryClusterComm());
-        if (clusterComm->queryGroup().rank(queryMyNode())==0) { // master so start thread
+        nodeComm.set(&queryNodeComm());
+        if (nodeComm->queryGroup().rank(queryMyNode())==0) { // master so start thread
             thread.setown(new cMultiThorResourceMutexThread(*this));
             thread->start();
             StringBuffer mname("thorres:");
@@ -1933,7 +1984,7 @@ public:
                 mbuf.clear();
                 rank_t from;
                 unsigned timeout = 1000*60*5;
-                if (clusterComm->recv(mbuf,RANK_ALL,MPTAG_THORRESOURCELOCK,&from,timeout)) {
+                if (nodeComm->recv(mbuf,RANK_ALL,MPTAG_THORRESOURCELOCK,&from,timeout)) {
                     byte req;
                     mbuf.read(req);
                     if (req==1) {
@@ -1944,7 +1995,7 @@ public:
                         if (mutex) 
                             mutex->leave();
                     }
-                    clusterComm->reply(mbuf,1000*60*5);
+                    nodeComm->reply(mbuf,1000*60*5);
                 }
             }
         }
@@ -1960,7 +2011,7 @@ public:
         if (mutex) 
             mutex->kill();
         try {
-            clusterComm->cancel(RANK_ALL,MPTAG_THORRESOURCELOCK);
+            nodeComm->cancel(RANK_ALL,MPTAG_THORRESOURCELOCK);
         }
         catch (IException *e) {
             EXCLOG(e,"cMultiThorResourceMutex::stop");
@@ -1983,7 +2034,7 @@ public:
         byte req = 1;
         mbuf.append(req);
         try {
-            if (!clusterComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
+            if (!nodeComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
                 stopping = true;
         }
         catch (IException *e) {
@@ -2004,7 +2055,7 @@ public:
         byte req = 0;
         mbuf.append(req);
         try {
-            if (!clusterComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
+            if (!nodeComm->sendRecv(mbuf,0,MPTAG_THORRESOURCELOCK,(unsigned)-1))
                 stopping = true;
         }
         catch (IException *e) {
