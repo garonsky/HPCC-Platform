@@ -2,39 +2,40 @@
 #include "ConfiguratorAPI.hpp"
 
 
-Cws_configuratorEX::Cws_configuratorEX()
+Cws_configuratorEx::Cws_configuratorEx()
 {
 }
 
-Cws_configuratorEX::~Cws_configuratorEX()
+Cws_configuratorEx::~Cws_configuratorEx()
 {
 }
 
-bool Cws_configuratorEX::ongetValue(IEspContext &context, IEspGetValueRequest &req, IEspGetValueResponse &resp)
-{
-    return true;
-}
-
-bool Cws_configuratorEX::onsetValue(IEspContext &context, IEspSetValueRequest &req, IEspSetValueResponse &resp)
+bool Cws_configuratorEx::ongetValue(IEspContext &context, IEspGetValueRequest &req, IEspGetValueResponse &resp)
 {
     return true;
 }
 
-bool Cws_configuratorEX::ongetTableValue(IEspContext &context, IEspGetTableValueRequest &req, IEspGetTableValueResponse &resp)
+bool Cws_configuratorEx::onsetValue(IEspContext &context, IEspSetValueRequest &req, IEspSetValueResponse &resp)
 {
     return true;
 }
 
-bool Cws_configuratorEX::onsetTableValue(IEspContext &context, IEspSetTableValueRequest &req, IEspSetTableValueResponse &resp)
+bool Cws_configuratorEx::ongetTableValue(IEspContext &context, IEspGetTableValueRequest &req, IEspGetTableValueResponse &resp)
 {
     return true;
 }
 
-bool Cws_configuratorEX::ongetNumberOfRows(IEspContext &context, IEspGetNumberOfRowsRequest &req, IEspGetNumberOfRowsResponse &resp)
+bool Cws_configuratorEx::onsetTableValue(IEspContext &context, IEspSetTableValueRequest &req, IEspSetTableValueResponse &resp)
 {
     return true;
 }
 
+bool Cws_configuratorEx::ongetNumberOfRows(IEspContext &context, IEspGetNumberOfRowsRequest &req, IEspGetNumberOfRowsResponse &resp)
+{
+    return true;
+}
 
-
-
+bool Cws_configuratorEx::onopenConfigurationFile(IEspContext &context, IEspOpenConfigurationFileRequest &req, IEspOpenConfigurationFileResponse &resp)
+{
+    return CONFIGURATOR_API::openConfigurationFile("");
+}

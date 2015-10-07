@@ -3,19 +3,20 @@
 
 #include "ws_configurator_esp.ipp"
 
-class Cws_configuratorEX : public Cws_configurator
+class Cws_configuratorEx : public Cws_configurator
 {
 public:
     IMPLEMENT_IINTERFACE
 
-    Cws_configuratorEX();
-    virtual ~Cws_configuratorEX();
+    Cws_configuratorEx();
+    virtual ~Cws_configuratorEx();
 
     virtual bool ongetValue(IEspContext &context, IEspGetValueRequest &req, IEspGetValueResponse &resp);
     virtual bool onsetValue(IEspContext &context, IEspSetValueRequest &req, IEspSetValueResponse &resp);
     virtual bool ongetTableValue(IEspContext &context, IEspGetTableValueRequest &req, IEspGetTableValueResponse &resp);
     virtual bool onsetTableValue(IEspContext &context, IEspSetTableValueRequest &req, IEspSetTableValueResponse &resp);
     virtual bool ongetNumberOfRows(IEspContext &context, IEspGetNumberOfRowsRequest &req, IEspGetNumberOfRowsResponse &resp);
+    virtual bool onopenConfigurationFile(IEspContext &context, IEspOpenConfigurationFileRequest &req, IEspOpenConfigurationFileResponse &resp);
 };
 
 #endif // _WSCONFIGURATOR_HPP_

@@ -22,6 +22,7 @@ set 	( 	SRCS
 		${HPCC_SOURCE_DIR}/esp/scm/ws_configurator.ecm
 		${ESPSCM_GENERATED_DIR}/ws_configurator_esp.cpp
 		./ws_configurator.cpp
+		./ws_configurator_plugin.cpp
 	)
 
 include_directories (

@@ -880,7 +880,7 @@ int main(int argc, char** argv)
       fprintf(stderr, "Error: unknown command line parameter: %s\n", argv[i]);
       usage();
       releaseAtoms();
-      return 1;
+      return 0;
     }
   }
 
@@ -889,7 +889,7 @@ int main(int argc, char** argv)
     fprintf(stderr, "Error: Environment xml file is required. Please specify.\n");
     usage();
     releaseAtoms();
-    return 1;
+    return 0;
   }
 
   if (ipAddr.length() == 0  && !listallComps && !validateOnly && !listcommondirs && !listMachines && !listldaps && !ldapconfig)
@@ -908,13 +908,13 @@ int main(int argc, char** argv)
     fprintf(stderr, "Exception: %d:\n%s\n", excpt->errorCode(), excpt->errorMessage(errMsg).str());
     releaseAtoms();
     excpt->Release();
-    return 1;
+    return 0;
   }
   catch(...)
   {
     fprintf(stderr, "Unknown exception\n");
     releaseAtoms();
-    return 1;
+    return 0;
   }
 
   releaseAtoms();
