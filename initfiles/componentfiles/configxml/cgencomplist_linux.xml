@@ -89,6 +89,7 @@
   <Component name="espsmc" processName='EspService' schema='espsmcservice.xsd' deployable='no'>
     <File name="plugins.xsl" method="esp_plugin" destName="plugins.xml" destPath="@temp"/>
     <File name="@temp/esp_service_WsSMC.xsl" method="esp_service_module"/>
+    <File name="@temp/esp_service_ws_configurator.xsl" method="esp_service_module"/>
   </Component>
   <Component name="ws_account" processName='EspService' schema='esp_service_account.xsd' deployable='no'>
     <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsAccount.xml" destPath="@temp"/>
@@ -307,5 +308,6 @@
             schema="plugin.xsd"/>
   <Component name="DynamicESDL" processName='EspService' schema='esdlsvcengine.xsd' deployable='no'>
    <File name="@temp/esp_service_DynamicESDL.xsl" method="esp_service_module"/>
+  </Component>
   </Component>
 </Components>

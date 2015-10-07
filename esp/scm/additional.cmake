@@ -29,6 +29,7 @@ set ( ESPSCM_SRCS
       ws_account.ecm
       ##### LIST FOR ESPECL
       WsDeploy.ecm
+      ws_configurator.ecm
     )
 
 foreach ( loop_var ${ESPSCM_SRCS} )
