@@ -86,6 +86,10 @@ void CChoice::getDocumentation(StringBuffer &strDoc) const
         m_pElementArray->getDocumentation(strDoc);
 }
 
+void CChoice::getJSON(StringBuffer &strJSON, int idx) const
+{
+}
+
 void CChoice::getQML(StringBuffer &strQML, int idx) const
 {
     if (m_pElementArray != NULL)

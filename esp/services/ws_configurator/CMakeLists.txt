@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL )
 
 HPCC_ADD_LIBRARY( ws_configurator SHARED ${SRCS}  )
-add_dependencies (ws_configurator ws_configuratorespscm)
 install ( TARGETS ws_configurator RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ws_configurator
          jlib
@@ -63,5 +62,6 @@ target_link_libraries ( ws_configurator
          environment
          dllserver
          securesocket
+		 configurator
     )
 

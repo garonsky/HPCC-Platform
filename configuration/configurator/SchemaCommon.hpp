@@ -1,4 +1,4 @@
-﻿/*##############################################################################
+/*##############################################################################
 
     HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
 
@@ -478,7 +478,7 @@ public:
         return NULL;
     }
 
-    virtual void getJSON(StringBuffer &strQML, int idx = -1) const = 0;
+    //virtual void getJSON(StringBuffer &strQML, int idx = -1) const = 0;
     virtual void getDocumentation(StringBuffer &strDoc) const = 0;
     virtual void getQML(StringBuffer &strQML, int idx = -1) const
     {

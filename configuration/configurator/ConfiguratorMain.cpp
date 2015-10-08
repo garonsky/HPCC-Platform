@@ -23,6 +23,7 @@
 #include "ExceptionStrings.hpp"
 #include <iostream>
 #include "jfile.hpp"
+#include "jstring.hpp"
 
 #ifdef CONFIGURATOR_LIB
     #include "../configurator_ui/ConfiguratorUI.hpp"
@@ -55,6 +56,7 @@ void usage()
     std::cout << "-l -list                          : list available xsd files" << std::endl;
     std::cout << "-m -xml                           : generate XML configuration file" << std::endl;
     std::cout << "-q -qml                           : prints QML" << std::endl;
+	std::cout << "-j -json                          : prints JSON" << std::endl;
     std::cout << "-c -env -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << std::endl;
 #ifdef CONFIGURATOR_LIB
         std::cout << "-s1 -server1 <qml file>           : run server using qml file" << std::endl;
@@ -83,6 +85,7 @@ void usage()
     char pBasePath[BUFF_SIZE];
     char pEnvXMLPath[BUFF_SIZE];
     char pQMLFile[BUFF_SIZE];
+	StringBuffer strJSONFile;
 
     memset(pBuildSetFile, 0, sizeof(pBuildSetFile));
     memset(pBuildSetFileDir, 0, sizeof(pBuildSetFileDir));
@@ -97,6 +100,7 @@ void usage()
     bool bListXSDs      = false;
     bool bGenDocs       = false;
     bool bGenQML        = false;
+	bool bGenJSON       = false;
     bool bDump          = false;
     bool bLoadEnvXML    = false;
     bool bQMLServer     = false;
@@ -246,6 +250,8 @@ void usage()
         }
         else if (stricmp(argv[idx], "-qml") == 0 || stricmp(argv[idx], "-q") == 0)
             bGenQML = true;
+		else if (stricmp(argv[idx], "-json") == 0 || stricmp(argv[idx], "-j") == 0)
+            bGenJSON = true;
         idx++;
     }
 
@@ -354,6 +360,42 @@ void usage()
         }
     }
 
+    for (int idx =  0; bGenJSON == true && idx < arrXSDs.length(); idx++)
+    {
+        if (pTargetDocDir[0] == 0)
+        {
+            char *pOutput = NULL;
+
+            pSchemaHelper->printJSON(arrXSDs.item(idx), &pOutput);
+            std::cout << pOutput;
+
+            free(pOutput);
+        }
+        else
+        {
+            Owned<IFile>   pFile;
+            Owned<IFileIO> pFileIO;
+            StringBuffer strTargetPath;
+
+            const char *pXSDFile = strrchr(arrXSDs.item(idx), '/') == NULL ? arrXSDs.item(idx) : strrchr(arrXSDs.item(idx),'/');
+
+            strTargetPath.append(pTargetDocDir).append("/").append(pXSDFile).append(pDefaultQMLExt);
+            pFile.setown(createIFile(strTargetPath.str()));
+            pFileIO.setown(pFile->open(IFOcreaterw));
+
+            char *pJSON = NULL;
+            pSchemaHelper->printQML(arrXSDs.item(idx), &pJSON);
+
+            if (pJSON == NULL)
+            {
+                free(pJSON);
+                continue;
+            }
+            free(pJSON);
+            pFileIO->write(0, strlen(pJSON), pJSON);
+        }
+    }
+
     for (int idx =  0; (bDump == true || bLoadEnvXML == true) && idx < arrXSDs.length(); idx++)
     {
         if (bLoadEnvXML == true)
@@ -364,9 +406,9 @@ void usage()
 
     if (bQMLServer == true)
     {
-#ifdef CONFIGURATOR_LIB
+#ifdef CONFIGURATOR_QT_UI
         StartQMLUI(pQMLFile);
-#endif // CONFIGURATOR_LIB
+#endif // CONFIGURATOR_QT_UI
     }
     return 0;
 }
