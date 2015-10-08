@@ -120,6 +120,11 @@ void CAttribute::getDocumentation(StringBuffer &strDoc) const
     strDoc.appendf("</%s>\n", DM_TABLE_ROW);
 }
 
+void CAttribute::getJSON(StringBuffer &strJSON, int idx) const
+{
+
+}
+
 void CAttribute::getQML2(StringBuffer &strQML, int idx) const
 {
     if (this->getParentNode()->getUIType() == QML_UI_TABLE_CONTENTS)

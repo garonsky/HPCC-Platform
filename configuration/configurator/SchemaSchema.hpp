@@ -38,6 +38,7 @@ public:
     virtual void getQML(StringBuffer &strQML, int idx = -1) const;
     virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
     virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
+	virtual void getJSON(StringBuffer &strJSON, int idx = -1) const;
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
     virtual const char* getXML(const char* /*pComponent*/);
     virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);

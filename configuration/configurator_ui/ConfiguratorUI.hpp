@@ -18,7 +18,9 @@
 #ifndef CONFIGURATORUI_HPP
 #define CONFIGURATORUI_HPP
 
-extern "C" void StartQMLUI(char* pQMLFile);
-extern "C" int main2(int argc, char *argv[]);
+	#ifdef CONFIGURATOR_QT_UI
+		extern "C" void StartQMLUI(char* pQMLFile);
+		extern "C" int main2(int argc, char *argv[]);
+	#endif // CONFIGURATOR_QT_UI
 
 #endif // CONFIGURATORUI_HPP

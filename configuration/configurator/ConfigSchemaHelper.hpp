@@ -79,6 +79,7 @@ public:
     void loadEnvFromConfig(const char *pEnvFile);
     const char* printDocumentation(const char* comp);
     void printQML(const char* comp, char **pOutput, int nIdx = -1) const;
+	void printJSON(const char* comp, char **pOutput, int nIdx = -1) const;
     void printDump(const char* comp) const;
     void dumpStdOut() const;
     void addToolTip(const char *js);

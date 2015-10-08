@@ -164,7 +164,70 @@ const char* CConfigSchemaHelper::printDocumentation(const char* comp)
     }
     return NULL;
 }
+void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) const
+{
+	  if (! (comp != NULL && *comp != 0) )
+    {
+        DBGLOG("no component selected for QML, index = %d", nIdx);
+        return;
+    }
+    assert(m_pSchemaMapManager != NULL);
 
+    StringBuffer strJSON;
+
+    strJSON.clear();
+    resetTables();
+
+    if (comp == NULL || *comp == 0)
+        return;
+
+    CSchema* pSchema = NULL;
+
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
+    {
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
+
+        if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
+        {
+             pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
+             assert(pSchema != NULL);
+
+             if (pSchema != NULL)
+             {
+                 pSchema->getJSON(strJSON, nIdx);
+                 *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
+                 sprintf(*pOutput,"%s",strJSON.str());
+
+                 return;
+             }
+        }
+    }
+}
+
+void CConfigSchemaHelper::printDump(const char* comp) const
+{
+    assert(comp != NULL && *comp != 0);
+    assert(m_pSchemaMapManager != NULL);
+
+    if (comp == NULL || *comp == 0)
+        return;
+
+    CSchema* pSchema = NULL;
+
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
+    {
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
+
+        if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
+        {
+             pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
+             assert(pSchema != NULL);
+
+             if (pSchema != NULL)
+                pSchema->dump(std::cout);
+        }
+    }
+}
 void CConfigSchemaHelper::printQML(const char* comp, char **pOutput, int nIdx) const
 {
     if (! (comp != NULL && *comp != 0) )
@@ -201,31 +264,6 @@ void CConfigSchemaHelper::printQML(const char* comp, char **pOutput, int nIdx) c
 
                  return;
              }
-        }
-    }
-}
-
-void CConfigSchemaHelper::printDump(const char* comp) const
-{
-    assert(comp != NULL && *comp != 0);
-    assert(m_pSchemaMapManager != NULL);
-
-    if (comp == NULL || *comp == 0)
-        return;
-
-    CSchema* pSchema = NULL;
-
-    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
-    {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
-
-        if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
-        {
-             pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
-             assert(pSchema != NULL);
-
-             if (pSchema != NULL)
-                pSchema->dump(std::cout);
         }
     }
 }

@@ -257,6 +257,10 @@ void CSchema::getQML3(StringBuffer &strQML, int idx) const
     strQML.append(QML_DOUBLE_END_BRACKET);
 }
 
+void CSchema::getJSON(StringBuffer &strJSON, int idx) const
+{
+}
+
 void  CSchema::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     strXPath.append("./").append(XML_TAG_SOFTWARE);
