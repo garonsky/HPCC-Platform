@@ -631,6 +631,11 @@ void CAttributeArray::getQML3(StringBuffer &strQML, int idx) const
     DEBUG_MARK_QML;
 }
 
+void CAttributeArray::getJSON(StringBuffer &strJSON, int idx ) const
+{
+
+}
+
 void CAttributeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     this->setEnvXPath(strXPath);

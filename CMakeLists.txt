@@ -154,6 +154,7 @@ if(APPLE OR WIN32)
 endif(APPLE OR WIN32)
 
 if (MAKE_CONFIGURATOR)
+    MESSAGE( "Configurator app build ON" )
     HPCC_ADD_SUBDIRECTORY (configuration)
 endif()
 

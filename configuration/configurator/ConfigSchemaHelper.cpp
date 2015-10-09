@@ -168,7 +168,7 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
 {
 	  if (! (comp != NULL && *comp != 0) )
     {
-        DBGLOG("no component selected for QML, index = %d", nIdx);
+        DBGLOG("no component selected for JSON, index = %d", nIdx);
         return;
     }
     assert(m_pSchemaMapManager != NULL);

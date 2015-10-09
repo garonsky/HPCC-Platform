@@ -22,6 +22,7 @@
 #include "DocumentationMarkup.hpp"
 #include "SchemaMapManager.hpp"
 #include "QMLMarkup.hpp"
+#include "JSONMarkUp.hpp"
 
 CSchema::~CSchema()
 {
@@ -165,6 +166,18 @@ void CSchema::getDocumentation(StringBuffer &strDoc) const
     strDoc.append(DM_SECT2_END);
 }
 
+void CSchema::getJSON(StringBuffer &strJSON, int idx) const
+{
+    strJSON.append(JSON_BEGIN);
+
+    if (m_pElementArray != NULL)
+        m_pElementArray->getJSON(strJSON, idx);
+    if (m_pComplexTypeArray != NULL)
+        m_pComplexTypeArray->getJSON(strJSON);
+
+    strJSON.append(JSON_END);
+}
+
 void CSchema::getQML(StringBuffer &strQML, int idx) const
 {
     strQML.append(QML_START);
@@ -255,10 +268,6 @@ void CSchema::getQML3(StringBuffer &strQML, int idx) const
         DEBUG_MARK_QML;
     }
     strQML.append(QML_DOUBLE_END_BRACKET);
-}
-
-void CSchema::getJSON(StringBuffer &strJSON, int idx) const
-{
 }
 
 void  CSchema::populateEnvXPath(StringBuffer strXPath, unsigned int index)

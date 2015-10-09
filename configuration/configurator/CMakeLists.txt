@@ -1,3 +1,4 @@
+MESSAGE( "PROCESSING CONFIGURATOR #1" )
 project ( configurator )
 
 SET(  SRCS QMLMarkup.cpp QMLMarkup.hpp ConfiguratorMain.cpp ConfigFileComponentUtils.cpp ConfigFileUtils.cpp
@@ -8,7 +9,7 @@ SET(  SRCS QMLMarkup.cpp QMLMarkup.hpp ConfiguratorMain.cpp ConfigFileComponentU
       SchemaEnumeration.cpp SchemaCommon.cpp ExceptionStrings.cpp SchemaEnumeration.cpp SchemaAttributeGroup.cpp DocumentationMarkup.hpp
       SchemaCommon.hpp BuildSet.cpp ConfiguratorAPI.cpp SchemaMapManager.cpp EnvironmentModel.cpp SchemaFractionDigits.cpp SchemaLength.cpp SchemaMaxExclusive.cpp
       SchemaMaxInclusive.cpp SchemaMaxLength.cpp SchemaMinInclusive.cpp SchemaMinExclusive.cpp SchemaMinLength.cpp SchemaPattern.cpp SchemaTotalDigits.cpp SchemaWhiteSpace.cpp
-      SchemaKey.cpp SchemaKeyRef.cpp SchemaSelector.cpp SchemaUnique.cpp SchemaField.cpp SchemaSimpleContent.cpp ConfigNotifications.cpp)
+      SchemaKey.cpp SchemaKeyRef.cpp SchemaSelector.cpp SchemaUnique.cpp SchemaField.cpp SchemaSimpleContent.cpp ConfigNotifications.cpp JSONMarkUp.cpp)
 
   INCLUDE_DIRECTORIES(
         ${Qt5_INCLUDE_DIRS}
@@ -34,7 +35,7 @@ IF( CONFIGURATOR_QT_UI OR CONFIGURATOR_LIB )
 
     INSTALL( TARGETS configurator LIBRARY DESTINATION ${LIB_DIR} )
 
-ELSE()
+ELSE ()
     MESSAGE( "-- configurator target is a binary executable" )
 
     ADD_DEFINITIONS( -D_CONSOLE )

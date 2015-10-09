@@ -34,6 +34,7 @@
 
 const char *pDefaultDocExt =  ".mod.xml";
 const char *pDefaultQMLExt =  ".qml";
+const char *pDefaultJSONExt =  ".json";
 
 void usage()
 {
@@ -379,12 +380,12 @@ void usage()
 
             const char *pXSDFile = strrchr(arrXSDs.item(idx), '/') == NULL ? arrXSDs.item(idx) : strrchr(arrXSDs.item(idx),'/');
 
-            strTargetPath.append(pTargetDocDir).append("/").append(pXSDFile).append(pDefaultQMLExt);
+            strTargetPath.append(pTargetDocDir).append("/").append(pXSDFile).append(pDefaultJSONExt);
             pFile.setown(createIFile(strTargetPath.str()));
             pFileIO.setown(pFile->open(IFOcreaterw));
 
             char *pJSON = NULL;
-            pSchemaHelper->printQML(arrXSDs.item(idx), &pJSON);
+            pSchemaHelper->printJSON(arrXSDs.item(idx), &pJSON);
 
             if (pJSON == NULL)
             {

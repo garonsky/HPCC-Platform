@@ -315,6 +315,17 @@ void CElement::getDocumentation(StringBuffer &strDoc) const
     }
 }
 
+void CElement::getJSON(StringBuffer &strJSON, int idx) const
+{
+    assert(this->getConstAncestorNode(2) != NULL);
+
+    if (m_pAnnotation != NULL && m_pAnnotation->getAppInfo() != NULL && m_pAnnotation->getAppInfo()->getViewType() != NULL && stricmp(m_pAnnotation->getAppInfo()->getViewType(), "none") == 0)
+        return;
+
+    assert(strlen(this->getName()) > 0);
+
+
+}
 
 void CElement::getQML(StringBuffer &strQML, int idx) const
 {
@@ -838,6 +849,16 @@ void CElementArray::getQML3(StringBuffer &strQML, int idx) const
     }
     else
         (this->item(0)).getQML3(strQML,0);
+}
+
+
+void CElementArray::getJSON(StringBuffer &strJSON, int idx) const
+{
+    for (int idx=0; idx < this->length(); idx++)
+    {
+        if ((this->item(idx)).getIsInXSD() == true)
+            (this->item(idx)).getJSON(strJSON, idx);
+    }
 }
 
 void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
