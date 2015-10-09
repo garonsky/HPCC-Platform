@@ -215,6 +215,21 @@ void CComplexType::getQML3(StringBuffer &strQML, int idx) const
     
 }
 
+void CComplexType::getJSON(StringBuffer &strJSON, int idx) const
+{
+    if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
+    {
+        if( m_pSequence == NULL && m_pAttributeGroupArray  == NULL)
+        {
+            m_pAttributeArray->getJSON(strJSON);
+        }
+        else
+        {
+
+        }
+    }
+}
+
 void CComplexType::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     this->setEnvXPath(strXPath);
@@ -383,6 +398,14 @@ void CComplexTypeArray::getQML3(StringBuffer &strQML, int idx) const
         (this->item(idx)).setUIType(this->getUIType());
         (this->item(idx)).getQML3(strQML);
         DEBUG_MARK_QML;
+    }
+}
+
+void CComplexTypeArray::getJSON(StringBuffer &strJSON, int idx) const
+{
+    for (int idx=0; idx < this->length(); idx++)
+    {
+        (this->item(idx)).getJSON(strJSON);
     }
 }
 

@@ -12,6 +12,11 @@ Cws_configuratorEx::~Cws_configuratorEx()
 
 bool Cws_configuratorEx::ongetValue(IEspContext &context, IEspGetValueRequest &req, IEspGetValueResponse &resp)
 {
+    char *pValue = new char[1024];
+    CONFIGURATOR_API::getValue(req.getXPath(), pValue);
+
+    resp.setValue(pValue);
+    delete[] pValue;
     return true;
 }
 
@@ -37,5 +42,13 @@ bool Cws_configuratorEx::ongetNumberOfRows(IEspContext &context, IEspGetNumberOf
 
 bool Cws_configuratorEx::onopenConfigurationFile(IEspContext &context, IEspOpenConfigurationFileRequest &req, IEspOpenConfigurationFileResponse &resp)
 {
-    return CONFIGURATOR_API::openConfigurationFile("");
+    if (CONFIGURATOR_API::openConfigurationFile(req.getFilePath()))
+    {
+        resp.setCode(1);
+    }
+    else
+    {
+        resp.setCode(0);
+    }
+    return true;
 }

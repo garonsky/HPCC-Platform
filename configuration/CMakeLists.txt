@@ -31,8 +31,8 @@ IF( CONFIGURATOR_QT_UI AND DEFINED ENV{QTDIR} )
     HPCC_ADD_SUBDIRECTORY (configurator_app)
 
 ELSEIF ( CONFIGURATOR_QT_UI )
-    MESSAGE( FATAL_ERROR "ERROR: Environment variable QTDIR is not set. Please locate your Qt folder and set QTDIR.")
+    MESSAGE( FATAL_ERROR "ERROR: Environment variable QTDIR is not set. Please locate your Qt folder and set QTDIR." )
+ELSE ()
+   MESSAGE( "Add configurator subdirectory" )
+   HPCC_ADD_SUBDIRECTORY (configurator)
 ENDIF()
-
-
-HPCC_ADD_SUBDIRECTORY (configurator)
