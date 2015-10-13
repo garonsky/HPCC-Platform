@@ -392,8 +392,8 @@ void usage()
                 free(pJSON);
                 continue;
             }
-            free(pJSON);
             pFileIO->write(0, strlen(pJSON), pJSON);
+            free(pJSON);
         }
     }
 

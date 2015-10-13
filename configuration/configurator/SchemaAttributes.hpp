@@ -62,7 +62,7 @@ public:
     virtual void getDocumentation(StringBuffer &strDoc) const;
     virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
     virtual void getQML3(StringBuffer &strQML, const char * role = NULL, int idx = -1) const;
-	virtual void getJSON(StringBuffer &strJSON, int idx = -1) const;
+    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
     virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
 
@@ -123,7 +123,7 @@ public:
     virtual void getDocumentation(StringBuffer &strDoc) const;
     virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
     virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
-    virtual void getJSON(StringBuffer &strJSON, int idx = -1) const;
+    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
     virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
     virtual const char* getXML(const char* /*pComponent*/);

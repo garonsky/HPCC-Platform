@@ -166,15 +166,18 @@ void CSchema::getDocumentation(StringBuffer &strDoc) const
     strDoc.append(DM_SECT2_END);
 }
 
-void CSchema::getJSON(StringBuffer &strJSON, int idx) const
+void CSchema::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 {
     strJSON.append(JSON_BEGIN);
+    offset += STANDARD_OFFSET_1;
+    QuickOutPad(strJSON, offset);
 
+    //offset -= STANDARD_OFFSET_1;
     if (m_pElementArray != NULL)
-        m_pElementArray->getJSON(strJSON, idx);
+        m_pElementArray->getJSON(strJSON, offset, idx);
     if (m_pComplexTypeArray != NULL)
-        m_pComplexTypeArray->getJSON(strJSON);
-
+        m_pComplexTypeArray->getJSON(strJSON, offset);
+    offset -= STANDARD_OFFSET_1;
     strJSON.append(JSON_END);
 }
 

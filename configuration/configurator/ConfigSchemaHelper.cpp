@@ -194,7 +194,7 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
 
              if (pSchema != NULL)
              {
-                 pSchema->getJSON(strJSON, nIdx);
+                 pSchema->getJSON(strJSON, 0, nIdx);
                  *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
                  sprintf(*pOutput,"%s",strJSON.str());
 

@@ -21,6 +21,7 @@
 #include "SchemaSequence.hpp"
 #include "SchemaElement.hpp"
 #include "QMLMarkup.hpp"
+#include "JSONMarkUp.hpp"
 
 const CXSDNodeBase* CSequence::getNodeByTypeAndNameDescending(NODE_TYPES eNodeType, const char *pName) const
 {
@@ -97,6 +98,63 @@ void CSequence::getQML3(StringBuffer &strQML, int idx) const
 {   
     if (m_pElementArray != NULL)
         m_pElementArray->getQML3(strQML);
+}
+
+void CSequence::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
+{
+    if (m_pElementArray != NULL)
+    {
+        strJSON.append("\n");
+        offset += STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_CONTENT_BEGIN_1);
+
+        offset += STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+
+//        m_pElementArray->getJSON(strJSON, offset);
+
+        strJSON.append("\n");
+        offset += STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_INNER_CONTENT_END);
+
+        strJSON.append("\n");
+        offset -= STANDARD_OFFSET_3;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_CONTENT_END);
+    }
+    /*if (m_pElementArray != NULL)
+    {
+        offset -= STANDARD_OFFSET_1;
+
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_CONTENT_BEGIN_1);
+        offset += STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_CONTENT_BEGIN_2);
+
+        offset += STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+
+        strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_INNER_CONTENT_BEGIN_2);
+
+        //m_pElementArray->getJSON(strJSON, offset);
+
+//        offset -= STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+
+        strJSON.append(JSON_INNER_CONTENT_END);
+
+        offset -= STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_CONTENT_END);
+
+        //strJSON.append(JSON_CONTENT_BEGIN).append(CJSONMarkUpHelper::createInnerContent(strJSON, )
+    }*/
 }
 
 void CSequence::populateEnvXPath(StringBuffer strXPath, unsigned int index)

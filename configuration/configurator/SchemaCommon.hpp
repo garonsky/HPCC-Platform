@@ -105,6 +105,7 @@
 #define DEBUG_MARK_COMMENT2(X,Y) X.append("//  UIType=").append(Y->getUIType()).append("  ").append(__FILE__).append(":").append(__LINE__).append("\n");
 #define DEBUG_MARK_STRJS DEBUG_MARK_COMMENT(strJS)
 #define DEBUG_MARK_QML DEBUG_MARK_COMMENT(strQML)
+#define DEBUG_MARK_JSON DEBUG_MARK_COMMENT(strJSON)
 #define DEBUG_MARK_QML2(X) DEBUG_MARK_COMMENT2(strQML, X)
 //#define DEBUG_MARK_QML
 //#define DEBUG_MARK_STRJS
@@ -346,12 +347,22 @@ static const char* TAG_UNBOUNDED("unbounded");
 
 static unsigned int STANDARD_OFFSET_1 = 3;
 static unsigned int STANDARD_OFFSET_2 = 6;
+static unsigned int STANDARD_OFFSET_3 = 9;
 
 static void QuickOutPad(std::ostream& cout, unsigned int offset)
 {
     while(offset > 0)
     {
         cout << " ";
+        offset--;
+    }
+}
+
+static void QuickOutPad(StringBuffer &str, unsigned int offset)
+{
+    while(offset > 0)
+    {
+        str.append(" ");
         offset--;
     }
 }
