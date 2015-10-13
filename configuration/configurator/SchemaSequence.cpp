@@ -113,17 +113,20 @@ void CSequence::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) con
         QuickOutPad(strJSON, offset);
         strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
 
-//        m_pElementArray->getJSON(strJSON, offset);
+        //m_pElementArray->getJSON(strJSON, offset);
 
+        //DEBUG_MARK_JSON
         strJSON.append("\n");
-        offset += STANDARD_OFFSET_1;
+        offset -= STANDARD_OFFSET_1;
         QuickOutPad(strJSON, offset);
         strJSON.append(JSON_INNER_CONTENT_END);
+           //DEBUG_MARK_JSON;
 
         strJSON.append("\n");
-        offset -= STANDARD_OFFSET_3;
+        offset -= STANDARD_OFFSET_1;
         QuickOutPad(strJSON, offset);
         strJSON.append(JSON_CONTENT_END);
+        //DEBUG_MARK_JSON;
     }
     /*if (m_pElementArray != NULL)
     {

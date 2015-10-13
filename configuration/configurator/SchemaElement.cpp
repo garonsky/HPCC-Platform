@@ -883,22 +883,24 @@ void CElementArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx)
     {
         if (idx == 0)
         {
-            strJSON.append("{ ");
+            strJSON.append("{");
         }
         if ((this->item(idx)).getIsInXSD() == true)
+        {
             (this->item(idx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, idx);
-        if (idx > 0)
+        }
+        if (idx >= 0 && this->length() > 1)
         {
             //DEBUG_MARK_JSON;
             //offset += STANDARD_OFFSET_1;
             QuickOutPad(strJSON, offset);
-            strJSON.append("},\n");
+            strJSON.append(" },\n ");
+            //DEBUG_MARK_JSON;
             QuickOutPad(strJSON, offset);
         }
+        offset -= STANDARD_OFFSET_1;
     }
-    offset += STANDARD_OFFSET_1;
-    //DEBUG_MARK_JSON;
-    //offset -= STANDARD_OFFSET_1;
+    offset += STANDARD_OFFSET_2;
     QuickOutPad(strJSON, offset);
 
     strJSON.append("}");

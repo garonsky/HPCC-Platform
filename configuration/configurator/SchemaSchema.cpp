@@ -174,11 +174,18 @@ void CSchema::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 
     //offset -= STANDARD_OFFSET_1;
     if (m_pElementArray != NULL)
+    {
         m_pElementArray->getJSON(strJSON, offset, idx);
+        //DEBUG_MARK_JSON;
+    }
     if (m_pComplexTypeArray != NULL)
-        m_pComplexTypeArray->getJSON(strJSON, offset);
-    offset -= STANDARD_OFFSET_1;
+    {
+        //m_pComplexTypeArray->getJSON(strJSON, offset);
+        //DEBUG_MARK_JSON;
+    }
+    //offset -= STANDARD_OFFSET_1;
     strJSON.append(JSON_END);
+
 }
 
 void CSchema::getQML(StringBuffer &strQML, int idx) const

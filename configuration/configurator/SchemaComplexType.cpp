@@ -232,6 +232,7 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
     {
         //DEBUG_MARK_JSON;
         m_pSequence->getJSON(strJSON, offset);
+        //DEBUG_MARK_JSON;
     }
 }
 
