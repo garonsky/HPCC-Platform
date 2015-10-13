@@ -113,7 +113,7 @@ void CSequence::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) con
         QuickOutPad(strJSON, offset);
         strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
 
-        //m_pElementArray->getJSON(strJSON, offset);
+        m_pElementArray->getJSON(strJSON, offset);
 
         //DEBUG_MARK_JSON
         strJSON.append("\n");
