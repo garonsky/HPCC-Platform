@@ -120,7 +120,7 @@ void CAttribute::getDocumentation(StringBuffer &strDoc) const
     strDoc.appendf("</%s>\n", DM_TABLE_ROW);
 }
 
-void CAttribute::getJSON(StringBuffer &strJSON, int idx) const
+void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 {
 
 }
@@ -631,7 +631,7 @@ void CAttributeArray::getQML3(StringBuffer &strQML, int idx) const
     DEBUG_MARK_QML;
 }
 
-void CAttributeArray::getJSON(StringBuffer &strJSON, int idx ) const
+void CAttributeArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx ) const
 {
 
 }

@@ -35,6 +35,7 @@
 #include "QMLMarkup.hpp"
 #include "SchemaMapManager.hpp"
 #include "ConfiguratorMain.hpp"
+#include "JSONMarkUp.hpp"
 
 const CXSDNodeBase* CElement::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const
 {
@@ -315,7 +316,7 @@ void CElement::getDocumentation(StringBuffer &strDoc) const
     }
 }
 
-void CElement::getJSON(StringBuffer &strJSON, int idx) const
+void CElement::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 {
     assert(this->getConstAncestorNode(2) != NULL);
 
@@ -324,7 +325,28 @@ void CElement::getJSON(StringBuffer &strJSON, int idx) const
 
     assert(strlen(this->getName()) > 0);
 
+    if (m_pComplexTypeArray != NULL)
+    {
+        CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TAB, this->getTitle(), this->getXSDXPath());
 
+        if (m_pComplexTypeArray != NULL)
+        {
+            m_pComplexTypeArray->getJSON(strJSON, offset);
+        }
+
+        /*if (m_pComplexTypeArray != NULL)
+        {
+            strJSON.append(",\n");
+            QuickOutPad(strJSON, offset);
+            //m_pComplexTypeArray->getJSON(strJSON, offset);
+        }*//*
+        else
+        {
+            strJSON.append("\n");
+            QuickOutPad(strJSON, offset);
+            strJSON.append("}");
+        }*/
+    }
 }
 
 void CElement::getQML(StringBuffer &strQML, int idx) const
@@ -852,13 +874,34 @@ void CElementArray::getQML3(StringBuffer &strQML, int idx) const
 }
 
 
-void CElementArray::getJSON(StringBuffer &strJSON, int idx) const
+void CElementArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 {
+    offset += STANDARD_OFFSET_2;
+    QuickOutPad(strJSON, offset);
+
     for (int idx=0; idx < this->length(); idx++)
     {
+        if (idx == 0)
+        {
+            strJSON.append("{ ");
+        }
         if ((this->item(idx)).getIsInXSD() == true)
-            (this->item(idx)).getJSON(strJSON, idx);
+            (this->item(idx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, idx);
+        if (idx > 0)
+        {
+            //DEBUG_MARK_JSON;
+            //offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append("},\n");
+            QuickOutPad(strJSON, offset);
+        }
     }
+    offset += STANDARD_OFFSET_1;
+    //DEBUG_MARK_JSON;
+    //offset -= STANDARD_OFFSET_1;
+    QuickOutPad(strJSON, offset);
+
+    strJSON.append("}");
 }
 
 void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)

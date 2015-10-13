@@ -215,18 +215,23 @@ void CComplexType::getQML3(StringBuffer &strQML, int idx) const
     
 }
 
-void CComplexType::getJSON(StringBuffer &strJSON, int idx) const
+void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 {
     if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
     {
         if( m_pSequence == NULL && m_pAttributeGroupArray  == NULL)
         {
-            m_pAttributeArray->getJSON(strJSON);
+            m_pAttributeArray->getJSON(strJSON, offset);
         }
         else
         {
 
         }
+    }
+    if (m_pSequence != NULL)
+    {
+        //DEBUG_MARK_JSON;
+        m_pSequence->getJSON(strJSON, offset);
     }
 }
 
@@ -401,11 +406,11 @@ void CComplexTypeArray::getQML3(StringBuffer &strQML, int idx) const
     }
 }
 
-void CComplexTypeArray::getJSON(StringBuffer &strJSON, int idx) const
+void CComplexTypeArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 {
     for (int idx=0; idx < this->length(); idx++)
     {
-        (this->item(idx)).getJSON(strJSON);
+        (this->item(idx)).getJSON(strJSON, offset);
     }
 }
 
