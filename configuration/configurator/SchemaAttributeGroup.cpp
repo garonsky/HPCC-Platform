@@ -411,7 +411,7 @@ void CAttributeGroupArray::getJSON(StringBuffer &strJSON, unsigned int offset, i
 //        offset += STANDARD_OFFSET_1;
         if (lidx != 0)
         {
-            strJSON.append("\n");
+            //strJSON.append("\n");
             QuickOutPad(strJSON, offset);
             if (lidx != 0)
             {
@@ -423,15 +423,16 @@ void CAttributeGroupArray::getJSON(StringBuffer &strJSON, unsigned int offset, i
 
 
         strJSON.append("{");
-         CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TAB, this->item(lidx).getRef(), this->getXSDXPath());
+         CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TAB, this->item(lidx).getRef(), this->getEnvXPath());
 //        strJSON.append(" }");
         strJSON.append("\n");
         //QuickOutPad(strJSON, offset);
 
         if (lidx == 0)
         {
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
             strJSON.append(JSON_CONTENT_BEGIN_1);
-
             offset += STANDARD_OFFSET_1;
             QuickOutPad(strJSON, offset);
             strJSON.append(JSON_INNER_CONTENT_BEGIN_1);

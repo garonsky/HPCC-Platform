@@ -259,30 +259,31 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
     }
     if(m_pAttributeGroupArray != NULL)
     {
-        strJSON.append("\n");
-        offset += STANDARD_OFFSET_1;
-        QuickOutPad(strJSON, offset);
-        strJSON.append(JSON_CONTENT_BEGIN_1);
+        if (m_pSequence == NULL)
+        {
+            strJSON.append("\n");
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_CONTENT_BEGIN_1);
 
-        offset += STANDARD_OFFSET_1;
-        QuickOutPad(strJSON, offset);
-        strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+        }
 
         m_pAttributeGroupArray->getJSON(strJSON, offset);
 
-        //DEBUG_MARK_JSON
-        //strJSON.append("\n");
-        offset -= STANDARD_OFFSET_1;
-        QuickOutPad(strJSON, offset);
-        strJSON.append(JSON_INNER_CONTENT_END);
-           //DEBUG_MARK_JSON;
 
-        //strJSON.append("\n");
-        offset -= STANDARD_OFFSET_1;
-        QuickOutPad(strJSON, offset);
-        strJSON.append(JSON_CONTENT_END);
-        //DEBUG_MARK_JSON;
+        if (m_pSequence == NULL)
+        {
+            offset -= STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_END);
 
+            offset -= STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_CONTENT_END);
+        }
     }
 }
 
