@@ -148,7 +148,7 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
         }
     }
 
-    CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_INPUT, this->getTitle(), this->getXSDXPath(), strToolTip.str(), this->getDefault());
+    CJSONMarkUpHelper::createUIContent(strJSON, offset, strValues.length() > 0 ? JSON_TYPE_DROP_DOWN : JSON_TYPE_INPUT, this->getTitle(), this->getEnvXPath(), strToolTip.str(), this->getDefault(), strValues.str());
 }
 
 void CAttribute::getQML2(StringBuffer &strQML, int idx) const
