@@ -31,6 +31,9 @@
 #include "SchemaKey.hpp"
 #include "SchemaKeyRef.hpp"
 #include "SchemaSimpleType.hpp"
+#include "SchemaAppInfo.hpp"
+#include "JSONMarkUp.hpp"
+#include "SchemaEnumeration.hpp"
 
 CAttribute::~CAttribute()
 {
@@ -122,7 +125,30 @@ void CAttribute::getDocumentation(StringBuffer &strDoc) const
 
 void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 {
+    StringBuffer strToolTip;
+    StringBuffer strValues;
 
+    if (this->getAnnotation() && this->getAnnotation()->getAppInfo() && this->getAnnotation()->getAppInfo()->getToolTip())
+    {
+        strToolTip.set(this->getAnnotation()->getAppInfo()->getToolTip());
+    }
+    if (this->getSimpleTypeArray() &&  this->getSimpleTypeArray()->length() > 0 &&
+            this->getSimpleTypeArray()->item(0).getRestriction() && this->getSimpleTypeArray()->item(0).getRestriction()->getEnumerationArray() &&
+            this->getSimpleTypeArray()->item(0).getRestriction()->getEnumerationArray()->length() > 0)  // why would I have more than 1 simpletype here for a dropdown?
+    {
+        int nLength = this->getSimpleTypeArray()->item(0).getRestriction()->getEnumerationArray()->length();
+
+        for (int lidx = 0; lidx < nLength; lidx++)
+        {
+            if (lidx > 0)
+            {
+                strValues.append(", ");
+            }
+            strValues.append(this->getSimpleTypeArray()->item(0).getRestriction()->getEnumerationArray()->item(lidx).getValue());
+        }
+    }
+
+    CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_INPUT, this->getTitle(), this->getXSDXPath(), strToolTip.str(), this->getDefault());
 }
 
 void CAttribute::getQML2(StringBuffer &strQML, int idx) const
@@ -633,7 +659,28 @@ void CAttributeArray::getQML3(StringBuffer &strQML, int idx) const
 
 void CAttributeArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx ) const
 {
+    offset += STANDARD_OFFSET_2;
+    QuickOutPad(strJSON, offset);
 
+    int lidx=0;
+
+    for (lidx=0; lidx < this->length(); lidx++)
+    {
+        strJSON.append("{");
+        (this->item(lidx)).getJSON(strJSON, offset/*+STANDARD_OFFSET_2*/, lidx);
+
+        if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length())
+        {
+           //QuickOutPad(strJSON, offset);
+            strJSON.append("},\n ");
+            QuickOutPad(strJSON, offset);
+        }
+        //offset -= STANDARD_OFFSET_1;
+    }
+    //offset += STANDARD_OFFSET_2;
+    //QuickOutPad(strJSON, offset);
+
+    strJSON.append("}");
 }
 
 void CAttributeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)

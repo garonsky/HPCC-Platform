@@ -58,6 +58,7 @@ public:
     virtual void getDocumentation(StringBuffer &strDoc) const;
     virtual void getQML(StringBuffer &strQML, int idx = -1) const;
     virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
+    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
 
     virtual CAnnotation* getAnnotation() const
     {
@@ -106,6 +107,7 @@ public:
     virtual void getQML(StringBuffer &strQML, int idx = -1) const;
     virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
     virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
+    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
     virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
     static CAttributeGroupArray* load(const char* pSchemaFile);

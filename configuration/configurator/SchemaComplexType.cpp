@@ -31,6 +31,7 @@
 #include "ExceptionStrings.hpp"
 #include "SchemaMapManager.hpp"
 #include "QMLMarkup.hpp"
+#include "JSONMarkUp.hpp"
 
 const CXSDNodeBase* CComplexType::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const
 {
@@ -221,7 +222,29 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
     {
         if( m_pSequence == NULL && m_pAttributeGroupArray  == NULL)
         {
-            m_pAttributeArray->getJSON(strJSON, offset);
+            strJSON.append("\n");
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_CONTENT_BEGIN_1);
+
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+
+             m_pAttributeArray->getJSON(strJSON, offset);
+
+            //DEBUG_MARK_JSON
+            //strJSON.append("\n");
+            offset -= STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_END);
+               //DEBUG_MARK_JSON;
+
+            //strJSON.append("\n");
+            offset -= STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_CONTENT_END);
+            //DEBUG_MARK_JSON;
         }
         else
         {
@@ -233,6 +256,33 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
         //DEBUG_MARK_JSON;
         m_pSequence->getJSON(strJSON, offset);
         //DEBUG_MARK_JSON;
+    }
+    if(m_pAttributeGroupArray != NULL)
+    {
+        strJSON.append("\n");
+        offset += STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_CONTENT_BEGIN_1);
+
+        offset += STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+
+        m_pAttributeGroupArray->getJSON(strJSON, offset);
+
+        //DEBUG_MARK_JSON
+        //strJSON.append("\n");
+        offset -= STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_INNER_CONTENT_END);
+           //DEBUG_MARK_JSON;
+
+        //strJSON.append("\n");
+        offset -= STANDARD_OFFSET_1;
+        QuickOutPad(strJSON, offset);
+        strJSON.append(JSON_CONTENT_END);
+        //DEBUG_MARK_JSON;
+
     }
 }
 
