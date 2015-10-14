@@ -66,6 +66,11 @@ public:
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
     virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
 
+    const CSimpleTypeArray* getSimpleTypeArray() const
+    {
+        return m_pSimpleTypeArray;
+    }
+
     static CAttribute* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
     bool isInstanceValueValid()

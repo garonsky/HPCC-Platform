@@ -883,10 +883,7 @@ void CElementArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx)
 
     for (lidx=0; lidx < this->length(); lidx++)
     {
-        //if (idx == 0)
-        {
-            strJSON.append("{");
-        }
+        strJSON.append("{");
         if ((this->item(lidx)).getIsInXSD() == true)
         {
             (this->item(lidx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, lidx);
@@ -905,11 +902,7 @@ void CElementArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx)
     offset += STANDARD_OFFSET_2;
     QuickOutPad(strJSON, offset);
 
-    //if (lidx == 1 || lidx+1 == this->length())
-    {
-        strJSON.append("}");
-    }
-
+    strJSON.append("}");
 }
 
 void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)

@@ -110,7 +110,7 @@
 //#define DEBUG_MARK_QML
 //#define DEBUG_MARK_STRJS
 
-#define GETTERTYPE(X) C##X* get##X() { return m_p##X; }
+#define GETTERTYPE(X) C##X* get##X() const { return m_p##X; }
 #define SETTERTYPE(X) void set##X( C##X *p ) { assert(p != NULL); if (p != NULL) m_p##X = p; }
 #define GETTERSETTERTYPE(X) public: C##X *m_p##X; GETTERTYPE(X) SETTERTYPE(X) private:
 

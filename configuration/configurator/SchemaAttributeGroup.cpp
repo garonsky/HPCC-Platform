@@ -21,6 +21,7 @@
 #include "jptree.hpp"
 #include "SchemaMapManager.hpp"
 #include "QMLMarkup.hpp"
+#include"JSONMarkUp.hpp"
 
 const CXSDNodeBase* CAttributeGroup::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const
 {
@@ -222,6 +223,47 @@ CAttributeGroup* CAttributeGroup::load(CXSDNodeBase* pParentNode, const IPropert
     return pAttributeGroup;
 }
 
+void CAttributeGroup::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
+{
+    assert(this->getRef() != NULL);
+    if (this->getRef() != NULL && this->getRef()[0] != 0 && m_pRefAttributeGroup != NULL)
+    {
+        if (m_pRefAttributeGroup->getConstAttributeArray() != NULL)
+        {
+            if (idx != 0)
+            {
+            //    strJSON.appendf("idx = %d\n",idx);
+                strJSON.append("\n");
+                offset += STANDARD_OFFSET_1;
+                QuickOutPad(strJSON, offset);
+                strJSON.append(JSON_CONTENT_BEGIN_1);
+
+                offset += STANDARD_OFFSET_1;
+                QuickOutPad(strJSON, offset);
+                strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+    //DEBUG_MARK_JSON
+            }
+            m_pRefAttributeGroup->getConstAttributeArray()->getJSON(strJSON, offset);
+            /*if (idx != 0)
+            {
+                //DEBUG_MARK_JSON
+                strJSON.append("\n");
+
+                offset -= STANDARD_OFFSET_1;
+                QuickOutPad(strJSON, offset);
+                strJSON.append(JSON_INNER_CONTENT_END);
+                   //DEBUG_MARK_JSON;
+
+                strJSON.append("\n");
+                offset -= STANDARD_OFFSET_1;
+                QuickOutPad(strJSON, offset);
+                strJSON.append(JSON_CONTENT_END);
+                //DEBUG_MARK_JSON;
+            }*/
+        }
+    }
+}
+
 CAttributeGroupArray::~CAttributeGroupArray()
 {
 }
@@ -352,4 +394,77 @@ void CAttributeGroupArray::populateEnvXPath(StringBuffer strXPath, unsigned int 
 void CAttributeGroupArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
     QUICK_LOAD_ENV_XML(pEnvTree)
+}
+
+void CAttributeGroupArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
+{
+    int nLength = this->length();
+
+    offset += STANDARD_OFFSET_1;
+    QuickOutPad(strJSON, offset);
+
+
+
+    for (int lidx = 0; lidx < nLength; lidx++)
+    {
+
+//        offset += STANDARD_OFFSET_1;
+        if (lidx != 0)
+        {
+            strJSON.append("\n");
+            QuickOutPad(strJSON, offset);
+            if (lidx != 0)
+            {
+                strJSON.append(",");
+            }
+        }
+            //QuickOutPad(strJSON, offset+STANDARD_OFFSET_2);
+        //}
+
+
+        strJSON.append("{");
+         CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TAB, this->item(lidx).getRef(), this->getXSDXPath());
+//        strJSON.append(" }");
+        strJSON.append("\n");
+        //QuickOutPad(strJSON, offset);
+
+        if (lidx == 0)
+        {
+            strJSON.append(JSON_CONTENT_BEGIN_1);
+
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+        }
+
+
+
+        this->item(lidx).getJSON(strJSON, offset, lidx);
+        strJSON.append("]}}");
+
+        /*if (lidx+1 > 0)
+        {
+            strJSON.append("\n");
+            offset -= STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_END);
+
+
+            strJSON.append("\n");
+            offset -= STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_CONTENT_END);
+
+        }*/
+
+
+        if (lidx+1 < nLength)
+        {
+            QuickOutPad(strJSON, offset);
+            //strJSON.append(",");
+            //strJSON.append("\n");
+            //QuickOutPad(strJSON, offset);
+        }
+
+    }
 }
