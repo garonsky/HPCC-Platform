@@ -232,7 +232,6 @@ void CAttributeGroup::getJSON(StringBuffer &strJSON, unsigned int offset, int id
         {
             if (idx != 0)
             {
-            //    strJSON.appendf("idx = %d\n",idx);
                 strJSON.append("\n");
                 offset += STANDARD_OFFSET_1;
                 QuickOutPad(strJSON, offset);
