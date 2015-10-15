@@ -218,10 +218,9 @@ void CComplexType::getQML3(StringBuffer &strQML, int idx) const
 
 void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 {
-    if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
-    {
-        if( m_pSequence == NULL && m_pAttributeGroupArray  == NULL)
-        {
+	bool bAddComma = false;
+	if ( m_pAttributeArray->length() > 0 || m_pSequence != NULL || m_pAttributeGroupArray != NULL)
+	{
             strJSON.append("\n");
             offset += STANDARD_OFFSET_1;
             QuickOutPad(strJSON, offset);
@@ -231,8 +230,64 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
             QuickOutPad(strJSON, offset);
             strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
 
-             m_pAttributeArray->getJSON(strJSON, offset);
+		bAddComma = true;
+	}
 
+
+    if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
+    {
+//        if( m_pSequence == NULL && m_pAttributeGroupArray  == NULL)
+        {
+             m_pAttributeArray->getJSON(strJSON, offset);
+	     bAddComma = true;
+
+       }
+        //else
+        {
+
+        }
+    }
+    if (m_pSequence != NULL)
+    {
+
+	if (bAddComma)
+		strJSON.append(",");
+
+        //DEBUG_MARK_JSON;
+        m_pSequence->getJSON(strJSON, offset);
+	bAddComma = true;
+        //DEBUG_MARK_JSON;
+    }
+    if(m_pAttributeGroupArray != NULL)
+    {
+        if (m_pSequence == NULL)
+        {
+/*            strJSON.append("\n");
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_CONTENT_BEGIN_1);
+
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_BEGIN_1);*/
+        }
+
+	if (bAddComma)
+		strJSON.append(",");
+        m_pAttributeGroupArray->getJSON(strJSON, offset);
+
+
+        if (m_pSequence == NULL)
+        {
+    /*        offset -= STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_END);
+
+            offset -= STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_CONTENT_END);*/
+        }
+    }
             //DEBUG_MARK_JSON
             //strJSON.append("\n");
             offset -= STANDARD_OFFSET_1;
@@ -245,46 +300,6 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
             QuickOutPad(strJSON, offset);
             strJSON.append(JSON_CONTENT_END);
             //DEBUG_MARK_JSON;
-        }
-        else
-        {
-
-        }
-    }
-    if (m_pSequence != NULL)
-    {
-        //DEBUG_MARK_JSON;
-        m_pSequence->getJSON(strJSON, offset);
-        //DEBUG_MARK_JSON;
-    }
-    if(m_pAttributeGroupArray != NULL)
-    {
-        if (m_pSequence == NULL)
-        {
-            strJSON.append("\n");
-            offset += STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_CONTENT_BEGIN_1);
-
-            offset += STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
-        }
-
-        m_pAttributeGroupArray->getJSON(strJSON, offset);
-
-
-        if (m_pSequence == NULL)
-        {
-            offset -= STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_INNER_CONTENT_END);
-
-            offset -= STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_CONTENT_END);
-        }
-    }
 }
 
 void CComplexType::populateEnvXPath(StringBuffer strXPath, unsigned int index)
