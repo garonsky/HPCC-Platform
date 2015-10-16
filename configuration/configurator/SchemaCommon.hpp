@@ -103,9 +103,12 @@
 #define DEBUG_MARK_STRDOC
 #define DEBUG_MARK_COMMENT(X) X.append("//  ").append(__FILE__).append(":").append(__LINE__).append("\n");
 #define DEBUG_MARK_COMMENT2(X,Y) X.append("//  UIType=").append(Y->getUIType()).append("  ").append(__FILE__).append(":").append(__LINE__).append("\n");
+#define DEBUG_MARK_COMMENT_3 QuickOutPad(strJSON, offset); strJSON.append("{ \"").append(__FILE__).append("\" : \"").append(__LINE__).append("\"},\n"); QuickOutPad(strJSON, offset);
+#define DEBUG_MARK_COMMENT_4 QuickOutPad(strJSON, offset); strJSON.append(",{ \"").append(__FILE__).append("\" : \"").append(__LINE__).append("\"},\n"); QuickOutPad(strJSON, offset);
 #define DEBUG_MARK_STRJS DEBUG_MARK_COMMENT(strJS)
 #define DEBUG_MARK_QML DEBUG_MARK_COMMENT(strQML)
-#define DEBUG_MARK_JSON DEBUG_MARK_COMMENT(strJSON)
+#define DEBUG_MARK_JSON_1 //DEBUG_MARK_COMMENT_4// DEBUG_MARK_COMMENT(strJSON)
+#define DEBUG_MARK_JSON_2 //DEBUG_MARK_COMMENT_3// DEBUG_MARK_COMMENT(strJSON)
 #define DEBUG_MARK_QML2(X) DEBUG_MARK_COMMENT2(strQML, X)
 //#define DEBUG_MARK_QML
 //#define DEBUG_MARK_STRJS
