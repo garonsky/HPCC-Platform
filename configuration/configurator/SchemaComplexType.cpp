@@ -237,11 +237,51 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
     if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
     {
 //        if( m_pSequence == NULL && m_pAttributeGroupArray  == NULL)
+	if (bAddComma)
         {
+        DEBUG_MARK_JSON_2
+	   strJSON.append("{");
+	}
+
+ //if( m_pSequence == NULL && m_pAttributeGroupArray  == NULL)
+    if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
+        CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TAB, "Attributes", this->getEnvXPath());
+
+             strJSON.append("\n");
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            /*if(!( m_pSequence == NULL && m_pAttributeGroupArray  == NULL))
+                strJSON.append(JSON_CONTENT_BEGIN_2);
+            else*/
+                strJSON.append(JSON_CONTENT_BEGIN_1);
+
+            offset += STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+
+
+            DEBUG_MARK_JSON_1
              m_pAttributeArray->getJSON(strJSON, offset);
+            bAddComma = true;
+
+//	   strJSON.append("}");
+            offset -= STANDARD_OFFSET_1;
+            QuickOutPad(strJSON, offset);
+            strJSON.append(JSON_INNER_CONTENT_END);
+               //DEBUG_MARK_JSON;
+
+		strJSON.append("}");
+	if (bAddComma)
+	{
+		strJSON.append("}");
+    }
+            //strJSON.append("\n");
+       //     offset -= STANDARD_OFFSET_1;
+//            QuickOutPad(strJSON, offset);
+  //          strJSON.append(JSON_CONTENT_END);
 	     bAddComma = true;
 
-       }
+       //}
         //else
         {
 
@@ -250,10 +290,11 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
     if (m_pSequence != NULL)
     {
 
-	if (bAddComma)
+    if (bAddComma)
+    {
 		strJSON.append(",");
-
-        //DEBUG_MARK_JSON;
+        DEBUG_MARK_JSON_1;
+    }
         m_pSequence->getJSON(strJSON, offset);
 	bAddComma = true;
         //DEBUG_MARK_JSON;
@@ -273,7 +314,10 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
         }
 
 	if (bAddComma)
-		strJSON.append(",");
+    {
+        DEBUG_MARK_JSON_1;
+        strJSON.append(",");
+    }
         m_pAttributeGroupArray->getJSON(strJSON, offset);
 
 

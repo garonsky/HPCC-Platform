@@ -672,6 +672,7 @@ void CAttributeArray::getJSON(StringBuffer &strJSON, unsigned int offset, int id
         if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length())
         {
            //QuickOutPad(strJSON, offset);
+            DEBUG_MARK_JSON_1
             strJSON.append("},\n ");
             QuickOutPad(strJSON, offset);
         }
