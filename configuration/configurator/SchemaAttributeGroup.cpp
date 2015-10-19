@@ -394,7 +394,6 @@ void CAttributeGroupArray::getJSON(StringBuffer &strJSON, unsigned int offset, i
         if (lidx != 0)
         {
             strJSON.append("\n");
-            QuickOutPad(strJSON, offset);
         }
 
         this->item(lidx).getJSON(strJSON, offset, lidx);
