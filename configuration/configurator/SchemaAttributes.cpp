@@ -660,23 +660,22 @@ void CAttributeArray::getQML3(StringBuffer &strQML, int idx) const
 void CAttributeArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx ) const
 {
     offset += STANDARD_OFFSET_2;
-    QuickOutPad(strJSON, offset);
 
     int lidx=0;
 
     for (lidx=0; lidx < this->length(); lidx++)
     {
+        QuickOutPad(strJSON, offset);
         strJSON.append("{");
         (this->item(lidx)).getJSON(strJSON, offset, lidx);
 
         if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length())
         {
-            DEBUG_MARK_JSON_1
-            strJSON.append("},\n ");
-            QuickOutPad(strJSON, offset);
+            strJSON.append("},\n");
         }
     }
     strJSON.append("}");
+    offset -= STANDARD_OFFSET_2;
 }
 
 void CAttributeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)

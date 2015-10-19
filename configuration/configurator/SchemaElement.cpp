@@ -325,14 +325,11 @@ void CElement::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) cons
 
     assert(strlen(this->getName()) > 0);
 
-    if (m_pComplexTypeArray != NULL)
+    if (m_pComplexTypeArray != NULL  && m_pComplexTypeArray->length() > 0)
     {
         CJSONMarkUpHelper::createUIContent(strJSON, offset, this->getMaxOccursInt() > 1 ? JSON_TYPE_TABLE : JSON_TYPE_TAB, this->getTitle(), this->getEnvXPath());
 
-        if (m_pComplexTypeArray != NULL)
-        {
-            m_pComplexTypeArray->getJSON(strJSON, offset);
-        }
+        m_pComplexTypeArray->getJSON(strJSON, offset);
     }
 }
 
@@ -870,11 +867,14 @@ void CElementArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx)
 
     for (lidx=0; lidx < this->length(); lidx++)
     {
-        strJSON.append("{");
-        if ((this->item(lidx)).getIsInXSD() == true)
+        if (this->item(lidx).getIsInXSD() == false)
         {
-            (this->item(lidx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, lidx);
+            break;
         }
+        strJSON.append("{");
+
+        (this->item(lidx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, lidx);
+
         if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length())
         {
             QuickOutPad(strJSON, offset);
