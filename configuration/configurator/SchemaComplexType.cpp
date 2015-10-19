@@ -219,131 +219,64 @@ void CComplexType::getQML3(StringBuffer &strQML, int idx) const
 void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
 {
 	bool bAddComma = false;
+
 	if ( m_pAttributeArray->length() > 0 || m_pSequence != NULL || m_pAttributeGroupArray != NULL)
 	{
-            strJSON.append("\n");
-            offset += STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_CONTENT_BEGIN_1);
-
-            offset += STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
+        strJSON.append("\n");
+        CONTENT_INNER_CONTENT_BEGIN
 
 		bAddComma = true;
 	}
 
-
     if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
     {
-//        if( m_pSequence == NULL && m_pAttributeGroupArray  == NULL)
-	if (bAddComma)
+        if (bAddComma)
         {
-        DEBUG_MARK_JSON_2
-	   strJSON.append("{");
-	}
-
- //if( m_pSequence == NULL && m_pAttributeGroupArray  == NULL)
-    if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
-        CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TAB, "Attributes", this->getEnvXPath());
-
-             strJSON.append("\n");
-            offset += STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            /*if(!( m_pSequence == NULL && m_pAttributeGroupArray  == NULL))
-                strJSON.append(JSON_CONTENT_BEGIN_2);
-            else*/
-                strJSON.append(JSON_CONTENT_BEGIN_1);
-
-            offset += STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
-
-
-            DEBUG_MARK_JSON_1
-             m_pAttributeArray->getJSON(strJSON, offset);
-            bAddComma = true;
-
-//	   strJSON.append("}");
-            offset -= STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_INNER_CONTENT_END);
-               //DEBUG_MARK_JSON;
-
-		strJSON.append("}");
-	if (bAddComma)
-	{
-		strJSON.append("}");
-    }
-            //strJSON.append("\n");
-       //     offset -= STANDARD_OFFSET_1;
-//            QuickOutPad(strJSON, offset);
-  //          strJSON.append(JSON_CONTENT_END);
-	     bAddComma = true;
-
-       //}
-        //else
-        {
-
+           strJSON.append("{");
         }
+
+        if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
+        {
+            CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TAB, "Attributes", this->getEnvXPath());
+        }
+
+        CONTENT_INNER_CONTENT_BEGIN
+
+        m_pAttributeArray->getJSON(strJSON, offset);
+        bAddComma = true;
+
+        INNER_CONTENT_END
+
+		strJSON.append("}");
+
+        if (bAddComma)
+        {
+            strJSON.append("}");
+        }
+
+        bAddComma = true;
     }
     if (m_pSequence != NULL)
     {
+        if (bAddComma)
+        {
+            strJSON.append(",");
+        }
 
-    if (bAddComma)
-    {
-		strJSON.append(",");
-        DEBUG_MARK_JSON_1;
-    }
         m_pSequence->getJSON(strJSON, offset);
-	bAddComma = true;
-        //DEBUG_MARK_JSON;
+        bAddComma = true;
     }
+
     if(m_pAttributeGroupArray != NULL)
     {
-        if (m_pSequence == NULL)
+        if (bAddComma)
         {
-/*            strJSON.append("\n");
-            offset += STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_CONTENT_BEGIN_1);
-
-            offset += STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_INNER_CONTENT_BEGIN_1);*/
+            strJSON.append(",");
         }
-
-	if (bAddComma)
-    {
-        DEBUG_MARK_JSON_1;
-        strJSON.append(",");
-    }
         m_pAttributeGroupArray->getJSON(strJSON, offset);
-
-
-        if (m_pSequence == NULL)
-        {
-    /*        offset -= STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_INNER_CONTENT_END);
-
-            offset -= STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_CONTENT_END);*/
-        }
     }
-            //DEBUG_MARK_JSON
-            //strJSON.append("\n");
-            offset -= STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_INNER_CONTENT_END);
-               //DEBUG_MARK_JSON;
-
-            //strJSON.append("\n");
-            offset -= STANDARD_OFFSET_1;
-            QuickOutPad(strJSON, offset);
-            strJSON.append(JSON_CONTENT_END);
-            //DEBUG_MARK_JSON;
+    INNER_CONTENT_END
+    CONTENT_CONTENT_END
 }
 
 void CComplexType::populateEnvXPath(StringBuffer strXPath, unsigned int index)

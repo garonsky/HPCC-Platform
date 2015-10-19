@@ -667,20 +667,15 @@ void CAttributeArray::getJSON(StringBuffer &strJSON, unsigned int offset, int id
     for (lidx=0; lidx < this->length(); lidx++)
     {
         strJSON.append("{");
-        (this->item(lidx)).getJSON(strJSON, offset/*+STANDARD_OFFSET_2*/, lidx);
+        (this->item(lidx)).getJSON(strJSON, offset, lidx);
 
         if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length())
         {
-           //QuickOutPad(strJSON, offset);
             DEBUG_MARK_JSON_1
             strJSON.append("},\n ");
             QuickOutPad(strJSON, offset);
         }
-        //offset -= STANDARD_OFFSET_1;
     }
-    //offset += STANDARD_OFFSET_2;
-    //QuickOutPad(strJSON, offset);
-
     strJSON.append("}");
 }
 

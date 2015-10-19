@@ -333,19 +333,6 @@ void CElement::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) cons
         {
             m_pComplexTypeArray->getJSON(strJSON, offset);
         }
-
-        /*if (m_pComplexTypeArray != NULL)
-        {
-            strJSON.append(",\n");
-            QuickOutPad(strJSON, offset);
-            //m_pComplexTypeArray->getJSON(strJSON, offset);
-        }*//*
-        else
-        {
-            strJSON.append("\n");
-            QuickOutPad(strJSON, offset);
-            strJSON.append("}");
-        }*/
     }
 }
 
@@ -890,11 +877,8 @@ void CElementArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx)
         }
         if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length())
         {
-            //DEBUG_MARK_JSON;
-            //offset += STANDARD_OFFSET_1;
             QuickOutPad(strJSON, offset);
             strJSON.append(" },\n ");
-            //DEBUG_MARK_JSON;
             QuickOutPad(strJSON, offset);
         }
         offset -= STANDARD_OFFSET_1;
