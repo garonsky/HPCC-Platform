@@ -79,6 +79,36 @@ ESPResponse [exceptions_inline, encode(0)]  OpenConfigurationFileResponse
    int code;
 };
 
+ESPRequest GetJSONForComponentRequest
+{
+   string Component;
+};
+
+ESPResponse GetJSONForComponentResponse
+{
+   string JSON;
+};
+
+ESPRequest GetNumberOfAvailableComponentsRequest
+{
+   string Empty;
+};
+
+ESPResponse GetNumberOfAvailableComponentsResponse
+{
+   int Number;
+};
+
+ESPRequest GetComponentNameRequest
+{
+   int Number;
+};
+
+ESPResponse GetComponentNameResponse
+{
+   string ComponentName;
+};
+
 ESPservice [version("2.0"), default_client_version("2.0"), exceptions_inline("xslt/exceptions.xslt")] ws_configurator
 {
     ESPMethod getValue(GetValueRequest, GetValueResponse);
@@ -87,6 +117,9 @@ ESPservice [version("2.0"), default_client_version("2.0"), exceptions_inline("xs
     ESPMethod setTableValue(SetTableValueRequest, SetTableValueResponse);
     ESPMethod getNumberOfRows(GetNumberOfRowsRequest, GetNumberOfRowsResponse);
     ESPMethod openConfigurationFile(OpenConfigurationFileRequest, OpenConfigurationFileResponse);
+    ESPMethod getJSONForComponent(GetJSONForComponentRequest, GetJSONForComponentResponse);
+    ESPMethod getNumberOfAvailableComponents(GetNumberOfAvailableComponentsRequest, GetNumberOfAvailableComponentsResponse);
+    ESPMethod getComponentName(GetComponentNameRequest, GetComponentNameResponse);
 };
 
 SCMexportdef(ws_configurator);

@@ -50,6 +50,8 @@ const char* CInclude::getXML(const char* /*pComponent*/)
 
 CInclude* CInclude::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
+    //return NULL; // TODO: Fix this to properly work with includes... temporary for testing
+
     if (pParentNode == NULL || pSchemaRoot == NULL || xpath == NULL)
         return NULL;
 

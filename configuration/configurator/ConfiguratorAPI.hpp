@@ -64,6 +64,7 @@ extern "C" void* getRootNode(int idx = 0);
 extern "C" void* getModel();
 extern "C" void reload(const char *pFile);
 extern "C" void getQML(void *pData, char **pOutput, int nIdx);
+extern "C" void getJSON(void *pData, char **pOutput, int nIdx);
 extern "C" const char* getQMLFromFile(const char *pXSD, int idx);
 extern "C" void getQMLByIndex(int idx, char *pOutput);
 extern "C" const char* getDocBookByIndex(int idx);
