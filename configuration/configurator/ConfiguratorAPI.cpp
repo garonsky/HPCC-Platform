@@ -470,6 +470,11 @@ void getQML(void *pData, char **pOutput, int nIdx)
     CConfigSchemaHelper::getInstance()->printQML(CONFIGURATOR_API::getFileName(pData), pOutput, nIdx);
 }
 
+void getJSON(void *pData, char **pOutput, int nIdx)
+{
+    CConfigSchemaHelper::getInstance()->printJSON(CONFIGURATOR_API::getFileName(pData), pOutput, nIdx);
+}
+
 const char* getQMLFromFile(const char *pXSD, int idx)
 {
     if (pXSD == NULL || *pXSD == 0)

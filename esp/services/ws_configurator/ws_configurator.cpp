@@ -4,6 +4,7 @@
 
 Cws_configuratorEx::Cws_configuratorEx()
 {
+    CONFIGURATOR_API::initialize();
 }
 
 Cws_configuratorEx::~Cws_configuratorEx()
@@ -50,5 +51,25 @@ bool Cws_configuratorEx::onopenConfigurationFile(IEspContext &context, IEspOpenC
     {
         resp.setCode(0);
     }
+    return true;
+}
+
+bool Cws_configuratorEx::ongetJSONForComponent(IEspContext &context, IEspGetJSONForComponentRequest &req, IEspGetJSONForComponentResponse &resp)
+{
+    //if (CONFIGURATOR_API::getreq.getComponent(())
+    return true;
+}
+
+bool Cws_configuratorEx::ongetNumberOfAvailableComponents(IEspContext &context, IEspGetNumberOfAvailableComponentsRequest &req, IEspGetNumberOfAvailableComponentsResponse &resp)
+{
+    resp.setNumber(CONFIGURATOR_API::getNumberOfAvailableComponents());
+    return true;
+}
+
+bool Cws_configuratorEx::ongetComponentName(IEspContext &context, IEspGetComponentNameRequest &req, IEspGetComponentNameResponse &resp)
+{
+    char pName[1024];
+    CONFIGURATOR_API::getComponentName(req.getNumber(),pName);
+    resp.setComponentName(pName);
     return true;
 }
