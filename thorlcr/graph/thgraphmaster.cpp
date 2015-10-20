@@ -1344,7 +1344,7 @@ void CJobMaster::broadcast(ICommunicator &comm, CMessageBuffer &msg, mptag_t mpt
 {
     unsigned groupSizeExcludingMaster = comm.queryGroup().ordinality() - 1;
 
-    mptag_t replyTag;
+    mptag_t replyTag = TAG_NULL;
     if (!sendOnly)
     {
         replyTag = queryJobChannel(0).queryMPServer().createReplyTag();
@@ -2563,7 +2563,7 @@ void CMasterGraph::getFinalProgress()
         if (0 == msg.remaining())
             continue;
 
-        bool processPerSlave = globals->getPropBool("@processPerSlave");
+        bool processPerSlave = globals->getPropBool("@processPerSlave", true);
         unsigned slavesPerProcess = processPerSlave ? 1 : globals->getPropInt("@slavesPerNode", 1); // JCSMORE - should move somewhere common
         for (unsigned sc=0; sc<slavesPerProcess; sc++)
         {

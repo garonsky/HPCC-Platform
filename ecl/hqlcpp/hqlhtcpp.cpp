@@ -9293,7 +9293,10 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     LinkedHqlExpr resourced = expr;
     // Second attempt to spot compound disk reads - this time of spill files for thor.
     resourced.setown(optimizeCompoundSource(resourced, csfFlags));
+
+    //MORE: This call (enabled by -fparanoid) isn't correct when this is processing a child query
     checkNormalized(resourced);
+
     //insert projects after compound created...
     if (options.optimizeResourcedProjects)
     {
@@ -11973,7 +11976,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             isAllJoin = true;
             //A non-many LOOKUP join can't really be converted to an ALL join.
             //Possibly if KEEP(1) was added, no limits, no skipping in transform etc.
-            if (isLookupJoin && !isManyLookup)
+            if ((isLookupJoin && !isManyLookup) || (op == no_selfjoin))
                 isAllJoin = false;
             WARNING(CategoryUnusual, HQLWRN_JoinConditionFoldedNowAll);
         }
