@@ -21,6 +21,9 @@
 #include "SchemaCommon.hpp"
 #include "jstring.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CSelector : public CXSDNode
 {
 public:
@@ -29,19 +32,19 @@ public:
     {
     }
 
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
 
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
 
-    static CSelector* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CSelector* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTER(ID)
     GETTERSETTER(XPath)
@@ -53,4 +56,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_SELECTOR_HPP_

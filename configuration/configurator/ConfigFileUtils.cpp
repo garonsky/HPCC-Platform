@@ -15,10 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-
-#include "ConfigFileUtils.hpp"
 #include "jfile.hpp"
 #include "jmutex.hpp"
+
+#include "ConfigFileUtils.hpp"
+
+using namespace CONFIGURATOR;
 
 CConfigFileUtils* CConfigFileUtils::getInstance()
 {
@@ -61,7 +63,7 @@ enum CConfigFileUtils::CF_ERROR_CODES CConfigFileUtils::openConfigurationFile(co
         m_pFile.setown(createIFile(pConfigFileName));
         m_pFileIO.setown(m_pFile->open(IFOcreaterw));
 
-        notify(IConfigFileUtilsObserver::CF_FILE_OPEN_EVENT);
+        notify(CONFIGURATOR::IConfigFileUtilsObserver::CF_FILE_OPEN_EVENT);
         return CF_NO_ERROR;
     }
 }
@@ -73,7 +75,7 @@ enum CConfigFileUtils::CF_ERROR_CODES CConfigFileUtils::closeConfigurationFile()
         m_pFileIO->close();
         m_pFileIO.clear();
         m_pFile.clear();
-        notify(IConfigFileUtilsObserver::CF_FILE_CLOSE_EVENT);
+        notify(CONFIGURATOR::IConfigFileUtilsObserver::CF_FILE_CLOSE_EVENT);
 
         return CF_NO_ERROR;
     }
@@ -90,7 +92,7 @@ enum CConfigFileUtils::CF_ERROR_CODES CConfigFileUtils::writeToOpenConfiguration
     else
     {
         m_pFileIO->write(0, length, pBuffer);
-        notify(IConfigFileUtilsObserver::CF_FILE_WRITE_EVENT);
+        notify(CONFIGURATOR::IConfigFileUtilsObserver::CF_FILE_WRITE_EVENT);
         return CF_NO_ERROR;
     }
 }
@@ -149,7 +151,8 @@ enum CConfigFileUtils::CF_ERROR_CODES CConfigFileUtils::writeConfigurationToFile
 
     pFileIO.setown(pFIO);
     pFileIO->write(0, length, pBuffer);
-    notify(IConfigFileUtilsObserver::CF_FILE_WRITE_NO_CHECK);
+    //notify(IConfigFileUtilsObserver::CF_FILE_WRITE_NO_CHECK);
+    notify(CONFIGURATOR::IConfigFileUtilsObserver::CF_FILE_WRITE_NO_CHECK);
 
     return CF_NO_ERROR;
 }

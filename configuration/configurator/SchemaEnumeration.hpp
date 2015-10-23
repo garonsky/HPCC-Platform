@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CEnumeration : public CXSDNode
 {
 public:
@@ -31,17 +34,17 @@ public:
 
     GETTERSETTER(Value)
 
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    void getQML(StringBuffer &strQML, int idx = -1) const;
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    void getQML(::StringBuffer &strQML, int idx = -1) const;
     virtual const char* getXML(const char* /*pComponent*/);
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
     bool isInstanceValueValid() const
     {
         return m_bInstanceValueValid;
     }
-    static CEnumeration* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CEnumeration* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
@@ -66,25 +69,25 @@ class CEnumerationArray : public CIArrayOf<CEnumeration>, public InterfaceImpl, 
 {
 public:
 
-    CEnumerationArray(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot = NULL) : CXSDNodeBase::CXSDNodeBase(pParentNode, XSD_ENUMERATION_ARRAY), m_pSchemaRoot(pSchemaRoot)
+    CEnumerationArray(CXSDNodeBase* pParentNode, ::IPropertyTree *pSchemaRoot = NULL) : CXSDNodeBase::CXSDNodeBase(pParentNode, XSD_ENUMERATION_ARRAY), m_pSchemaRoot(pSchemaRoot)
     {
     }
     virtual ~CEnumerationArray()
     {
     }
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    void getQML(StringBuffer &strQML, int idx = -1) const;
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    void getQML(::StringBuffer &strQML, int idx = -1) const;
     virtual const char* getXML(const char* /*pComponent*/);
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
     int getEnvValueNodeIndex() const;
     void setEnvValueNodeIndex(int index);
-    static CEnumerationArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CEnumerationArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 
-    IPropertyTree *m_pSchemaRoot;
+    ::IPropertyTree *m_pSchemaRoot;
 
 private:
 
@@ -93,4 +96,5 @@ private:
     }
 };
 
+}
 #endif // _SCHEMA_ENUMERATION_HPP_

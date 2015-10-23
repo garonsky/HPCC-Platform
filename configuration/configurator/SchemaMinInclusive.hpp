@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CMinInclusive : public CXSDNodeWithRestrictions<CMinInclusive>
 {
     friend class CXSDNodeWithRestrictions<CMinInclusive>;
@@ -28,7 +31,7 @@ public:
     virtual ~CMinInclusive()
     {
     }
-    static CMinInclusive* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CMinInclusive* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTERINT(MinInclusive)
 
@@ -39,4 +42,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_MIN_INCLUSIVE_HPP_

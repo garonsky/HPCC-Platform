@@ -21,6 +21,8 @@
 #include "jptree.hpp"
 #include "ConfigFileComponentUtils.hpp"
 
+namespace CONFIGURATOR
+{
 
 class CEnvironmentConfiguration : public CConfigFileComponentUtils
 {
@@ -49,5 +51,5 @@ protected:
     Owned<IPropertyTree> m_pEnv;
 private:
 };
-
+}
 #endif // _ENVIRONMENT_CONFIGURATON_HPP_

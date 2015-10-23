@@ -20,6 +20,10 @@
 #include "SchemaExtension.hpp"
 #include "SchemaRestriction.hpp"
 
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
+
 CSimpleContent* CSimpleContent::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     if (pParentNode == NULL || pSchemaRoot == NULL)

@@ -15,11 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-#include "SchemaKeyRef.hpp"
-#include "SchemaSelector.hpp"
 #include "SchemaCommon.hpp"
+#include "SchemaSelector.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "SchemaMapManager.hpp"
+#include "SchemaKeyRef.hpp"
+
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
+#define StringBuffer ::StringBuffer
 
 CKeyRef* CKeyRef::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
@@ -71,7 +76,7 @@ CKeyRef* CKeyRef::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRo
     return pKeyRef;
 }
 
-void CKeyRef::dump(std::ostream& cout, unsigned int offset) const
+void CKeyRef::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 
@@ -155,7 +160,7 @@ CKeyRefArray* CKeyRefArray::load(CXSDNodeBase* pParentNode, const IPropertyTree 
     return pKeyRefArray;
 }
 
-void CKeyRefArray::dump(std::ostream &cout, unsigned int offset) const
+void CKeyRefArray::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

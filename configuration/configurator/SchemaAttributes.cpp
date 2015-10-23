@@ -17,8 +17,9 @@
 
 #include "jptree.hpp"
 #include "jarray.hpp"
-#include "SchemaCommon.hpp"
+#include "jlog.hpp"
 #include "SchemaAttributes.hpp"
+#include "SchemaCommon.hpp"
 #include "SchemaAppInfo.hpp"
 #include "SchemaSimpleType.hpp"
 #include "DocumentationMarkup.hpp"
@@ -27,13 +28,17 @@
 #include "ExceptionStrings.hpp"
 #include "SchemaMapManager.hpp"
 #include "ConfiguratorMain.hpp"
-#include "jlog.hpp"
 #include "SchemaKey.hpp"
 #include "SchemaKeyRef.hpp"
 #include "SchemaSimpleType.hpp"
 #include "SchemaAppInfo.hpp"
 #include "JSONMarkUp.hpp"
 #include "SchemaEnumeration.hpp"
+
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
 
 CAttribute::~CAttribute()
 {
@@ -62,7 +67,7 @@ const char* CAttribute::getXML(const char* pComponent)
     return m_strXML.str();
 }
 
-void CAttribute::dump(std::ostream& cout, unsigned int offset) const
+void CAttribute::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 
@@ -474,7 +479,7 @@ CAttributeArray* CAttributeArray::load(CXSDNodeBase* pParentNode, const IPropert
     return pAttribArray;
 }
 
-void CAttributeArray::dump(std::ostream &cout, unsigned int offset) const
+void CAttributeArray::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

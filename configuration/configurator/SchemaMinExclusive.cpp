@@ -17,7 +17,9 @@
 
 #include "SchemaMinExclusive.hpp"
 
-CMinExclusive* CMinExclusive::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
+using namespace CONFIGURATOR;
+
+CMinExclusive* CMinExclusive::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath)
 {
     CMinExclusive *pMinExclusive = CXSDNodeWithRestrictions<CMinExclusive>::load(pParentNode, pSchemaRoot, xpath);
 

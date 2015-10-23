@@ -24,8 +24,11 @@
 #include "jlib.hpp"
 #include "jlog.hpp"
 #include "jarray.hpp"
-#include "ExceptionStrings.hpp"
 #include "XMLTags.h"
+#include "ExceptionStrings.hpp"
+
+namespace CONFIGURATOR
+{
 
 #define MINIMUM_STRICTNESS  0
 #define DEFAULT_STRICTNESS  5
@@ -38,7 +41,7 @@
 #define QUICK_OUT_ARRAY(X,Z) for (int idx=0; idx < this->length(); idx++)               \
                              {                                                          \
                                 QuickOutPad(X,Z+STANDARD_OFFSET_1);                     \
-                                X << idx+1 << "]" << std::endl;                         \
+                                X << idx+1 << "]" << ::std::endl;                         \
                                 (this->item(idx)).dump(cout,Z);                         \
                              }
 
@@ -352,7 +355,7 @@ static unsigned int STANDARD_OFFSET_1 = 3;
 static unsigned int STANDARD_OFFSET_2 = 6;
 static unsigned int STANDARD_OFFSET_3 = 9;
 
-static void QuickOutPad(std::ostream& cout, unsigned int offset)
+static void QuickOutPad(::std::ostream& cout, unsigned int offset)
 {
     while(offset > 0)
     {
@@ -361,7 +364,7 @@ static void QuickOutPad(std::ostream& cout, unsigned int offset)
     }
 }
 
-static void QuickOutPad(StringBuffer &str, unsigned int offset)
+static void QuickOutPad(::StringBuffer &str, unsigned int offset)
 {
     while(offset > 0)
     {
@@ -370,32 +373,32 @@ static void QuickOutPad(StringBuffer &str, unsigned int offset)
     }
 }
 
-static void QuickOutHeader(std::ostream &cout, const char* pLabel, unsigned int offset = 0)
+static void QuickOutHeader(::std::ostream &cout, const char* pLabel, unsigned int offset = 0)
 {
     QuickOutPad(cout,offset);
-    cout << "\033[32m-- " << pLabel << " START" << " --" << "\033[0m" << std::endl;
+    cout << "\033[32m-- " << pLabel << " START" << " --" << "\033[0m" << ::std::endl;
 }
 
-static void QuickOutFooter(std::ostream &cout, const char* pLabel, unsigned int offset = 0)
+static void QuickOutFooter(::std::ostream &cout, const char* pLabel, unsigned int offset = 0)
 {
     QuickOutPad(cout,offset);
-    //cout << "<--- FINISH " << pLabel << std::endl;
-    cout << "\033[31m" << "-- " << pLabel << " FINISH" << " --" << "\033[0m" << std::endl;
+    //cout << "<--- FINISH " << pLabel << ::std::endl;
+    cout << "\033[31m" << "-- " << pLabel << " FINISH" << " --" << "\033[0m" << ::std::endl;
 }
 
-static void QuickOut(std::ostream &cout, const char* pLabel, const char* pValue, unsigned int offset = 0)
+static void QuickOut(::std::ostream &cout, const char* pLabel, const char* pValue, unsigned int offset = 0)
 {
     if (pLabel && strlen(pValue) > 0)
     {
         QuickOutPad(cout,offset+STANDARD_OFFSET_2);
-        cout << "\033[34m" << pLabel << ":\t\033[0m" << "\033[34m'\033[0m" << pValue << "\033[34m'" << "\033[0m" << std::endl;
+        cout << "\033[34m" << pLabel << ":\t\033[0m" << "\033[34m'\033[0m" << pValue << "\033[34m'" << "\033[0m" << ::std::endl;
     }
 }
 
-static void QuickOut(std::ostream &cout, const char* pLabel, int value, unsigned int offset = 0)
+static void QuickOut(::std::ostream &cout, const char* pLabel, int value, unsigned int offset = 0)
 {
     QuickOutPad(cout,offset);
-    cout << pLabel << ": " << value << std::endl;
+    cout << pLabel << ": " << value << ::std::endl;
 }
 
 class InterfaceImpl : public IInterface
@@ -442,6 +445,11 @@ public:
     virtual ~CXSDNodeBase();
 
     GETTERSETTER(XSDXPath)
+    /*protected:
+    ::StringBuffer m_strXSDXPath;
+    public:
+    virtual void setXSDXPath(const char *p) const {m_strXSDXPath.set(p); }
+    virtual const char* getXSDXPath() const { return m_strXSDXPath.str(); }*/
     GETTERSETTER(EnvXPath)
     GETTERSETTER(EnvValueFromXML)
 
@@ -485,31 +493,31 @@ public:
     {
         return m_eNodeType;
     }
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const = 0;
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const = 0;
 
     virtual const char* getXML(const char* /*pComponent*/)
     {
         return NULL;
     }
 
-    //virtual void getJSON(StringBuffer &strQML, int idx = -1) const = 0;
-    virtual void getDocumentation(StringBuffer &strDoc) const = 0;
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    //virtual void getJSON(::StringBuffer &strQML, int idx = -1) const = 0;
+    virtual void getDocumentation(::StringBuffer &strDoc) const = 0;
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
     }
-    virtual void getQML2(StringBuffer &strQML, int idx = -1) const
-    {
-    }
-
-    virtual void getQML3(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML2(::StringBuffer &strQML, int idx = -1) const
     {
     }
 
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1)
+    virtual void getQML3(::StringBuffer &strQML, int idx = -1) const
     {
     }
 
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1)
+    {
+    }
+
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
     {
     }
 
@@ -526,10 +534,10 @@ public:
 protected:
 
     CXSDNodeBase*               m_pParentNode;
-    StringBuffer                m_strXML;
+    ::StringBuffer                m_strXML;
     NODE_TYPES                  m_eNodeType;
     char                        m_pNodeType[1024];
-    mutable QML_UI_TYPE                     m_eUIType;
+    mutable QML_UI_TYPE         m_eUIType;
 
 private:
 
@@ -559,7 +567,7 @@ public:
     {
     }
 
-    static T* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
+    static T* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath)
     {
         assert(pSchemaRoot != NULL);
 
@@ -570,7 +578,7 @@ public:
 
         if (xpath != NULL && *xpath != 0)
         {
-            IPropertyTree* pTree = pSchemaRoot->queryPropTree(xpath);
+            ::IPropertyTree* pTree = pSchemaRoot->queryPropTree(xpath);
 
             if (pTree == NULL)
                 return NULL;
@@ -591,7 +599,7 @@ public:
         return pT;
     }
 
-    void dump(std::ostream& cout, unsigned int offset) const
+    void dump(::std::ostream& cout, unsigned int offset) const
     {
         offset += STANDARD_OFFSET_1;
 
@@ -600,12 +608,12 @@ public:
         QuickOutFooter(cout, XSD_MIN_INCLUSIVE_STR, offset);
     }
 
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
 
-    void getQML(StringBuffer &strQML, int idx = -1) const
+    void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
@@ -616,12 +624,12 @@ public:
         return NULL;
     }
 
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1)
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1)
     {
         UNIMPLEMENTED;
     }
 
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
     {
         UNIMPLEMENTED;
     }
@@ -687,8 +695,8 @@ public:
 
     virtual ~CXSDBuiltInDataType();
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
     virtual bool checkConstraint(const char *pValue) const;
 
 private:
@@ -696,5 +704,7 @@ private:
     CXSDBuiltInDataType(CXSDNodeBase* pParentNode = NULL, NODE_TYPES eNodeType = XSD_ERROR);
     CXSDBuiltInDataType(CXSDNodeBase* pParentNode, const char* pNodeType);
 };
+
+}
 
 #endif // _SCHEMA_COMMON_HPP_

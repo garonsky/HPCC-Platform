@@ -15,15 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
+#include "jptree.hpp"
+#include "XMLTags.h"
+#include <cstring>
+#include "jfile.hpp"
+
 #include "ConfigSchemaHelper.hpp"
 #include "SchemaAttributes.hpp"
 #include "SchemaElement.hpp"
 #include "SchemaEnumeration.hpp"
-#include "jptree.hpp"
-#include "XMLTags.h"
 #include "ExceptionStrings.hpp"
-#include <cstring>
-#include "jfile.hpp"
 #include "BuildSet.hpp"
 #include "SchemaMapManager.hpp"
 #include "ConfigSchemaHelper.hpp"
@@ -33,6 +34,8 @@
 int nComponentCount = CBuildSetManager::getInstance()->getBuildSetComponentCount();         \
 \
 for (int idx = 0; idx < nComponentCount; idx++)
+
+using namespace CONFIGURATOR;
 
 CConfigSchemaHelper* CConfigSchemaHelper::s_pCConfigSchemaHelper = NULL;
 
@@ -126,7 +129,7 @@ void CConfigSchemaHelper::printConfigSchema(StringBuffer &strXML) const
             if (pSchema != NULL)
             {
                 if (strXML.length() > 0 ? strcmp(strXML.str(), pXSDSchema) == 0 : true)
-                    pSchema->dump(std::cout);
+                    pSchema->dump(::std::cout);
             }
         }
     }
@@ -166,7 +169,7 @@ const char* CConfigSchemaHelper::printDocumentation(const char* comp)
 }
 void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) const
 {
-	  if (! (comp != NULL && *comp != 0) )
+    if (! (comp != NULL && *comp != 0) )
     {
         DBGLOG("no component selected for JSON, index = %d", nIdx);
         return;
@@ -224,7 +227,7 @@ void CConfigSchemaHelper::printDump(const char* comp) const
              assert(pSchema != NULL);
 
              if (pSchema != NULL)
-                pSchema->dump(std::cout);
+                pSchema->dump(::std::cout);
         }
     }
 }
@@ -486,7 +489,8 @@ void CConfigSchemaHelper::loadEnvFromConfig(const char *pEnvFile)
 {
     assert(pEnvFile != NULL);
 
-    Linked<IPropertyTree> pEnvXMLRoot;
+    typedef ::IPropertyTree PT;
+    Linked<PT> pEnvXMLRoot;
 
     try
     {
@@ -494,7 +498,7 @@ void CConfigSchemaHelper::loadEnvFromConfig(const char *pEnvFile)
     }
     catch (...)
     {
-        MakeExceptionFromMap(EX_STR_CAN_NOT_PROCESS_ENV_XML);
+        CONFIGURATOR::MakeExceptionFromMap(EX_STR_CAN_NOT_PROCESS_ENV_XML);
     }
 
     CSchema* pSchema = NULL;
@@ -694,7 +698,7 @@ bool CConfigSchemaHelper::saveConfigurationFile() const
 
     StringBuffer strXML;
     strXML.appendf("<"XML_HEADER">\n<!-- Edited with THE CONFIGURATOR -->\n");
-    toXML(this->getConstEnvPropertyTree(), strXML, 0, XML_SortTags | XML_Format);
+    ::toXML(this->getConstEnvPropertyTree(), strXML, 0, XML_SortTags | XML_Format);
 
     if (CConfigFileUtils::getInstance()->writeConfigurationToFile(m_strEnvFilePath.str(), strXML.str(), strXML.length()) == CConfigFileUtils::CF_NO_ERROR)
         return true;

@@ -15,10 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
-#include "SchemaFractionDigits.hpp"
 #include "XMLTags.h"
 #include "jptree.hpp"
 #include <cstdlib>
+
+#include "SchemaFractionDigits.hpp"
+
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
 
 CFractionDigits* CFractionDigits::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
@@ -56,7 +61,7 @@ CFractionDigits* CFractionDigits::load(CXSDNodeBase* pParentNode, const IPropert
     return pFractionDigits;
 }
 
-void CFractionDigits::dump(std::ostream& cout, unsigned int offset) const
+void CFractionDigits::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

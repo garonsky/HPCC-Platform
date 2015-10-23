@@ -20,9 +20,11 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CDocumentation;
 class CAppInfo;
-class IPropertyTree;
 
 class CAnnotation : public CXSDNode
 {
@@ -32,7 +34,7 @@ public:
     {
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
 
     const CDocumentation* getDocumentation() const
     {
@@ -41,13 +43,13 @@ public:
 
     virtual void getDocumentation(StringBuffer &strDoc) const;
     virtual void getQML(StringBuffer &strQML, int idx = -1) const;
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
 
     const CAppInfo* getAppInfo() const
     {
         return m_pAppInfo;
     }
-    static CAnnotation* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CAnnotation* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 
@@ -64,5 +66,5 @@ private:
     {
     }
 };
-
+}
 #endif // _SCHEMA_ANNOTATION_HPP_

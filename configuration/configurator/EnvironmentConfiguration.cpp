@@ -18,6 +18,8 @@
 #include "EnvironmentConfiguration.hpp"
 #include "XMLTags.h"
 
+using namespace CONFIGURATOR;
+
 CEnvironmentConfiguration* CEnvironmentConfiguration::getInstance()
 {
     static Owned<CEnvironmentConfiguration> s_ConfigurationSingleton;

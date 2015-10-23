@@ -23,6 +23,11 @@
 #include "QMLMarkup.hpp"
 #include "JSONMarkUp.hpp"
 
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
+
 const CXSDNodeBase* CSequence::getNodeByTypeAndNameDescending(NODE_TYPES eNodeType, const char *pName) const
 {
     const CXSDNodeBase* pMatchingNode = NULL;
@@ -60,7 +65,7 @@ CSequence* CSequence::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSche
     return pSequence;
 }
 
-void CSequence::dump(std::ostream& cout, unsigned int offset) const
+void CSequence::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

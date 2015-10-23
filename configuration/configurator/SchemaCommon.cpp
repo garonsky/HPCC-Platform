@@ -15,11 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
+
+#include "jregexp.hpp"
+
 #include "SchemaCommon.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "SchemaMapManager.hpp"
-#include "jregexp.hpp"
+
 #include <cstring>
+
+using namespace CONFIGURATOR;
 
 CXSDNodeBase::CXSDNodeBase(CXSDNodeBase* pParentNode, NODE_TYPES eNodeType) : m_pParentNode(pParentNode),  m_eNodeType(eNodeType), m_eUIType(QML_UI_UNKNOWN)
 {
@@ -208,7 +213,7 @@ CXSDNodeBase::~CXSDNodeBase()
 
 void CXSDNodeBase::dumpStdOut() const
 {
-   dump(std::cout);
+   dump(::std::cout);
 }
 
 const CXSDNodeBase* CXSDNodeBase::getConstAncestorNode(unsigned iLevel) const
@@ -312,7 +317,7 @@ CXSDBuiltInDataType::~CXSDBuiltInDataType()
 {
 }
 
-void CXSDBuiltInDataType::dump(std::ostream& cout, unsigned int offset) const
+void CXSDBuiltInDataType::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 

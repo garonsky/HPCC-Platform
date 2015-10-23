@@ -21,6 +21,11 @@
 #include "jarray.hpp"
 #include "jhash.hpp"
 #include "XMLTags.h"
+
+
+//#define ::StringBuffer ::::StringBuffer
+//#define ::IPropertyTree ::::IPropertyTree
+
 #include "SchemaAnnotation.hpp"
 #include "SchemaCommon.hpp"
 #include "SchemaElement.hpp"
@@ -36,6 +41,8 @@
 #include "SchemaMapManager.hpp"
 #include "ConfiguratorMain.hpp"
 #include "JSONMarkUp.hpp"
+
+using namespace CONFIGURATOR;
 
 const CXSDNodeBase* CElement::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const
 {
@@ -64,7 +71,7 @@ const CXSDNodeBase* CElement::getNodeByTypeAndNameDescending(NODE_TYPES eNodeTyp
     return pMatchingNode;
 }
 
-CElement* CElement::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath, bool bIsInXSD)
+CElement* CElement::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath, bool bIsInXSD)
 {
     assert(pSchemaRoot != NULL);
     assert(pParentNode != NULL);
@@ -77,7 +84,7 @@ CElement* CElement::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchema
     pElement->setIsInXSD(bIsInXSD);
     pElement->setXSDXPath(xpath);
 
-    IPropertyTree *pTree = pSchemaRoot->queryPropTree(xpath);
+    ::IPropertyTree *pTree = pSchemaRoot->queryPropTree(xpath);
 
     if (pElement != NULL && pTree != NULL)
         pElement->setName(pTree->queryProp(XML_ATTR_NAME));
@@ -129,7 +136,7 @@ CElement* CElement::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchema
     }
     assert(strlen(pElement->getName()) > 0);
 
-    StringBuffer strXPathExt(xpath);
+    ::StringBuffer strXPathExt(xpath);
 
     strXPathExt.append("/").append(XSD_TAG_ANNOTATION);
     pElement->m_pAnnotation = CAnnotation::load(pElement, pSchemaRoot, strXPathExt.str());
@@ -146,12 +153,12 @@ CElement* CElement::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchema
     else
         pElement->setTitle(pElement->getName());
 
-    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_KEY);
+/*    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_KEY);
     pElement->m_pKeyArray = CKeyArray::load(pElement, pSchemaRoot, strXPathExt.str());
 
     strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_KEYREF);
     pElement->m_pKeyRefArray = CKeyRefArray::load(pElement, pSchemaRoot, strXPathExt.str());
-
+*/
     strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_SIMPLE_TYPE);
     pElement->m_pSimpleType = CSimpleType::load(pElement, pSchemaRoot, strXPathExt.str());
 
@@ -199,7 +206,7 @@ const char* CElement::getXML(const char* /*pComponent*/)
     return m_strXML.str();
 }
 
-void CElement::dump(std::ostream &cout, unsigned int offset) const
+void CElement::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 
@@ -238,7 +245,7 @@ void CElement::dump(std::ostream &cout, unsigned int offset) const
     QuickOutFooter(cout, XSD_ELEMENT_STR, offset);
 }
 
-void CElement::getDocumentation(StringBuffer &strDoc) const
+void CElement::getDocumentation(::StringBuffer &strDoc) const
 {
     const CXSDNodeBase *pGrandParentNode = this->getConstParentNode()->getConstParentNode();
 
@@ -256,7 +263,7 @@ void CElement::getDocumentation(StringBuffer &strDoc) const
 
     if (pGrandParentNode->getNodeType() == XSD_SCHEMA)
     {
-        StringBuffer strName(this->getName());
+        ::StringBuffer strName(this->getName());
 
         strName.replace(' ', '_');
         strDoc.append(DM_HEADING);
@@ -316,7 +323,7 @@ void CElement::getDocumentation(StringBuffer &strDoc) const
     }
 }
 
-void CElement::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
+void CElement::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) const
 {
     assert(this->getConstAncestorNode(2) != NULL);
 
@@ -333,7 +340,7 @@ void CElement::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) cons
     }
 }
 
-void CElement::getQML(StringBuffer &strQML, int idx) const
+void CElement::getQML(::StringBuffer &strQML, int idx) const
 {
     // Handle HPCC Specific tag
     if (m_pAnnotation != NULL && m_pAnnotation->getAppInfo() != NULL && m_pAnnotation->getAppInfo()->getViewType() != NULL)
@@ -420,7 +427,7 @@ void CElement::getQML(StringBuffer &strQML, int idx) const
 
 }
 
-void CElement::getQML2(StringBuffer &strQML, int idx) const
+void CElement::getQML2(::StringBuffer &strQML, int idx) const
 {
     // Handle HPCC Specific tag
     if (m_pAnnotation != NULL && m_pAnnotation->getAppInfo() != NULL && m_pAnnotation->getAppInfo()->getViewType() != NULL)
@@ -561,7 +568,7 @@ void CElement::getQML2(StringBuffer &strQML, int idx) const
         }
     }
 }
-void CElement::getQML3(StringBuffer &strQML, int idx) const
+void CElement::getQML3(::StringBuffer &strQML, int idx) const
 {
     DEBUG_MARK_QML;
     if (m_pComplexTypeArray != NULL)
@@ -645,7 +652,7 @@ bool CElement::isLastTab(const int idx) const
 }
 
 
-void CElement::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+void CElement::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
 {
     assert(strXPath.length() > 0);
 
@@ -662,7 +669,7 @@ void CElement::populateEnvXPath(StringBuffer strXPath, unsigned int index)
         m_pKeyArray->populateEnvXPath(strXPath, index);
 }
 
-void CElement::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+void CElement::loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
 {
     //PROGLOG("Mapping element with XPATH of %s to %p", this->getEnvXPath(), this);
     CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(this->getEnvXPath(), this);
@@ -719,7 +726,7 @@ const char * CElement::getViewType() const
     return NULL;
 }
 
-void CElementArray::dump(std::ostream &cout, unsigned int offset) const
+void CElementArray::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 
@@ -730,12 +737,12 @@ void CElementArray::dump(std::ostream &cout, unsigned int offset) const
     QuickOutFooter(cout, XSD_ELEMENT_ARRAY_STR, offset);
 }
 
-void CElementArray::getDocumentation(StringBuffer &strDoc) const
+void CElementArray::getDocumentation(::StringBuffer &strDoc) const
 {
     QUICK_DOC_ARRAY(strDoc);
 }
 
-void CElementArray::getQML(StringBuffer &strQML, int idx) const
+void CElementArray::getQML(::StringBuffer &strQML, int idx) const
 {
     for (int idx=0; idx < this->length(); idx++)
     {
@@ -744,7 +751,7 @@ void CElementArray::getQML(StringBuffer &strQML, int idx) const
     }
 }
 
-void CElementArray::getQML2(StringBuffer &strQML, int idx) const
+void CElementArray::getQML2(::StringBuffer &strQML, int idx) const
 {
     DEBUG_MARK_QML;
     if (this->getParentNode()->getUIType() == QML_UI_TAB)
@@ -782,20 +789,21 @@ void CElementArray::getQML2(StringBuffer &strQML, int idx) const
     }
 }
 
-void CElementArray::getQML3(StringBuffer &strQML, int idx) const
+void CElementArray::getQML3(::StringBuffer &strQML, int idx) const
 {
     DEBUG_MARK_QML;
     if(this->length() > 1)
     {
         StringArray keyspace;
-        MapStringTo<bool,bool> isList;
-        MapStringTo<StringBuffer,const char *> elementGroups;
+        ::MapStringTo<bool,bool> isList;
+	typedef ::StringBuffer jlibStringBuffer;
+        ::MapStringTo<jlibStringBuffer,const char *> elementGroups;
 
         for (int i = 0; i < this->length(); i++) // Go through Element Array to initialize elementGroups
         {            
             if(elementGroups.getValue((this->item(i)).getName()) == NULL) // If this is a unique element name
             {
-                StringBuffer temp("");
+                ::StringBuffer temp("");
                 CQMLMarkupHelper::buildAccordionStart(temp,(this->item(i)).getTitle()); // Build Accordion
 
                 // If list or instance, append table boilerplate, make mapping for later
@@ -832,7 +840,7 @@ void CElementArray::getQML3(StringBuffer &strQML, int idx) const
             assert(*elementGroups.getValue((this->item(i)).getName()) != NULL);
             if(*elementGroups.getValue((this->item(i)).getName()) != NULL)
             {
-                StringBuffer temp = *elementGroups.getValue((this->item(i)).getName());
+                ::StringBuffer temp = *elementGroups.getValue((this->item(i)).getName());
 
                 if(*isList.getValue((this->item(i)).getName()) == true)
                     (this->item(i)).setUIType(QML_UI_TABLE_LIST);
@@ -858,7 +866,7 @@ void CElementArray::getQML3(StringBuffer &strQML, int idx) const
 }
 
 
-void CElementArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
+void CElementArray::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) const
 {
     offset += STANDARD_OFFSET_2;
     QuickOutPad(strJSON, offset);
@@ -889,7 +897,7 @@ void CElementArray::getJSON(StringBuffer &strJSON, unsigned int offset, int idx)
     strJSON.append("}");
 }
 
-void CElementArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+void CElementArray::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
 {
     int elemCount = 1;
 
@@ -924,13 +932,13 @@ const char* CElementArray::getXML(const char* /*pComponent*/)
     return m_strXML.str();
 }
 
-void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+void CElementArray::loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
 {
     int nUniqueElements = this->length();
 
     for (int idx = 0; idx < nUniqueElements; idx++)
     {
-        StringBuffer strXPath(this->item(idx).getEnvXPath());
+        ::StringBuffer strXPath(this->item(idx).getEnvXPath());
 
         if (pEnvTree->hasProp(strXPath.str()) == false)
             continue;
@@ -939,7 +947,7 @@ void CElementArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 
         do
         {
-            StringBuffer strEnvXPath(this->item(idx).getEnvXPath());
+            ::StringBuffer strEnvXPath(this->item(idx).getEnvXPath());
             CConfigSchemaHelper::stripXPathIndex(strEnvXPath);
 
             strEnvXPath.appendf("[%d]",subIndex);
@@ -990,8 +998,9 @@ CElementArray* CElementArray::load(const char* pSchemaFile)
     if (pSchemaFile == NULL)
         return NULL;
 
-    Linked<IPropertyTree> pSchemaRoot;
-    StringBuffer schemaPath;
+    typedef ::IPropertyTree jlibIPropertyTree;
+    ::Linked<jlibIPropertyTree> pSchemaRoot;
+    ::StringBuffer schemaPath;
 
     schemaPath.appendf("%s%s", DEFAULT_SCHEMA_DIRECTORY, pSchemaFile);
     pSchemaRoot.setown(createPTreeFromXMLFile(schemaPath.str()));
@@ -1004,7 +1013,7 @@ CElementArray* CElementArray::load(const char* pSchemaFile)
     return pElemArray;
 }
 
-CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
+CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
     if (pSchemaRoot == NULL)
@@ -1016,10 +1025,11 @@ CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const IPropertyTre
     pSchemaRoot->Link();
     pElemArray->setSchemaRoot(pSchemaRoot);
 
-    StringBuffer strXPathExt(xpath);
+    ::StringBuffer strXPathExt(xpath);
     pElemArray->setXSDXPath(xpath);
 
-    Owned<IPropertyTreeIterator> elemIter = pSchemaRoot->getElements(xpath);
+    typedef ::IPropertyTreeIterator jlibIPropertyTreeIterator;
+    Owned<jlibIPropertyTreeIterator> elemIter = pSchemaRoot->getElements(xpath);
 
     int count = 1;
 

@@ -18,12 +18,8 @@
 #ifndef _QMLMARKUP_HPP_
 #define _QMLMARKUP_HPP_
 
-//#include "jarray.hpp"
-class StringBuffer;
-class CAttribute;
-class StringArray;
-class String;
-   
+namespace CONFIGURATOR
+{
 
 static const char* QML_TABLE_DATA_MODEL(" tableDataModel\n");
 static const char* QML_PROPERTY_STRING_TABLE_BEGIN("\
@@ -533,24 +529,28 @@ static const char * QML_TABLE_END("}\n");
 // Table ends can be replaced with DOUBLE_END_BRACKET in appropriate situations (if buildColumns are done before Content)
 
 // NewConstants end;
+
+
+class CAttribute;
+
 class CQMLMarkupHelper
 {
 public:
     // New Helper Functions
-    static void buildAccordionStart(StringBuffer &strQML, const char * title, const char * altTitle = "", int idx = -1);
+    static void buildAccordionStart(::StringBuffer &strQML, const char * title, const char * altTitle = "", int idx = -1);
     // End Accordion with QML_DOUBLE_END_BRACKET
-    static void buildColumns(StringBuffer &strQML, StringArray &roles, StringArray &titles);
-    static void buildRole(StringBuffer &strQML, const char * role, StringArray &values, const char * type = "text", const char * tooltip = "", const char * placeholder = "");
-    static const StringBuffer printProperty(const char * property, const char * value, const bool newline = true);
+    static void buildColumns(::StringBuffer &strQML, ::StringArray &roles, ::StringArray &titles);
+    static void buildRole(::StringBuffer &strQML, const char * role, ::StringArray &values, const char * type = "text", const char * tooltip = "", const char * placeholder = "");
+    static const ::StringBuffer printProperty(const char * property, const char * value, const bool newline = true);
     // NewHelperFunctions end;
-    static void getTabQML(StringBuffer &strQML, const char *pName);
-    static void getComboBoxListElement(const char* pLabel, StringBuffer &strID, const char* pDefault = "");
-    static void getToolTipQML(StringBuffer &strQML, const char *pToolTip, const char* pTextAreaID);
-    static void getToolTipRectangle(StringBuffer &strQML, const char *pToolTip, const char *pRectangleID);
-    static void getToolTipTimer(StringBuffer &strQML, const char *pToolTip, const char *pRectangleID, const char* pTimerID_1, const char* pTimerID_2, const char *pMouseAreaID);
-    static void getToolMouseArea(StringBuffer &strQML, const char *pToolTip, const char *pRectangleID, const char* pTimerID_1, const char* pTimerID_2, const char *pMouseAreaID, const char* pTextAreaID);
-    static void getTableViewColumn(StringBuffer &strQML, const char* colTitle, const char *pRole);
-    static unsigned getRandomID(StringBuffer *pID = 0);
+    static void getTabQML(::StringBuffer &strQML, const char *pName);
+    static void getComboBoxListElement(const char* pLabel, ::StringBuffer &strID, const char* pDefault = "");
+    static void getToolTipQML(::StringBuffer &strQML, const char *pToolTip, const char* pTextAreaID);
+    static void getToolTipRectangle(::StringBuffer &strQML, const char *pToolTip, const char *pRectangleID);
+    static void getToolTipTimer(::StringBuffer &strQML, const char *pToolTip, const char *pRectangleID, const char* pTimerID_1, const char* pTimerID_2, const char *pMouseAreaID);
+    static void getToolMouseArea(::StringBuffer &strQML, const char *pToolTip, const char *pRectangleID, const char* pTimerID_1, const char* pTimerID_2, const char *pMouseAreaID, const char* pTextAreaID);
+    static void getTableViewColumn(::StringBuffer &strQML, const char* colTitle, const char *pRole);
+    static unsigned getRandomID(::StringBuffer *pID = 0);
     static bool isTableRequired(const CAttribute *pAttrib);
 
     static int getImplicitHeight()
@@ -567,5 +567,5 @@ protected:
 
     static int glImplicitHeight;
 };
-
+}
 #endif // _QMLMARKUP_HPP_

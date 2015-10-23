@@ -57,6 +57,7 @@ void deleteTableModels()
 
 namespace CONFIGURATOR_API
 {
+    using namespace CONFIGURATOR;
 static CConfigSchemaHelper *s_pConfigSchemaHelper = NULL;
 
 void reload(const char *pFile)
@@ -126,11 +127,11 @@ int getValue(const char *pXPath, char *pValue)
     CAttribute *pAttribute = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getAttributeFromXPath(pXPath);
 
     if(pAttribute == NULL)
-        std::cout << "xPath: " << pXPath << "| value: " << pXPath << std::endl;
+        ::std::cout << "xPath: " << pXPath << "| value: " << pXPath << ::std::endl;
     else if (pAttribute->isInstanceValueValid() == true)
     {
         strcpy(pValue, pAttribute->getInstanceValue());
-        std::cout << "xPath: " << pXPath << "| value: " << pValue << std::endl;
+        ::std::cout << "xPath: " << pXPath << "| value: " << pValue << ::std::endl;
     }
     return true;
 }
@@ -263,6 +264,14 @@ const char* getComponentName(int idx, char *pName)
 
 int openConfigurationFile(const char* pFile)
 {
+    /*s_pConfigSchemaHelper = NULL;
+    s_pConfigSchemaHelper = CConfigSchemaHelper::getInstance();
+
+    StringArray arrXSDS;
+    arrXSDS.append("dali.xsd");
+    CBuildSetManager::getInstance()->setBuildSetArray(arrXSDS);
+    s_pConfigSchemaHelper->populateSchema();*/
+
     CConfigSchemaHelper::getInstance()->loadEnvFromConfig(pFile);
     return 1;
 }
@@ -473,6 +482,11 @@ void getQML(void *pData, char **pOutput, int nIdx)
 void getJSON(void *pData, char **pOutput, int nIdx)
 {
     CConfigSchemaHelper::getInstance()->printJSON(CONFIGURATOR_API::getFileName(pData), pOutput, nIdx);
+}
+
+void getJSONByComponentName(const char *pComponentName, char **pOutput, int nIdx)
+{
+    CConfigSchemaHelper::getInstance()->printJSON(pComponentName, pOutput, nIdx);
 }
 
 const char* getQMLFromFile(const char *pXSD, int idx)

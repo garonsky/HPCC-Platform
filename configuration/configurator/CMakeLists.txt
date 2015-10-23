@@ -1,4 +1,3 @@
-MESSAGE( "PROCESSING CONFIGURATOR #1" )
 project ( configurator )
 
 SET(  SRCS QMLMarkup.cpp QMLMarkup.hpp ConfiguratorMain.cpp ConfigFileComponentUtils.cpp ConfigFileUtils.cpp

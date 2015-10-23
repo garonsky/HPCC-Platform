@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CRestriction;
 class CExtension;
 class CAnnotation;
@@ -45,7 +48,7 @@ public:
     {
         return m_pExtension;
     }
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const
     {
         UNIMPLEMENTED;
     }
@@ -86,6 +89,6 @@ private:
     }
 };
 
-
+}
 
 #endif // _SCHEMA_SIMPLECONTENT_HPP_

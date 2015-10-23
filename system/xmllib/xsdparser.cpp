@@ -462,11 +462,11 @@ protected:
 public: 
     IMPLEMENT_IINTERFACE;
 
-    CComplexType(const char* name, XmlSubType subType, size_t count, IXmlType** els, char** names, size_t nAttrs, IXmlAttribute** attrs=NULL) 
+    CComplexType(const char* name, XmlSubType subType, size_t count, IXmlType** els, char** names, size_t nAttrs, IXmlAttribute** attrs=NULL)
         : m_name(name), m_subType(subType), m_fldCount(count), m_fldNames(names), 
         m_fldTypes(els), m_nAttrs(nAttrs), m_attrs(attrs) { }
     
-    virtual ~CComplexType() 
+    virtual ~CComplexType()
     { 
         // types are cached, but not linked
         if (m_fldTypes)

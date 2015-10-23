@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CLength : public CXSDNode
 {
 public:
@@ -27,8 +30,8 @@ public:
     virtual ~CLength()
     {
     }
-    static CLength* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
+    static CLength* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
     virtual void getDocumentation(StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
@@ -42,7 +45,7 @@ public:
         UNIMPLEMENTED;
         return NULL;
     }
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1)
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1)
     {
         UNIMPLEMENTED;
     }
@@ -56,4 +59,5 @@ private:
     }
 };
 
+}
 #endif // _SCHEMA_LENGTH_HPP_

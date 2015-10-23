@@ -21,7 +21,11 @@
 #include "jiface.hpp"
 #include "jmutex.hpp"
 #include "jutil.hpp"
+
 #include "ConfigFileUtilsObservable.hpp"
+
+namespace CONFIGURATOR
+{
 
 static const char* DEFAULT_CONFIGURATION_PATH("/etc/HPCCSystems/source/");
 static const char* DEFAULT_CONFIGURATION_MASK("*.xml");
@@ -65,4 +69,5 @@ private:
     Owned<IFileIO>  m_pFileIO;
 };
 
+}
 #endif // _CONFIG_FILE_HPP_

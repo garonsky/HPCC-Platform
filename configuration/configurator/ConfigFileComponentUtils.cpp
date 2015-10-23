@@ -15,8 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-#include "ConfigFileComponentUtils.hpp"
 #include "jexcept.hpp"
+
+#include "ConfigFileComponentUtils.hpp"
+
+//using namespace CONFIGURATOR;
 
 CConfigFileComponentUtils::CConfigFileComponentUtils()
 {

@@ -15,17 +15,21 @@
     limitations under the License.
 ############################################################################## */
 
+#include "jlib.hpp"
+#include "jlog.hpp"
+#include <cassert>
+
 #include "EnvironmentModel.hpp"
 #include "SchemaCommon.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "SchemaMapManager.hpp"
 #include "SchemaElement.hpp"
 #include "SchemaSchema.hpp"
-#include "jlib.hpp"
-#include "jlog.hpp"
-#include <cassert>
+
 
 #define LOG_CONSTRUCTOR
+
+using namespace CONFIGURATOR;
 
 CEnvironmentModelNode::CEnvironmentModelNode(const CEnvironmentModelNode *pParent, int index,  CXSDNodeBase *pNode) : m_pParent(NULL), m_pArrChildNodes(NULL)
 {

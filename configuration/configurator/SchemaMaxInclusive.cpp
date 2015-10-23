@@ -17,7 +17,9 @@
 
 #include "SchemaMaxInclusive.hpp"
 
-CMaxInclusive* CMaxInclusive::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
+using namespace CONFIGURATOR;
+
+CMaxInclusive* CMaxInclusive::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath)
 {
     CMaxInclusive *pMaxInclusive = CXSDNodeWithRestrictions<CMaxInclusive>::load(pParentNode, pSchemaRoot, xpath);
     if (pMaxInclusive == NULL)

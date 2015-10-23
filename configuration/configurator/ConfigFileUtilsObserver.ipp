@@ -3,6 +3,9 @@
 
 #include "jobserve.hpp"
 
+namespace CONFIGURATOR
+{
+
 interface IConfigFileUtilsObserver : extends IObserver
 {
 public:
@@ -19,4 +22,5 @@ public:
     virtual enum CF_EVENT_TYPES getEventType() = 0;
 };
 
+}
 #endif // _CONFIG_FILE_UTILS_OBSERVER_IPP_

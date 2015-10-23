@@ -62,6 +62,6 @@ target_link_libraries ( ws_configurator
          environment
          dllserver
          securesocket
-		 configurator
+	 configurator
     )
 

@@ -32,38 +32,39 @@
 
 #define BUFF_SIZE 1024
 
+using namespace CONFIGURATOR;
 const char *pDefaultDocExt =  ".mod.xml";
 const char *pDefaultQMLExt =  ".qml";
 const char *pDefaultJSONExt =  ".json";
 
 void usage()
 {
-    std::cout << "configurator -use <xsd files>  -b <base dir path>" << std::endl;
-    std::cout << "Example Usage: ./configurator -use dali.xsd -b /opt/HPCCSystems/componentfiles/configxml -d -t /tmp " << std::endl;
-    std::cout << "-d -doc                           : generate docs" << std::endl;
-    std::cout << "-b -base <base dir path>          : base directory path to use with -use option and for xs:include references in xsd files" << std::endl;
-    std::cout << "-e -extension <file extension>    : write docs or qml to files with appended extension (default " <<  pDefaultDocExt << ")" << std::endl;
-    std::cout << "-t -target <target directory>     : directory to which to docs will be written. If not specified, then output will go to std::out" << std::endl;
-    std::cout << "-u -use <schema xsd>              : use specified xsd schema instead of buildset file" << std::endl;
-    std::cout << "-h -help                          : prints out this usage" << std::endl;
+    ::std::cout << "configurator -use <xsd files>  -b <base dir path>" << ::std::endl;
+    ::std::cout << "Example Usage: ./configurator -use dali.xsd -b /opt/HPCCSystems/componentfiles/configxml -d -t /tmp " << ::std::endl;
+    ::std::cout << "-d -doc                           : generate docs" << ::std::endl;
+    ::std::cout << "-b -base <base dir path>          : base directory path to use with -use option and for xs:include references in xsd files" << ::std::endl;
+    ::std::cout << "-e -extension <file extension>    : write docs or qml to files with appended extension (default " <<  pDefaultDocExt << ")" << ::std::endl;
+    ::std::cout << "-t -target <target directory>     : directory to which to docs will be written. If not specified, then output will go to ::std::out" << ::std::endl;
+    ::std::cout << "-u -use <schema xsd>              : use specified xsd schema instead of buildset file" << ::std::endl;
+    ::std::cout << "-h -help                          : prints out this usage" << ::std::endl;
 
-    std::cout << std::endl;
+    ::std::cout << ::std::endl;
 
-    std::cout << std::endl << "** Experimental **" << std::endl;
-    std::cout <<"Example Usage: ./configurator -use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/  -qml -t ./ -e qml -s1 ./esp.xsd.qml -env /etc/HPCCSystems/source/environment.xml" << std::endl;
-    std::cout << "-f -file <build set file>         : buildset file name (required if base directory is specfied" << std::endl;
-    std::cout << "-p -path <base dir path>          : base directory path (required if buildset file name is specified)" << std::endl;
-    std::cout << "-x -xsd  <xsd file name>          : xsd file name (can be more than one) - For use with buildset file" << std::endl;
-    std::cout << "-l -list                          : list available xsd files" << std::endl;
-    std::cout << "-m -xml                           : generate XML configuration file" << std::endl;
-    std::cout << "-q -qml                           : prints QML" << std::endl;
-	std::cout << "-j -json                          : prints JSON" << std::endl;
-    std::cout << "-c -env -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << std::endl;
+    ::std::cout << ::std::endl << "** Experimental **" << ::std::endl;
+    ::std::cout <<"Example Usage: ./configurator -use esp.xsd -b /opt/HPCCSystems/componentfiles/configxml/  -qml -t ./ -e qml -s1 ./esp.xsd.qml -env /etc/HPCCSystems/source/environment.xml" << ::std::endl;
+    ::std::cout << "-f -file <build set file>         : buildset file name (required if base directory is specfied" << ::std::endl;
+    ::std::cout << "-p -path <base dir path>          : base directory path (required if buildset file name is specified)" << ::std::endl;
+    ::std::cout << "-x -xsd  <xsd file name>          : xsd file name (can be more than one) - For use with buildset file" << ::std::endl;
+    ::std::cout << "-l -list                          : list available xsd files" << ::std::endl;
+    ::std::cout << "-m -xml                           : generate XML configuration file" << ::std::endl;
+    ::std::cout << "-q -qml                           : prints QML" << ::std::endl;
+	::std::cout << "-j -json                          : prints JSON" << ::std::endl;
+    ::std::cout << "-c -env -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << ::std::endl;
 #ifdef CONFIGURATOR_LIB
-        std::cout << "-s1 -server1 <qml file>           : run server using qml file" << std::endl;
-        std::cout << "-s2 -server2                      : run QT application mode" << std::endl;
+        ::std::cout << "-s1 -server1 <qml file>           : run server using qml file" << ::std::endl;
+        ::std::cout << "-s2 -server2                      : run QT application mode" << ::std::endl;
 #endif // CONFIGURATOR_LIB
-    std::cout << "-dump                             : dump out xsd internal structure and values" << std::endl;
+    ::std::cout << "-dump                             : dump out xsd internal structure and values" << ::std::endl;
 }
 
 #ifndef CONFIGURATOR_LIB
@@ -130,7 +131,7 @@ void usage()
 
             if (argv[idx] == NULL)
             {
-                std::cout << "Missing env xml file parameter!" << std::endl;
+                ::std::cout << "Missing env xml file parameter!" << ::std::endl;
                 return 0;
             }
             strncpy(pEnvXMLPath, argv[idx], BUFF_SIZE);
@@ -142,7 +143,7 @@ void usage()
             assert(argv[idx]);
             if (argv[idx] == NULL)
             {
-                std::cout << "Missing file parameter!" << std::endl;
+                ::std::cout << "Missing file parameter!" << ::std::endl;
                 return 0;
             }
             strncpy(pBuildSetFile, argv[idx], BUFF_SIZE);
@@ -154,7 +155,7 @@ void usage()
             assert(argv[idx]);
             if (argv[idx] == NULL)
             {
-                std::cout << "Missing path parameter!" << std::endl;
+                ::std::cout << "Missing path parameter!" << ::std::endl;
                 return 0;
             }
             strncpy(pBuildSetFileDir, argv[idx], BUFF_SIZE);
@@ -166,7 +167,7 @@ void usage()
             assert(argv[idx]);
             if (argv[idx] == NULL)
             {
-                std::cout << "Missing base dir parameter!" << std::endl;
+                ::std::cout << "Missing base dir parameter!" << ::std::endl;
                 return 0;
             }
             strncpy(pBasePath, argv[idx], BUFF_SIZE);
@@ -178,7 +179,7 @@ void usage()
             assert(argv[idx]);
             if (argv[idx] == NULL)
             {
-                std::cout << "Missing XSD file!" << std::endl;
+                ::std::cout << "Missing XSD file!" << ::std::endl;
                 return 0;
             }
             arrXSDs.append(argv[idx]);
@@ -190,7 +191,7 @@ void usage()
 
             if (argv[idx] == NULL)
             {
-                std::cout << "Missing qml file!" << std::endl;
+                ::std::cout << "Missing qml file!" << ::std::endl;
                 return 0;
             }
             strncpy(pQMLFile, argv[idx], BUFF_SIZE);
@@ -208,7 +209,7 @@ void usage()
             assert(argv[idx]);
             if (argv[idx] == NULL)
             {
-                std::cout << "Missing target!" << std::endl;
+                ::std::cout << "Missing target!" << ::std::endl;
                 return 0;
             }
             strcpy(pTargetDocDir,argv[idx]);
@@ -220,7 +221,7 @@ void usage()
             assert(argv[idx]);
             if (argv[idx] == NULL)
             {
-                std::cout << "Missing extension!" << std::endl;
+                ::std::cout << "Missing extension!" << ::std::endl;
                 return 0;
             }
             if (argv[idx][0] != '.')
@@ -240,7 +241,7 @@ void usage()
             assert(argv[idx]);
             if (argv[idx] == NULL)
             {
-                std::cout << "Missing schema xsd!" << std::endl;
+                ::std::cout << "Missing schema xsd!" << ::std::endl;
                 return 0;
             }
             else
@@ -295,16 +296,16 @@ void usage()
         CBuildSetManager::getInstance()->getBuildSetComponents(arrXSDs);
 
         if (arrXSDs.length() > 0)
-            std::cout << "XSD files (" << arrXSDs.length() << ")" << std::endl;
+            ::std::cout << "XSD files (" << arrXSDs.length() << ")" << ::std::endl;
 
         for (int idx = 0; idx < arrXSDs.length(); idx++)
-            std::cout << "(" << idx+1 << ") " << arrXSDs.item(idx) << std::endl;
+            ::std::cout << "(" << idx+1 << ") " << arrXSDs.item(idx) << ::std::endl;
     }
 
     for (int idx =  0; bGenDocs == true && idx < arrXSDs.length(); idx++)
     {
         if (pTargetDocDir[0] == 0)
-            std::cout << pSchemaHelper->printDocumentation(arrXSDs.item(idx));
+            ::std::cout << pSchemaHelper->printDocumentation(arrXSDs.item(idx));
         else
         {
             Owned<IFile>   pFile;
@@ -332,7 +333,7 @@ void usage()
             char *pOutput = NULL;
 
             pSchemaHelper->printQML(arrXSDs.item(idx), &pOutput);
-            std::cout << pOutput;
+            ::std::cout << pOutput;
 
             free(pOutput);
         }
@@ -368,7 +369,7 @@ void usage()
             char *pOutput = NULL;
 
             pSchemaHelper->printJSON(arrXSDs.item(idx), &pOutput);
-            std::cout << pOutput;
+            ::std::cout << pOutput;
 
             free(pOutput);
         }

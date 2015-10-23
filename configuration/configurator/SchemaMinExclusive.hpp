@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CMinExclusive : public CXSDNodeWithRestrictions<CMinExclusive>
 {
     friend class CXSDNodeWithRestrictions<CMinExclusive>;
@@ -28,7 +31,7 @@ public:
     virtual ~CMinExclusive()
     {
     }
-    static CMinExclusive* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CMinExclusive* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
     GETTERSETTERINT(MinExclusive)
 
 protected:
@@ -38,4 +41,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_MIN_EXCLUSIVE_HPP_

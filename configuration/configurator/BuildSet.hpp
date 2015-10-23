@@ -21,10 +21,12 @@
 #include "jstring.hpp"
 #include "jlib.hpp"
 
+namespace CONFIGURATOR
+{
+
 static const char* DEFAULT_BUILD_SET_XML_FILE("buildset.xml");
 static const char* DEFAULT_BUILD_SET_DIRECTORY("/opt/HPCCSystems/componentfiles/configxml/");
 
-class StringArray;
 class CBuildSet;
 
 class CBuildSetManager
@@ -34,9 +36,9 @@ public:
     static CBuildSetManager* getInstance(const char* pBuildSetFile =  NULL, const char* pBuildSetDirectory = NULL);
 
     virtual ~CBuildSetManager();
-    void getBuildSetComponents(StringArray& buildSetArray) const;
-    void getBuildSetServices(StringArray& buildSetArray) const;
-    void setBuildSetArray(const StringArray &strArray);
+    void getBuildSetComponents(::StringArray& buildSetArray) const;
+    void getBuildSetServices(::StringArray& buildSetArray) const;
+    void setBuildSetArray(const ::StringArray &strArray);
     const char* getBuildSetServiceName(int index) const;
     const char* getBuildSetServiceFileName(int index) const;
     const char* getBuildSetComponentName(int index) const;
@@ -116,4 +118,5 @@ protected:
 private:
 };
 
+}
 #endif // _BUILD_SET_HPP_

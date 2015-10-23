@@ -21,7 +21,11 @@
 #include "SchemaSchema.hpp"
 #include "ConfigSchemaHelper.hpp"
 
-void CInclude::dump(std::ostream& cout, unsigned int offset) const
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
+
+void CInclude::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 
@@ -137,7 +141,7 @@ const char* CIncludeArray::getXML(const char* /*pComponent*/)
     return m_strXML.str();
 }
 
-void CIncludeArray::dump(std::ostream &cout, unsigned int offset) const
+void CIncludeArray::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

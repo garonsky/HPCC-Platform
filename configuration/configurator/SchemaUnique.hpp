@@ -22,6 +22,9 @@
 #include "SchemaKey.hpp"
 #include "jstring.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CSchemaUnique;
 
 class CUnique : public CXSDNode
@@ -32,20 +35,20 @@ public:
     {
     }
 
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1)
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1)
     {
         UNIMPLEMENTED;
     }
-    static CUnique* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CUnique* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTER(ID)
     GETTERSETTER(Name)
@@ -66,16 +69,16 @@ public:
     {
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1)
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1)
     {
         UNIMPLEMENTED;
     }
@@ -92,4 +95,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_UNIQUE_HPP_

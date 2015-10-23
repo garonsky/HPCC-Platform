@@ -17,7 +17,9 @@
 
 #include "SchemaUnique.hpp"
 
-CUnique* CUnique::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
+using namespace CONFIGURATOR;
+
+CUnique* CUnique::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
     assert(pParentNode != NULL);
@@ -53,7 +55,7 @@ CUnique* CUnique::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRo
     return pUnique;
 }
 
-void CUnique::dump(std::ostream& cout, unsigned int offset) const
+void CUnique::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 
@@ -97,7 +99,7 @@ CUniqueArray* CUniqueArray::load(CXSDNodeBase* pParentNode, const IPropertyTree 
     return pUniqueArray;
 }
 
-void CUniqueArray::dump(std::ostream &cout, unsigned int offset) const
+void CUniqueArray::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

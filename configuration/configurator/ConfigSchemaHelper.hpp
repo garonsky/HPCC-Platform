@@ -31,10 +31,13 @@
 #include "BuildSet.hpp"
 #include "ConfiguratorAPI.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CSchemaMapManager;
 class CSimpleType;
 
-class CConfigSchemaHelper : public CInterface
+class CConfigSchemaHelper : public ::CInterface
 {
 public:
 
@@ -114,11 +117,11 @@ public:
     static int stripXPathIndex(StringBuffer &strXPath);
     static bool isXPathTailAttribute(const StringBuffer &strXPath);
 
-    IPropertyTree* getEnvPropertyTree()
+    ::IPropertyTree* getEnvPropertyTree()
     {
         return m_pEnvPropertyTree;
     }
-    const IPropertyTree* getConstEnvPropertyTree() const
+    const ::IPropertyTree* getConstEnvPropertyTree() const
     {
         return m_pEnvPropertyTree;
     }
@@ -141,17 +144,17 @@ protected:
     CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = NULL);
 
     CSchemaMapManager *m_pSchemaMapManager;
-    CIArrayOf<CExtension> m_extensionArr;
-    CIArrayOf<CAttributeGroup> m_attributeGroupArr;
-    CIArrayOf<CXSDNodeWithType> m_nodeWithTypeArr;
-    CIArrayOf<CXSDNodeWithBase> m_nodeWithBaseArr;
-    CIArrayOf<CElement> m_ElementArr;
-    CIArrayOf<CKeyRef> m_KeyRefArr;
-    StringArray m_strToolTipsJS;
-    StringArray m_strArrayEnvXPaths;
-    StringArray m_strArrayEnvXMLComponentInstances;
+    ::CIArrayOf<CExtension> m_extensionArr;
+    ::CIArrayOf<CAttributeGroup> m_attributeGroupArr;
+    ::CIArrayOf<CXSDNodeWithType> m_nodeWithTypeArr;
+    ::CIArrayOf<CXSDNodeWithBase> m_nodeWithBaseArr;
+    ::CIArrayOf<CElement> m_ElementArr;
+    ::CIArrayOf<CKeyRef> m_KeyRefArr;
+    ::StringArray m_strToolTipsJS;
+    ::StringArray m_strArrayEnvXPaths;
+    ::StringArray m_strArrayEnvXMLComponentInstances;
 
-    void setEnvPropertyTree(IPropertyTree *pEnvTree)
+    void setEnvPropertyTree(::IPropertyTree *pEnvTree)
     {
         m_pEnvPropertyTree =  pEnvTree;
     }
@@ -171,8 +174,8 @@ private:
     mutable int m_nTables;
     char *m_pBasePath;
 
-    StringBuffer m_strEnvFilePath;
-    IPropertyTree *m_pEnvPropertyTree;
+    ::StringBuffer m_strEnvFilePath;
+    ::IPropertyTree *m_pEnvPropertyTree;
 };
-
+}
 #endif // _CONFIG_SCHEMA_HELPER_HPP_

@@ -33,6 +33,11 @@
 #include "QMLMarkup.hpp"
 #include "JSONMarkUp.hpp"
 
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
+
 const CXSDNodeBase* CComplexType::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const
 {
     const CXSDNodeBase* pMatchingNode = NULL;
@@ -65,7 +70,7 @@ const CXSDNodeBase* CComplexType::getNodeByTypeAndNameDescending(NODE_TYPES eNod
     return pMatchingNode;
 }
 
-void CComplexType::dump(std::ostream& cout, unsigned int offset) const
+void CComplexType::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
     QuickOutHeader(cout, XSD_COMPLEX_TYPE_STR, offset);
@@ -341,7 +346,6 @@ CComplexType* CComplexType::load(CXSDNodeBase* pParentNode, const IPropertyTree 
     CComplexContent *pComplexContent = NULL;
     CAttributeArray *pAttributeArray =  NULL;
     CChoice *pChoice = NULL;
-    CElementArray *pElementArray = NULL;
     CSequence *pSequence  = NULL;
     CAttributeGroupArray *pAttributeGroupArray = NULL;
     CAnnotation *pAnnotation = NULL;
@@ -352,11 +356,6 @@ CComplexType* CComplexType::load(CXSDNodeBase* pParentNode, const IPropertyTree 
     IPropertyTree *pTree = pSchemaRoot->queryPropTree(xpath);
     const char* pName = pTree->queryProp(XML_ATTR_NAME);
     StringBuffer strXPathExt(xpath);
-
-    StringBuffer strXPathExt2(strXPathExt);
-    strXPathExt2.append("*");
-
-    Owned<IPropertyTreeIterator> iter = pSchemaRoot->getElements(strXPathExt2.str());
 
     strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_SEQUENCE);
     pSequence = CSequence::load(NULL, pSchemaRoot, strXPathExt.str());
@@ -396,7 +395,7 @@ CComplexType* CComplexType::load(CXSDNodeBase* pParentNode, const IPropertyTree 
     return pComplexType;
 }
 
-void CComplexTypeArray::dump(std::ostream& cout, unsigned int offset) const
+void CComplexTypeArray::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

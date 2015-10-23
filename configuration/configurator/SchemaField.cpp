@@ -17,6 +17,10 @@
 
 #include "SchemaField.hpp"
 
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
+
 CField* CField::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
@@ -67,7 +71,7 @@ CField* CField::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot
    return pField;
 }
 
-void CField::dump(std::ostream& cout, unsigned int offset) const
+void CField::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 
@@ -119,7 +123,7 @@ CFieldArray* CFieldArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *p
     return pFieldArray;
 }
 
-void CFieldArray::dump(std::ostream &cout, unsigned int offset) const
+void CFieldArray::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

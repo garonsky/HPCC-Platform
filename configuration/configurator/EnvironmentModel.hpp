@@ -20,12 +20,14 @@
 
 #include <cassert>
 
+namespace CONFIGURATOR
+{
+
 class CXSDNodeBase;
-class CEnvironmentModelNode;
-class PointerArray;
+/*class CEnvironmentModelNode;
 
 template <class TYPE>
-class CIArrayOf;
+class CIArrayOf;*/
 
 class CEnvironmentModelNode
 {
@@ -52,7 +54,7 @@ protected:
 
     CXSDNodeBase *m_pXSDNode;
     const CEnvironmentModelNode *m_pParent;
-    PointerArray *m_pArrChildNodes;
+    ::PointerArray *m_pArrChildNodes;
 } __attribute__((aligned (32)));
 
 class CEnvironmentModel
@@ -76,5 +78,5 @@ protected:
     CEnvironmentModel();
     CEnvironmentModelNode *m_pRootNode;
 };
-
+}
 #endif // _ENVIRONMENT_MODEL_HPP_

@@ -14,17 +14,23 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-
-#include "QMLMarkup.hpp"
-#include "SchemaCommon.hpp"
 #include "jstring.hpp"
 #include "jutil.hpp"
 #include "jarray.hpp"
 #include "jdebug.hpp"
+
+#include "QMLMarkup.hpp"
+
+using namespace CONFIGURATOR;
+
+#include "SchemaCommon.hpp"
 #include "SchemaAttributes.hpp"
 #include "SchemaElement.hpp"
 #include "SchemaAppInfo.hpp"
 #include "SchemaAnnotation.hpp"
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
 
 int CQMLMarkupHelper::glImplicitHeight = -1;
 

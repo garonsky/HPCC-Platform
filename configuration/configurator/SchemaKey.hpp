@@ -21,6 +21,9 @@
 #include "SchemaCommon.hpp"
 #include "jstring.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CSelector;
 class CFieldArray;
 class CAnnotation;
@@ -36,7 +39,7 @@ public:
     {
     }
 
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
     virtual void getDocumentation(StringBuffer &strDoc) const
     {
@@ -77,7 +80,7 @@ public:
     {
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
 
     virtual void getDocumentation(StringBuffer &strDoc) const
@@ -103,4 +106,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_KEY_HPP_

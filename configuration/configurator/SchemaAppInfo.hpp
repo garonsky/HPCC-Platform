@@ -21,6 +21,8 @@
 #include "SchemaCommon.hpp"
 #include "jstring.hpp"
 
+namespace CONFIGURATOR
+{
 class IPropertyTree;
 
 class CAppInfo : public CXSDNodeBase
@@ -43,15 +45,15 @@ public:
     GETTERSETTER(XPath)
     GETTERSETTER(DocTableID)
 
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
     virtual void getDocumentation(StringBuffer &strDoc) const;
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
 
     bool getDocLineBreak() const
     {
         return m_bDocLineBreak;
     }
-    static CAppInfo* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CAppInfo* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
@@ -71,5 +73,5 @@ private:
     {
     }
 };
-
+}
 #endif // _SCHEMA_APP_INFO_HPP_

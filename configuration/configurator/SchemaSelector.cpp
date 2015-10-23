@@ -18,6 +18,11 @@
 #include "SchemaSelector.hpp"
 #include "SchemaCommon.hpp"
 
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
+#define StringBuffer ::StringBuffer
+
 CSelector* CSelector::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
@@ -39,7 +44,7 @@ CSelector* CSelector::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSche
 
         if (pTree == NULL)
         {
-            assert(!"Selector reuqired");
+            assert(!"Selector required");
             // TODO: throw MakeExceptionFromMap("EX_STR_MISSING_SELECTOR_MISSING");
         }
         const char* pXPath = pSchemaRoot->getPropTree(xpath)->queryProp(XML_ATTR_XPATH);
@@ -70,7 +75,7 @@ CSelector* CSelector::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSche
     return pSelector;
 }
 
-void CSelector::dump(std::ostream& cout, unsigned int offset) const
+void CSelector::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 

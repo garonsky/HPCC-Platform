@@ -346,13 +346,13 @@
   </DaliServerProcess>
   <DfuServerProcess build="_"
                     buildSet="dfuserver"
-                    daliServers="mydali"
+                    daliServers="mydali2"
                     description="DFU Server"
                     monitorinterval="900"
                     monitorqueue="dfuserver_monitor_queue"
                     name="mydfuserver"
                     queue="dfuserver_queue"
-                    transferBufferSize="65536">
+                    transferBufferSize="655367">
    <Instance computer="localhost"
              directory="/var/lib/HPCCSystems/mydfuserver"
              name="s1"
@@ -795,7 +795,7 @@
              program="/opt/HPCCSystems/bin/ftslave"/>
   </FTSlaveProcess>
   <Hardware_NEW attrib1name="gleb1">
-     <Computer computerType="linuxmachine"
+   <Computer computerType="linuxmachine"
              domain="localdomain"
              name="localhost"
              netAddress="."/>
@@ -805,13 +805,13 @@
                  opSys="linux"/>
    <Domain name="localdomain" snmpSecurityString=""/>
    <Switches name="Switch">
-        <Deep2>
-            <Switch5>
-                <deep6>
-                    <table1 name7="hi1"/>
-                </deep6>
-            </Switch5>
-        </Deep2>
+    <Deep2>
+     <Switch5>
+      <deep6>
+       <table1 name7="hi1"/>
+      </deep6>
+     </Switch5>
+    </Deep2>
    </Switches>
   </Hardware_NEW>
   <Hardware_NEW2>
@@ -1005,10 +1005,10 @@
    <tab3 tab3-1="val1" tab3-2="val2"/>
    <tab4>
     <tab4>
-       <tab6c>
-        <tab7 tab6c-1="hello1"/>
-       </tab6c>
-        </tab4>
+     <tab6c>
+      <tab7 tab6c-1="hello1"/>
+     </tab6c>
+    </tab4>
     <tab5 tab5-1="deep1"/>
     <tab6>
      <tab6-sub tab6-2="deep2"/>

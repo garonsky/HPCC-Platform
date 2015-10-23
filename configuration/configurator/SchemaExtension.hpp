@@ -21,6 +21,9 @@
 #include "SchemaCommon.hpp"
 #include "jstring.hpp"
 
+namespace CONFIGURATOR
+{
+
 class IPropertyTree;
 
 class CExtension : public CXSDNodeWithBase
@@ -33,14 +36,14 @@ public:
 
     virtual const char* getXML(const char* /*pComponent*/);
     virtual void initExtension();
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
 
     virtual void getDocumentation(StringBuffer &strDoc) const
     {
        throwUnexpected(); // Should not be called directly
     }
 
-    static CExtension* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CExtension* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 
@@ -55,4 +58,5 @@ private:
     }
 };
 
+}
 #endif // _SCHEMA_EXTENSION_HPP_

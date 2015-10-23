@@ -18,10 +18,14 @@
 #ifndef _CONFIG_FILE_UTILS_OBSERVALBE_HPP_
 #define _CONFIG_FILE_UTILS_OBSERVALBE_HPP_
 
-#include "ConfigFileUtilsObserver.ipp"
 #include "jlib.hpp"
 #include "jqueue.tpp"
 #include "jmutex.hpp"
+
+#include "ConfigFileUtilsObserver.ipp"
+
+namespace CONFIGURATOR
+{
 
 
 class CConfigFileUtilsObservable : public CInterface, implements IObservable
@@ -47,9 +51,10 @@ protected:
 
 private:
 
-    QueueOf<IConfigFileUtilsObserver,false> m_qObservers;
-    CriticalSection m_critsecObserverQueue;
+    ::QueueOf<IConfigFileUtilsObserver,false> m_qObservers;
+    ::CriticalSection m_critsecObserverQueue;
     bool m_bEnableNotifications;
 };
 
+}
 #endif // _CONFIG_FILE_UTILS_OBSERVALBE_HPP_

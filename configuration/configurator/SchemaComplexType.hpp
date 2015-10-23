@@ -21,10 +21,12 @@
 #include "SchemaCommon.hpp"
 #include "jarray.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CSequence;
 class CComplexContent;
 class CAttributeArray;
-class IPropertyTree;
 class CChoice;
 class CComplexType;
 class CAttributeGroupArray;
@@ -43,14 +45,14 @@ public:
     virtual const CXSDNodeBase* getNodeByTypeAndNameDescending(NODE_TYPES eNodeType, const char *pName) const;
     virtual const CXSDNodeBase* getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const;
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
-    virtual void getJSON(StringBuffer &strQML, unsigned int offset = 0, int idx = -1) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML2(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML3(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getJSON(::StringBuffer &strQML, unsigned int offset = 0, int idx = -1) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
     virtual const char* getXML(const char* /*pComponent*/);
 
     virtual const CAttributeArray* getAttributeArray() const
@@ -75,7 +77,7 @@ public:
 
     bool hasChildElements() const;
 
-    static CComplexType* load(CXSDNodeBase* pRootNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CComplexType* load(CXSDNodeBase* pRootNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 
@@ -101,7 +103,7 @@ private:
 
 };
 
-class CComplexTypeArray : public CIArrayOf<CComplexType>, public InterfaceImpl, public CXSDNodeBase
+class CComplexTypeArray : public ::CIArrayOf<CComplexType>, public InterfaceImpl, public CXSDNodeBase
 {
 public:
 
@@ -113,21 +115,21 @@ public:
     {
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
-    virtual void getJSON(StringBuffer &strQML, unsigned int offset = 0, int idx = -1) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML2(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML3(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getJSON(::StringBuffer &strQML, unsigned int offset = 0, int idx = -1) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CComplexTypeArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CComplexTypeArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = NULL);
     static CComplexTypeArray* load(CXSDNodeBase* pParentNode, const char* pSchemaFile);
 
 protected:
 private:
 };
-
+} // namespace CONFIGURATOR
 #endif // _SCHEMA_COMPLEX_TYPE_HPP
