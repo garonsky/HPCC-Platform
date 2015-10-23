@@ -28,6 +28,7 @@ IF( CONFIGURATOR_QT_UI AND DEFINED ENV{QTDIR} )
     MESSAGE( "-- Qt5_LIB_DIR is set to ${Qt5_LIB_DIR}" )
 
     HPCC_ADD_SUBDIRECTORY (configurator_ui)
+    HPCC_ADD_SUBDIRECTORY (configurator)
     HPCC_ADD_SUBDIRECTORY (configurator_app)
 
 ELSEIF ( CONFIGURATOR_QT_UI )

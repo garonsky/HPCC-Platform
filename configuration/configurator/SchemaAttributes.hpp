@@ -24,6 +24,10 @@
 #include "SchemaCommon.hpp"
 #include "SchemaAnnotation.hpp"
 
+namespace CONFIGURATOR
+{
+
+
 class CSimpleTypeArray;
 class CKeyRefArray;
 class CKeyArray;
@@ -58,20 +62,20 @@ public:
 
     const char* getTitle() const;
     virtual const char* getXML(const char* pComponent);
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML3(StringBuffer &strQML, const char * role = NULL, int idx = -1) const;
-    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    virtual void getQML2(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML3(::StringBuffer &strQML, const char * role = NULL, int idx = -1) const;
+    virtual void getJSON(::StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
 
     const CSimpleTypeArray* getSimpleTypeArray() const
     {
         return m_pSimpleTypeArray;
     }
 
-    static CAttribute* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CAttribute* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
     bool isInstanceValueValid()
     {
@@ -104,15 +108,15 @@ protected:
 
     CAnnotation *m_pAnnotation;
     CSimpleTypeArray *m_pSimpleTypeArray;
-    PointerArray m_ReverseKeyArray;
-    PointerArray m_ReverseKeyRefArray;
+    ::PointerArray m_ReverseKeyArray;
+    ::PointerArray m_ReverseKeyRefArray;
     bool m_bInstanceValueValid;
 
 private:
 
 };
 
-class CAttributeArray : public CIArrayOf<CAttribute>, public InterfaceImpl, public CXSDNodeBase
+class CAttributeArray : public ::CIArrayOf<CAttribute>, public InterfaceImpl, public CXSDNodeBase
 {
 public:
 
@@ -124,18 +128,18 @@ public:
     {
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
-    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    virtual void getQML2(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML3(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getJSON(::StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
     virtual const char* getXML(const char* /*pComponent*/);
     const CAttribute* findAttributeWithName(const char *pName, bool bCaseInsensitive = true) const;
-    const void getAttributeNames(StringArray &names, StringArray &titles) const;
+    const void getAttributeNames(::StringArray &names, ::StringArray &titles) const;
     static CAttributeArray* load(const char* pSchemaFile);
-    static CAttributeArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CAttributeArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
@@ -144,4 +148,5 @@ protected:
 private:
 };
 
+}
 #endif // _SCHEMA_ATTRIBUTES_HPP_

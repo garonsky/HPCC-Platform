@@ -23,6 +23,8 @@
 #ifndef _SCHEMA_MAP_MANAGER_HPP_
 #define _SCHEMA_MAP_MANAGER_HPP_
 
+namespace CONFIGURATOR
+{
 class CSchema;
 class CAttribute;
 class CAttributeGroup;
@@ -136,4 +138,5 @@ protected:
 private:
 };
 
+}
 #endif // _SCHEMA_MAP_MANAGER_HPP_

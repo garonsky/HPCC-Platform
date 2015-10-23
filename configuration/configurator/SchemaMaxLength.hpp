@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CMaxLength : public CXSDNodeWithRestrictions<CMaxLength>
 {
     friend class CXSDNodeWithRestrictions<CMaxLength>;
@@ -28,7 +31,7 @@ public:
     virtual ~CMaxLength()
     {
     }
-    static CMaxLength* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CMaxLength* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTERINT(MaxLength)
 
@@ -39,4 +42,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_MAX_LENGTH_HPP_

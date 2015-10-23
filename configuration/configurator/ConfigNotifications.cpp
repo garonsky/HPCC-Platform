@@ -22,6 +22,8 @@
 #include "jhash.hpp"
 #include "jstring.hpp"
 
+using namespace CONFIGURATOR;
+
 CNotificationManager* CNotificationManager::s_pNotificationManager = NULL;
 
 CNotificationManager::CNotificationManager()

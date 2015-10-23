@@ -20,6 +20,10 @@
 
 #include "WizardInterface.ipp"
 
+
+namespace CONFIGURATOR
+{
+
 class CWizardBase : public IWizardInterface
 {
 public:
@@ -36,5 +40,7 @@ protected:
 private:
 
 };
+
+}
 
 #endif // _WIZARD_BASE_HPP

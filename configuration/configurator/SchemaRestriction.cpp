@@ -30,19 +30,23 @@
 #include "SchemaWhiteSpace.hpp"
 #include "SchemaSimpleContent.hpp"
 
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
+
 #define QUICK_LOAD_XSD_RESTRICTIONS(X, Y)       \
     strXPathExt.set(xpath);                     \
     strXPathExt.append("/").append(Y);          \
     C##X *p##X = C##X::load(pRestriction, pSchemaRoot, strXPathExt.str());    \
     if (p##X != NULL) pRestriction->set##X(p##X);
-    //if (p##X != NULL) pRestriction->C##X(p##X);
 
 CRestriction::~CRestriction()
 {
     CConfigSchemaHelper::getInstance()->getSchemaMapManager()->removeMapOfXPathToRestriction(this->getEnvXPath());
 }
 
-void CRestriction::dump(std::ostream& cout, unsigned int offset) const
+void CRestriction::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

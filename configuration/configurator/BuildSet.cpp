@@ -15,10 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-#include "BuildSet.hpp"
 #include "jptree.hpp"
 #include "XMLTags.h"
+#include "BuildSet.hpp"
 #include "SchemaCommon.hpp"
+
+using namespace CONFIGURATOR;
 
 #define LOOP_THRU_BUILD_SET for (int idx = 0; idx < m_buildSetArray.length(); idx++)
 

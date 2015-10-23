@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CTotalDigits : public CXSDNodeWithRestrictions<CTotalDigits>
 {
     friend class CXSDNodeWithRestrictions<CTotalDigits>;
@@ -28,7 +31,7 @@ public:
     virtual ~CTotalDigits()
     {
     }
-    static CTotalDigits* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CTotalDigits* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTERINT(TotalDigits)
 
@@ -39,4 +42,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_TOTAL_DIGITS_HPP_

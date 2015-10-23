@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CPattern : public CXSDNodeWithRestrictions<CPattern>
 {
     friend class CXSDNodeWithRestrictions<CPattern>;
@@ -28,7 +31,7 @@ public:
     virtual ~CPattern()
     {
     }
-    static CPattern* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CPattern* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTER(Pattern)
 
@@ -39,4 +42,5 @@ private:
     }
 };
 
+}
 #endif // _SCHEMA_PATTERN_HPP_

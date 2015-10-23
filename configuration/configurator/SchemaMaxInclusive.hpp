@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CMaxInclusive : public CXSDNodeWithRestrictions<CMaxInclusive>
 {
     friend class CXSDNodeWithRestrictions<CMaxInclusive>;
@@ -29,7 +32,7 @@ public:
     {
     }
 
-    static CMaxInclusive* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CMaxInclusive* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
     GETTERSETTERINT(MaxInclusive)
 
 protected:
@@ -39,4 +42,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_MAX_INCLUSIVE_HPP_

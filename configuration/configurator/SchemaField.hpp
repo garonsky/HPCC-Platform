@@ -21,6 +21,9 @@
 #include "SchemaCommon.hpp"
 #include "jstring.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CSchemaField;
 class CKey;
 
@@ -32,21 +35,21 @@ public:
     {
     }
 
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1)
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1)
     {
         UNIMPLEMENTED;
     }
 
-    static CField* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CField* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTER(ID)
     SETTER(XPath)
@@ -55,7 +58,7 @@ public:
     {
         if (bRemoveAmpersand == true)
         {
-            static StringBuffer strRetString(m_strXPath);
+            static ::StringBuffer strRetString(m_strXPath);
             static bool bOnce = true;
 
             if (bOnce == true)
@@ -74,35 +77,35 @@ protected:
     {
     }
 
-    StringBuffer m_strXPath;
+    ::StringBuffer m_strXPath;
 };
 
-class CFieldArray : public CIArrayOf<CField>, public InterfaceImpl, public CXSDNodeBase
+class CFieldArray : public ::CIArrayOf<CField>, public InterfaceImpl, public CXSDNodeBase
 {
 public:
     virtual ~CFieldArray()
     {
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1)
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1)
     {
         UNIMPLEMENTED;
     }
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
     {
         UNIMPLEMENTED;
     }
 
-    static CFieldArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CFieldArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
@@ -110,4 +113,6 @@ protected:
     {
     }
 };
+
+}
 #endif // _SCHEMA_FIELD_HPP_

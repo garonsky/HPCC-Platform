@@ -21,17 +21,6 @@
 #include "jexcept.hpp"
 #include <cstring>
 
-#define MAX_EXCEPTION_STRING_LENGTH 2048
-
-#define CATCH_EXCEPTION_AND_EXIT \
-catch (IException *except) \
-{\
-    StringBuffer strErrMsg;\
-    except->errorMessage(strErrMsg);\
-    std::cout << std::endl << strErrMsg.str() << std::endl << std::endl;\
-    exit(-1);\
-}
-
 enum eExceptionCodes
 {
     EX_STR_CAN_NOT_OPEN_XSD  = 1,
@@ -49,6 +38,19 @@ enum eExceptionCodes
     EX_STR_UNKNOWN,
     EX_STR_LAST_ENTRY
 };
+
+namespace CONFIGURATOR
+{
+#define MAX_EXCEPTION_STRING_LENGTH 2048
+
+#define CATCH_EXCEPTION_AND_EXIT \
+catch (::IException *except) \
+{\
+    StringBuffer strErrMsg;\
+    except->errorMessage(strErrMsg);\
+    ::std::cout << ::std::endl << strErrMsg.str() << ::std::endl << ::std::endl;\
+    exit(-1);\
+}
 
 const char pExceptionStringArray[EX_STR_LAST_ENTRY][MAX_EXCEPTION_STRING_LENGTH] = { /*** ALWAYS ADD TO THE END OF THE ARRAY!!! ***/
                                                                                      "can not open xsd file", //
@@ -96,7 +98,7 @@ enum eActionArray { EACTION_FRACTION_DIGITS_HAS_BAD_LENGTH = 10,
                     EACTION_WHITE_SPACE_BAD_VALUE = 18
                   };
 
-IException *MakeExceptionFromMap(int code, enum eExceptionCodes, const char* pMsg = NULL);
-IException *MakeExceptionFromMap(enum eExceptionCodes, const char* pMsg = NULL);
-
+::IException *MakeExceptionFromMap(int code, enum eExceptionCodes, const char* pMsg = NULL);
+::IException *MakeExceptionFromMap(enum eExceptionCodes, const char* pMsg = NULL);
+}
 #endif // _EXCEPTION_STRINGS_HPP_

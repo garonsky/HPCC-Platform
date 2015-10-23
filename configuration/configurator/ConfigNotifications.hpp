@@ -22,6 +22,9 @@
 #include "jhash.ipp"
 #include "jutil.hpp"
 
+namespace CONFIGURATOR
+{
+
 enum ENotificationType
 {
     eInformational = 1,
@@ -96,4 +99,5 @@ public:
     StringArray m_NotificationMessagesArrays[eUnknown];
 };
 
+}
 #endif // _CONFIG_NOTIFICATIONS_HPP_

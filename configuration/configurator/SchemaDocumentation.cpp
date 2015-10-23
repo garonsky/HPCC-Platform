@@ -20,7 +20,9 @@
 #include "SchemaDocumentation.hpp"
 #include "DocumentationMarkup.hpp"
 
-void CDocumentation::dump(std::ostream& cout, unsigned int offset) const
+using namespace CONFIGURATOR;
+
+void CDocumentation::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

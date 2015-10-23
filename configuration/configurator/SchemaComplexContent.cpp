@@ -20,6 +20,11 @@
 #include "SchemaComplexContent.hpp"
 #include "SchemaExtension.hpp"
 
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
+
 CComplexContent* CComplexContent::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot);
@@ -48,7 +53,7 @@ CComplexContent* CComplexContent::load(CXSDNodeBase* pParentNode, const IPropert
     return pComplexContent;
 }
 
-void CComplexContent::dump(std::ostream& cout, unsigned int offset) const
+void CComplexContent::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

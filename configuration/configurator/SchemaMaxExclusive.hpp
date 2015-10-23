@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CMaxExclusive : public CXSDNodeWithRestrictions<CMaxExclusive>
 {
     friend class CXSDNodeWithRestrictions<CMaxExclusive>;
@@ -28,7 +31,7 @@ public:
     virtual ~CMaxExclusive()
     {
     }
-    static CMaxExclusive* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CMaxExclusive* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
@@ -39,4 +42,5 @@ protected:
     GETTERSETTERINT(MaxExclusive)
 };
 
+}
 #endif // _SCHEMA_MAX_EXCLUSIVE_HPP_

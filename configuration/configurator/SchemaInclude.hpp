@@ -22,6 +22,9 @@
 #include "jarray.hpp"
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CSchema;
 
 class CInclude : public CXSDNode
@@ -32,7 +35,7 @@ public:
     {
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
     virtual void getDocumentation(StringBuffer &strDoc) const;
     virtual void getQML(StringBuffer &strQML, int idx = -1) const;
     virtual const char* getXML(const char* /*pComponent*/);
@@ -80,7 +83,7 @@ public:
     {
     }
 
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
     virtual void getDocumentation(StringBuffer &strDoc) const;
     virtual void getQML(StringBuffer &strQML, int idx = -1) const;
     virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
@@ -99,4 +102,5 @@ private:
     }
 };
 
+}
 #endif // _SCHEMA_INCLUDE_HPP_

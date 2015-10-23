@@ -20,7 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
-class IPropertyTree;
+namespace CONFIGURATOR
+{
+
 class CExtension;
 
 class CComplexContent : public CXSDNode
@@ -31,12 +33,12 @@ public:
     {
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
     virtual void getQML(StringBuffer &strQML, int idx = -1) const;
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CComplexContent* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CComplexContent* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 
@@ -53,4 +55,5 @@ private:
     }
 };
 
+}
 #endif // _SCHEMA_COMPLEX_CONTENT_HPP_

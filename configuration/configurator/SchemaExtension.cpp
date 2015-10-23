@@ -22,9 +22,13 @@
 #include "SchemaSchema.hpp"
 #include "ConfigSchemaHelper.hpp"
 
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
+
 static const char* DEFAULT_ENVIRONMENT_XSD("Environment.xsd");
 
-void CExtension::dump(std::ostream& cout, unsigned int offset) const
+void CExtension::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

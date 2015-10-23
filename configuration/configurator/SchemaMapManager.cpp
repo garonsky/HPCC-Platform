@@ -18,6 +18,8 @@
 #include "SchemaMapManager.hpp"
 #include "SchemaAll.hpp"
 
+using namespace CONFIGURATOR;
+
 CSchemaMapManager::CSchemaMapManager()
 {
     m_pSchemaPtrMap.setown(new MapStringToCSchema());

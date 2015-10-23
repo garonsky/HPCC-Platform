@@ -17,7 +17,9 @@
 
 #include "SchemaMinInclusive.hpp"
 
-CMinInclusive* CMinInclusive::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
+using namespace CONFIGURATOR;
+
+CMinInclusive* CMinInclusive::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath)
 {
     CMinInclusive *pMinInclusive = CXSDNodeWithRestrictions<CMinInclusive>::load(pParentNode, pSchemaRoot, xpath);
     if (pMinInclusive == NULL)

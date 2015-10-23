@@ -20,6 +20,10 @@
 #include "SchemaAppInfo.hpp"
 #include "DocumentationMarkup.hpp"
 
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
+
 CAppInfo* CAppInfo::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     if (pSchemaRoot == NULL)
@@ -97,7 +101,7 @@ CAppInfo* CAppInfo::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchema
     return pAppInfo;
 }
 
-void CAppInfo::dump(std::ostream &cout, unsigned int offset) const
+void CAppInfo::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 

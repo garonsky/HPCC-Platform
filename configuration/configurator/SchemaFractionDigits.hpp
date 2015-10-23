@@ -20,6 +20,9 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CFractionDigits : public CXSDNode
 {
 public:
@@ -28,14 +31,14 @@ public:
     {
     }
 
-    static CFractionDigits* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CFractionDigits* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    void getQML(StringBuffer &strQML, int idx = -1) const
+    void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
@@ -44,7 +47,7 @@ public:
         UNIMPLEMENTED;
         return NULL;
     }
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1)
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1)
     {
         UNIMPLEMENTED;
     }
@@ -57,4 +60,5 @@ private:
     {
     }
 };
+}
 #endif

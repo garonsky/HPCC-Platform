@@ -18,9 +18,15 @@
 #include <cassert>
 #include "XMLTags.h"
 #include "jptree.hpp"
+
 #include "SchemaAnnotation.hpp"
 #include "SchemaDocumentation.hpp"
 #include "SchemaAppInfo.hpp"
+
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
 
 CAnnotation* CAnnotation::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
@@ -46,7 +52,7 @@ CAnnotation* CAnnotation::load(CXSDNodeBase* pParentNode, const IPropertyTree *p
     return pAnnotation;
 }
 
-void CAnnotation::dump(std::ostream& cout, unsigned int offset) const
+void CAnnotation::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
     QuickOutHeader(cout, XSD_ANNOTATION_STR, offset);

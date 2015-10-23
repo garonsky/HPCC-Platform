@@ -18,11 +18,14 @@
 #ifndef _SCHEMA_KEYREF_HPP_
 #define _SCHEMA_KEYREF_HPP_
 
-#include "SchemaCommon.hpp"
 #include "jstring.hpp"
+#include "SchemaCommon.hpp"
 
 class CSelector;
 class CFieldArray;
+
+namespace CONFIGURATOR
+{
 
 class CKeyRef : public CXSDNode
 {
@@ -32,20 +35,20 @@ public:
     {
     }
 
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
     bool checkConstraint(const char *pValue) const;
 
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
 
-    static CKeyRef* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CKeyRef* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTER(Name)
     GETTERSETTER(ID)
@@ -61,29 +64,29 @@ protected:
     CSelector *m_pSelector;
 };
 
-class CKeyRefArray : public CIArrayOf<CKeyRef>, public InterfaceImpl, public CXSDNodeBase
+class CKeyRefArray : public ::CIArrayOf<CKeyRef>, public InterfaceImpl, public CXSDNodeBase
 {
 public:
     virtual ~CKeyRefArray()
     {
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
 
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
     {
         UNIMPLEMENTED;
     }
-    static CKeyRefArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CKeyRefArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
@@ -92,4 +95,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_KeyRef_HPP_

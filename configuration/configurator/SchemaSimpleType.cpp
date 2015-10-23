@@ -23,6 +23,10 @@
 #include "SchemaMapManager.hpp"
 #include "jlib.hpp"
 
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
 
 CXSDNodeBase* CSimpleType::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName)
 {
@@ -34,7 +38,7 @@ CXSDNodeBase* CSimpleType::getNodeByTypeAndNameDescending(NODE_TYPES eNodeType, 
     return (this->checkSelf(eNodeType, pName, this->getName()) ? this : NULL);
 }
 
-void CSimpleType::dump(std::ostream& cout, unsigned int offset) const
+void CSimpleType::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 
@@ -140,7 +144,7 @@ bool CSimpleType::checkConstraint(const char *pValue) const
         return this->getRestriction()->checkConstraint(pValue);
 }
 
-void CSimpleTypeArray::dump(std::ostream& cout, unsigned int offset) const
+void CSimpleTypeArray::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

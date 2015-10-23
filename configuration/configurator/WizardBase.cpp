@@ -20,6 +20,8 @@
 #include "jstring.hpp"
 #include "jptree.hpp"
 
+using namespace CONFIGURATOR;
+
 CWizardBase::CWizardBase()
 {
 }

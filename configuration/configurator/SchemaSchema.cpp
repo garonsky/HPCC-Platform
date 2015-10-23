@@ -17,12 +17,18 @@
 
 #include "jptree.hpp"
 #include "XMLTags.h"
+
 #include "SchemaSchema.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "DocumentationMarkup.hpp"
 #include "SchemaMapManager.hpp"
 #include "QMLMarkup.hpp"
 #include "JSONMarkUp.hpp"
+
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
 
 CSchema::~CSchema()
 {
@@ -54,7 +60,7 @@ CSchema* CSchema::load(const char* pSchemaLocation, const IPropertyTree *pSchema
     StringBuffer strXPathExt(xpath);
     strXPathExt.clear().append(xpath).append(XSD_TAG_INCLUDE);
 
-    CIncludeArray* pIncludeArray = CIncludeArray::load(pSchema, pSchemaRoot, strXPathExt);
+    CIncludeArray* pIncludeArray = NULL;//CIncludeArray::load(pSchema, pSchemaRoot, strXPathExt); // change this back to be uncommented
 
     strXPathExt.clear().append(xpath).append(XSD_TAG_SIMPLE_TYPE);
 
@@ -113,7 +119,7 @@ CSchema* CSchema::load(const char* pSchemaLocation, CXSDNodeBase* pParentNode)
     catch (...)
     {
         // TODO: Hanlde exceptions
-        std::cout << "Can't open " << schemaPath.str() << std::endl;
+        ::std::cout << "Can't open " << schemaPath.str() << ::std::endl;
         exit(-1);
     }
 
@@ -123,7 +129,7 @@ CSchema* CSchema::load(const char* pSchemaLocation, CXSDNodeBase* pParentNode)
     return pSchema;
 }
 
-void CSchema::dump(std::ostream& cout, unsigned int offset) const
+void CSchema::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

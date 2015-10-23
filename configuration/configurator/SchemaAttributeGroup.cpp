@@ -23,6 +23,11 @@
 #include "QMLMarkup.hpp"
 #include"JSONMarkUp.hpp"
 
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
+
 const CXSDNodeBase* CAttributeGroup::getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const
 {
     const CXSDNodeBase* pMatchingNode = NULL;
@@ -59,7 +64,7 @@ const CXSDNodeBase* CAttributeGroup::getNodeByTypeAndNameDescending(NODE_TYPES e
     return pMatchingNode;
 }
 
-void CAttributeGroup::dump(std::ostream &cout, unsigned int offset) const
+void CAttributeGroup::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 
@@ -294,7 +299,7 @@ CAttributeGroupArray* CAttributeGroupArray::load(CXSDNodeBase* pParentNode, cons
     return pAttribGroupArray;
 }
 
-void CAttributeGroupArray::dump(std::ostream& cout, unsigned int offset) const
+void CAttributeGroupArray::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

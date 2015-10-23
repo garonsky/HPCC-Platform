@@ -17,6 +17,8 @@
 
 #include "ConfigFileUtilsObservable.hpp"
 
+using namespace CONFIGURATOR;
+
 void CConfigFileUtilsObservable::addObserver(IConfigFileUtilsObserver& observer)
 {
    CriticalBlock block(m_critsecObserverQueue);

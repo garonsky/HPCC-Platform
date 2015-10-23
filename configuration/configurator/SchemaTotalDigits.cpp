@@ -17,7 +17,9 @@
 
 #include "SchemaTotalDigits.hpp"
 
-CTotalDigits* CTotalDigits::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
+using namespace CONFIGURATOR;
+
+CTotalDigits* CTotalDigits::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath)
 {
     CTotalDigits *pTotalDigits = CXSDNodeWithRestrictions<CTotalDigits>::load(pParentNode, pSchemaRoot, xpath);
 

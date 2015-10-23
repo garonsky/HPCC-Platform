@@ -22,6 +22,9 @@
 #include "jstring.hpp"
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CDocumentation : public CXSDNode
 {
 public:
@@ -37,7 +40,7 @@ public:
         return m_strDocString.str();
     }
 
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
     virtual void getDocumentation(StringBuffer &strDoc) const;
 
     static CDocumentation* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
@@ -55,4 +58,5 @@ private:
     }
 };
 
+}
 #endif // _SCHEMA_DOCUMENATION_HPP_

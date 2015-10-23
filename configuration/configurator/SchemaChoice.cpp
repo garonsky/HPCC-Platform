@@ -21,6 +21,10 @@
 #include "SchemaElement.hpp"
 #include "DocumentationMarkup.hpp"
 
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
 
 CChoice* CChoice::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
@@ -63,7 +67,7 @@ const char* CChoice::getXML(const char* /*pComponent*/)
     return m_strXML.str();
 }
 
-void CChoice::dump(std::ostream &cout, unsigned int offset) const
+void CChoice::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 

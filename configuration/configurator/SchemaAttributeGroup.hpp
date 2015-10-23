@@ -21,6 +21,9 @@
 #include "SchemaCommon.hpp"
 #include "SchemaAttributes.hpp"
 
+namespace CONFIGURATOR
+{
+
 class CAttributeGroup : public CXSDNode
 {
 public:
@@ -54,21 +57,21 @@ public:
     }
 
     virtual const char* getXML(const char* /*pComponent*/);
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
-    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML3(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getJSON(::StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
 
     virtual CAnnotation* getAnnotation() const
     {
         return m_pAnnotation;
     }
 
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
 
-    static CAttributeGroup* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CAttributeGroup* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
@@ -93,7 +96,7 @@ protected:
 private:
 };
 
-class CAttributeGroupArray : public CIArrayOf<CAttributeGroup>, public InterfaceImpl, public CXSDNodeBase
+class CAttributeGroupArray : public ::CIArrayOf<CAttributeGroup>, public InterfaceImpl, public CXSDNodeBase
 {
 public:
 
@@ -102,19 +105,20 @@ public:
     }
 
     virtual ~CAttributeGroupArray();
-    virtual void dump(std::ostream& cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
-    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML2(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML3(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getJSON(::StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
     static CAttributeGroupArray* load(const char* pSchemaFile);
-    static CAttributeGroupArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CAttributeGroupArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 private:
 };
 
+}
 #endif // _SCHEMA_ATTRIBUTE_GROUP_HPP_

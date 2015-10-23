@@ -19,6 +19,10 @@
 #include "SchemaLength.hpp"
 #include "ConfigSchemaHelper.hpp"
 
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
+
 CLength* CLength::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
@@ -52,7 +56,7 @@ CLength* CLength::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRo
     return pLength;
 }
 
-void CLength::dump(std::ostream& cout, unsigned int offset) const
+void CLength::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 

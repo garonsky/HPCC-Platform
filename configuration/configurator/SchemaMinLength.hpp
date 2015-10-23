@@ -20,6 +20,8 @@
 
 #include "SchemaCommon.hpp"
 
+namespace CONFIGURATOR
+{
 class CMinLength : public CXSDNodeWithRestrictions<CMinLength>
 {
     friend class CXSDNodeWithRestrictions<CMinLength>;
@@ -28,7 +30,7 @@ public:
     virtual ~CMinLength()
     {
     }
-    static CMinLength* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CMinLength* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTERINT(MinLength)
 
@@ -39,4 +41,5 @@ protected:
     }
 };
 
+}
 #endif // _SCHEMA_MIN_LENGTH_HPP_

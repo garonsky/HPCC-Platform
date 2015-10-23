@@ -26,9 +26,11 @@
 #include "SchemaComplexType.hpp"
 #include <climits>
 
+namespace CONFIGURATOR
+{
+
 class CAnnotation;
 class CComplexTypeArray;
-class IPropertyTree;
 class CKeyArray;
 class CKeyRefArray;
 class CKeyRef;
@@ -50,14 +52,14 @@ public:
     virtual const CXSDNodeBase* getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const;
     virtual const CXSDNodeBase* getNodeByTypeAndNameDescending(NODE_TYPES eNodeType, const char *pName) const;
     virtual const char* getXML(const char* /*pComponent*/);
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strJS) const;
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
-    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strJS) const;
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML2(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML3(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getJSON(::StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
     virtual bool isTopLevelElement() const;
     const CSchema* getConstSchemaNode() const;
 
@@ -128,7 +130,7 @@ public:
         return atoi(m_strMinOccurs.str());
     }
 
-    static CElement* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath, bool bIsInXSD = true);
+    static CElement* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath, bool bIsInXSD = true);
 
     const char * getViewType() const;
 
@@ -164,11 +166,11 @@ protected:
 private:
 };
 
-class CElementArray : public CIArrayOf<CElement>, public InterfaceImpl, public CXSDNodeBase
+class CElementArray : public ::CIArrayOf<CElement>, public InterfaceImpl, public CXSDNodeBase
 {
     friend class CElement;
 public:
-    CElementArray(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot = NULL) : CXSDNodeBase::CXSDNodeBase(pParentNode, XSD_ELEMENT_ARRAY),\
+    CElementArray(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot = NULL) : CXSDNodeBase::CXSDNodeBase(pParentNode, XSD_ELEMENT_ARRAY),\
         m_pSchemaRoot(pSchemaRoot), m_nCountOfElementsInXSD(0)
     {
     }
@@ -182,26 +184,26 @@ public:
 
     const CElement* getElementByNameAscending(const char *pName) const;
     const CElement* getElementByNameDescending(const char *pName) const;
-    virtual void dump(std::ostream &cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML2(StringBuffer &strQML, int idx = -1) const;
-    virtual void getQML3(StringBuffer &strQML, int idx = -1) const;
-    virtual void getJSON(StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree);
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML2(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getQML3(::StringBuffer &strQML, int idx = -1) const;
+    virtual void getJSON(::StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
     virtual const char* getXML(const char* /*pComponent*/);
     virtual int getCountOfSiblingElements(const char *pXPath) const;
     bool anyElementsHaveMaxOccursGreaterThanOne() const;
 
-    virtual void setSchemaRoot(const IPropertyTree *pSchemaRoot)
+    virtual void setSchemaRoot(const ::IPropertyTree *pSchemaRoot)
     {
         assert(m_pSchemaRoot == NULL);
         assert(pSchemaRoot);
 
         m_pSchemaRoot = pSchemaRoot;
     }
-    const IPropertyTree* getSchemaRoot() const
+    const ::IPropertyTree* getSchemaRoot() const
     {
         return m_pSchemaRoot;
     }
@@ -214,12 +216,12 @@ public:
         m_nCountOfElementsInXSD++;
     }
 
-    static CElementArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = DEFAULT_ELEMENT_ARRAY_XPATH);
+    static CElementArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = DEFAULT_ELEMENT_ARRAY_XPATH);
     static CElementArray* load(const char *pSchemaFile);
 
 protected:
 
-    const IPropertyTree *m_pSchemaRoot;
+    const ::IPropertyTree *m_pSchemaRoot;
     int m_nCountOfElementsInXSD;
     int getSiblingIndex(const char* pXSDXPath, const CElement* pElement);
 
@@ -230,4 +232,5 @@ private:
     }
 };
 
+}
 #endif // _SCHEMA_ELEMENT_HPP_

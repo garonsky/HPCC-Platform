@@ -24,6 +24,11 @@
 #include "DocumentationMarkup.hpp"
 #include "QMLMarkup.hpp"
 
+using namespace CONFIGURATOR;
+
+#define StringBuffer ::StringBuffer
+#define IPropertyTree ::IPropertyTree
+
 CEnumeration* CEnumeration::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
@@ -48,7 +53,7 @@ CEnumeration* CEnumeration::load(CXSDNodeBase* pParentNode, const IPropertyTree 
     return pEnumeration;
 }
 
-void CEnumeration::dump(std::ostream &cout, unsigned int offset) const
+void CEnumeration::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 
@@ -101,7 +106,7 @@ void CEnumeration::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         this->setInstanceValueValid(false);
 }
 
-void CEnumerationArray::dump(std::ostream &cout, unsigned int offset) const
+void CEnumerationArray::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 

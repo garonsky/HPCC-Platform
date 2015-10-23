@@ -1,4 +1,5 @@
 /*##############################################################################
+ *
 
     HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
 
@@ -15,6 +16,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include "jptree.hpp"
 #include "SchemaKey.hpp"
 #include "SchemaSelector.hpp"
 #include "SchemaField.hpp"
@@ -23,7 +25,10 @@
 #include "ConfigSchemaHelper.hpp"
 #include "SchemaMapManager.hpp"
 #include "SchemaAttributes.hpp"
-#include "jptree.hpp"
+
+using namespace CONFIGURATOR;
+
+#define IPropertyTree ::IPropertyTree
 
 CKey* CKey::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
@@ -132,7 +137,7 @@ bool CKey::checkConstraint(const char *pValue) const
     return bRetVal;
 }
 
-void CKey::dump(std::ostream& cout, unsigned int offset) const
+void CKey::dump(::std::ostream& cout, unsigned int offset) const
 {
     offset += STANDARD_OFFSET_1;
 
@@ -199,7 +204,7 @@ bool CKeyArray::checkConstraint(const char *pValue) const
     return true;
 }
 
-void CKeyArray::dump(std::ostream &cout, unsigned int offset) const
+void CKeyArray::dump(::std::ostream &cout, unsigned int offset) const
 {
     offset+= STANDARD_OFFSET_1;
 
