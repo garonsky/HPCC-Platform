@@ -287,19 +287,35 @@ void CSchemaMapManager::addMapOfXPathToAttribute(const char*pXPath, CAttribute *
 
     // should I remove automatically?
     assert(pAttribute->getLinkCount() == 1);
+
+    StringBuffer strXPath(pXPath);
+    strXPath.replace('/','_');
     m_pAttributePtrsMap->setValue(pXPath, pAttribute);
+    m_pAttributePtrsMap->setValue(strXPath.str(), pAttribute);
 }
 
 void CSchemaMapManager::removeMapOfXPathToAttribute(const char*pXPath)
 {
     assert (m_pAttributePtrsMap->find(pXPath) != NULL);
+
+    StringBuffer strXPath(pXPath);
+    strXPath.replace('/','_');
+
     m_pAttributePtrsMap->remove(pXPath);
+    m_pAttributePtrsMap->remove(strXPath.str());
 }
 
 CAttribute* CSchemaMapManager::getAttributeFromXPath(const char* pXPath)
 {
     assert(pXPath != NULL && *pXPath != 0);
     CAttribute **pAttribute = m_pAttributePtrsMap->getValue(pXPath);
+
+    if (pAttribute == NULL)
+    {
+        StringBuffer strXPath(pXPath);
+        strXPath.replace('/','_');
+        pAttribute = m_pAttributePtrsMap->getValue(pXPath);
+    }
 
     if (STRICTNESS_LEVEL >= DEFAULT_STRICTNESS)
         assert(pAttribute != NULL);

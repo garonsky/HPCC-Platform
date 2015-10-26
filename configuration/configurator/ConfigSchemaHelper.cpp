@@ -29,6 +29,7 @@
 #include "SchemaMapManager.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "ConfigFileUtils.hpp"
+#include "JSONMarkUp.hpp"
 
 #define LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET \
 int nComponentCount = CBuildSetManager::getInstance()->getBuildSetComponentCount();         \
@@ -188,7 +189,8 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
+        //const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentName(idx);
 
         if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
@@ -205,6 +207,19 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
              }
         }
     }
+}
+
+void CConfigSchemaHelper::printNavigatorJSON(char **pOutput) const
+{
+    StringBuffer strJSON;
+
+    CJSONMarkUpHelper::getNavigatorJSON(strJSON);
+
+    *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
+
+    sprintf(*pOutput,"%s",strJSON.str());
+
+    return;
 }
 
 void CConfigSchemaHelper::printDump(const char* comp) const

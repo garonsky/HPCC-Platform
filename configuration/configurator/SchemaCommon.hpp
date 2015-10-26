@@ -80,22 +80,26 @@ namespace CONFIGURATOR
 
 #define QUICK_ENV_XPATH(X) for (int idx=0; idx < this->length(); idx++)                 \
                             {                                                           \
-                                 (this->item(idx)).populateEnvXPath(X.str(), idx+1);          \
+                                 (this->item(idx)).populateEnvXPath(X.str(), idx+1);    \
                             }
-#define QUICK_ENV_XPATH_WITH_INDEX(X,Y) for (int idx=0; idx < this->length(); idx++)                 \
+#define QUICK_ENV_XPATH_WITH_INDEX(X,Y) for (int idx=0; idx < this->length(); idx++)    \
                             {                                                           \
-                                 (this->item(idx)).populateEnvXPath(X.str(), Y);          \
+                                 (this->item(idx)).populateEnvXPath(X.str(), Y);        \
                             }
 
-#define QUICK_LOAD_ENV_XML(X)   assert(X != NULL);                                        \
-                                for (int idx=0; idx < this->length(); idx++)              \
-                                {                                                         \
-                                     (this->item(idx)).loadXMLFromEnvXml(X);              \
+#define QUICK_LOAD_ENV_XML(X)   assert(X != NULL);                                      \
+                                for (int idx=0; idx < this->length(); idx++)            \
+                                {                                                       \
+                                     (this->item(idx)).loadXMLFromEnvXml(X);            \
                                 }
 
 #define GETTER(X) virtual const char* get##X() const { return m_str##X.str(); }
 #define SETTER(X) virtual void set##X(const char* p) { m_str##X.clear().append(p); }
 #define GETTERSETTER(X) protected: StringBuffer m_str##X; public: GETTER(X) SETTER(X) public:
+
+//#define GETTER2(X) virtual const char* get##X() const { return m_str##X.str(); }
+//#define SETTER2(X) virtual void set##X(const char* p) { m_str##X.clear().append(p); m_str##X.replace('/','_');}
+//#define GETTERSETTER2(X) protected: StringBuffer m_str##X; public: GETTER(X) SETTER2(X) public:
 
 #define GETTERINT(X) virtual const long get##X() const { return m_n##X; }
 #define SETTERINT(X) virtual void set##X(long p) { m_n##X = p; } virtual void set##X(const char *p) { assert(p != NULL); if (p != 0 && *p != 0) m_n##X = atol(p); }
@@ -445,12 +449,8 @@ public:
     virtual ~CXSDNodeBase();
 
     GETTERSETTER(XSDXPath)
-    /*protected:
-    ::StringBuffer m_strXSDXPath;
-    public:
-    virtual void setXSDXPath(const char *p) const {m_strXSDXPath.set(p); }
-    virtual const char* getXSDXPath() const { return m_strXSDXPath.str(); }*/
     GETTERSETTER(EnvXPath)
+    //GETTERSETTER2(EnvXPath)
     GETTERSETTER(EnvValueFromXML)
 
     void dumpStdOut() const;

@@ -20,6 +20,7 @@ public:
     virtual bool ongetJSONForComponent(IEspContext &context, IEspGetJSONForComponentRequest &req, IEspGetJSONForComponentResponse &resp);
     virtual bool ongetNumberOfAvailableComponents(IEspContext &context, IEspGetNumberOfAvailableComponentsRequest &req, IEspGetNumberOfAvailableComponentsResponse &resp);
     virtual bool ongetComponentName(IEspContext &context, IEspGetComponentNameRequest &req, IEspGetComponentNameResponse &resp);
+    virtual bool ongetNavigatorJSON(IEspContext &context, IEspGetNavigatorJSONRequest &req, IEspGetNavigatorJSONResponse &resp);
     //virtual bool onopenConfigurationFile(IEspContext &context, IEspOpenConfigurationFileRequest &req, IEspOpenConfigurationFileResponse &resp);
 };
 

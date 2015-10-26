@@ -83,6 +83,7 @@ public:
     const char* printDocumentation(const char* comp);
     void printQML(const char* comp, char **pOutput, int nIdx = -1) const;
 	void printJSON(const char* comp, char **pOutput, int nIdx = -1) const;
+    void printNavigatorJSON(char **pOutput) const;
     void printDump(const char* comp) const;
     void dumpStdOut() const;
     void addToolTip(const char *js);
@@ -139,6 +140,11 @@ public:
     }
     bool saveConfigurationFile() const;
 
+    const char* getEnvFilePath() const
+    {
+        return m_strEnvFilePath.str();
+    }
+
 protected:
 
     CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = NULL);
@@ -162,10 +168,6 @@ protected:
     {
         assert(pEnvFilePath != NULL);
         m_strEnvFilePath.set(pEnvFilePath);
-    }
-    const char* getEnvFilePath() const
-    {
-        return m_strEnvFilePath.str();
     }
 
 private:

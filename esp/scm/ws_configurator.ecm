@@ -109,6 +109,16 @@ ESPResponse GetComponentNameResponse
    string ComponentName;
 };
 
+ESPRequest GetNavigatorJSONRequest
+{
+   string Empty;
+};
+
+ESPResponse GetNavigatorJSONResponse
+{
+   string JSON;
+};
+
 ESPservice [version("2.0"), default_client_version("2.0"), exceptions_inline("xslt/exceptions.xslt")] ws_configurator
 {
     ESPMethod getValue(GetValueRequest, GetValueResponse);
@@ -120,6 +130,7 @@ ESPservice [version("2.0"), default_client_version("2.0"), exceptions_inline("xs
     ESPMethod getJSONForComponent(GetJSONForComponentRequest, GetJSONForComponentResponse);
     ESPMethod getNumberOfAvailableComponents(GetNumberOfAvailableComponentsRequest, GetNumberOfAvailableComponentsResponse);
     ESPMethod getComponentName(GetComponentNameRequest, GetComponentNameResponse);
+    ESPMethod getNavigatorJSON(GetNavigatorJSONRequest, GetNavigatorJSONResponse);
 };
 
 SCMexportdef(ws_configurator);
