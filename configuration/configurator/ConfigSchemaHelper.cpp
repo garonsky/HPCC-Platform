@@ -189,8 +189,8 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
     {
-        //const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
-        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentName(idx);
+        const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx);
+        //const char *pSchemaName = CBuildSetManager::getInstance()->getBuildSetComponentName(idx);
 
         if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
