@@ -23,6 +23,7 @@ bool Cws_configuratorEx::ongetValue(IEspContext &context, IEspGetValueRequest &r
 
 bool Cws_configuratorEx::onsetValue(IEspContext &context, IEspSetValueRequest &req, IEspSetValueResponse &resp)
 {
+    CONFIGURATOR_API::setValue(req.getXPath(), req.getValue());
     return true;
 }
 
@@ -74,6 +75,14 @@ bool Cws_configuratorEx::ongetComponentName(IEspContext &context, IEspGetCompone
     char pName[1024];
     CONFIGURATOR_API::getComponentName(req.getNumber(),pName);
     resp.setComponentName(pName);
+    return true;
+}
+
+bool Cws_configuratorEx::ongetNavigatorJSON(IEspContext &context, IEspGetNavigatorJSONRequest &req, IEspGetNavigatorJSONResponse &resp)
+{
+    char *pJSON = NULL;
+    CONFIGURATOR_API::getNavigatorJSON(&pJSON);
+    resp.setJSON(pJSON);
     return true;
 }
 

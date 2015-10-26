@@ -326,6 +326,7 @@ void CSchema::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
     if (m_pAttributeGroupArray != NULL)
         m_pAttributeGroupArray->loadXMLFromEnvXml(pEnvTree);
 }
+
 const char* CSchema::getXML(const char* /*pComponent*/)
 {
     if (m_strXML.length() == 0)

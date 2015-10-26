@@ -145,7 +145,14 @@ void setValue(const char *pXPath, const char *pValue)
     assert(pAttribute != NULL);
     pAttribute->setEnvValueFromXML(pValue);
 
-    CConfigSchemaHelper::getInstance()->setEnvTreeProp(pXPath, pValue);
+    StringBuffer strXPath(pXPath);
+
+    if (strstr(pValue, "/") == NULL)
+    {
+        strXPath.replace('_','/');
+    }
+
+    CConfigSchemaHelper::getInstance()->setEnvTreeProp(strXPath.str(), pValue);
 }
 
 int getIndex(const char *pXPath)
@@ -482,6 +489,11 @@ void getQML(void *pData, char **pOutput, int nIdx)
 void getJSON(void *pData, char **pOutput, int nIdx)
 {
     CConfigSchemaHelper::getInstance()->printJSON(CONFIGURATOR_API::getFileName(pData), pOutput, nIdx);
+}
+
+void getNavigatorJSON(char **pOutput)
+{
+    CConfigSchemaHelper::getInstance()->printNavigatorJSON(pOutput);
 }
 
 void getJSONByComponentName(const char *pComponentName, char **pOutput, int nIdx)

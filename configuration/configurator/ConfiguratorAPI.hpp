@@ -66,6 +66,7 @@ extern "C" void* getModel();
 extern "C" void reload(const char *pFile);
 extern "C" void getQML(void *pData, char **pOutput, int nIdx);
 extern "C" void getJSON(void *pData, char **pOutput, int nIdx);
+extern "C" void getNavigatorJSON(char **pOutput);
 extern "C" void getJSONByComponentName(const char *pComponentName, char **pOutput, int nIdx);
 extern "C" const char* getQMLFromFile(const char *pXSD, int idx);
 extern "C" void getQMLByIndex(int idx, char *pOutput);
