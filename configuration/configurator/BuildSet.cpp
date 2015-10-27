@@ -72,7 +72,7 @@ void CBuildSetManager::getBuildSetComponents(StringArray& buildSetArray) const
 
     for (int idx = 0; idx < nLength; idx++)
     {
-        buildSetArray.append(this->getBuildSetComponentName(idx));
+        buildSetArray.append(this->getBuildSetComponentTypeName(idx));
     }
 }
 
@@ -96,7 +96,7 @@ const char* CBuildSetManager::getBuildSetServiceFileName(int index) const
     return this->getBuildSetService(index)->getSchema();
 }
 
-const char* CBuildSetManager::getBuildSetComponentName(int index) const
+const char* CBuildSetManager::getBuildSetComponentTypeName(int index) const
 {
     return this->getBuildSetComponent(index)->getName();
 }

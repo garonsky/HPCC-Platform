@@ -24,10 +24,6 @@ namespace CONFIGURATOR
 {
 
 class CXSDNodeBase;
-/*class CEnvironmentModelNode;
-
-template <class TYPE>
-class CIArrayOf;*/
 
 class CEnvironmentModelNode
 {

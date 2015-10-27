@@ -264,9 +264,9 @@ const char* getServiceName(int idx, char *pName)
 const char* getComponentName(int idx, char *pName)
 {
     if (pName != NULL)
-        strcpy (pName, CBuildSetManager::getInstance()->getBuildSetComponentName(idx));
+        strcpy (pName, CBuildSetManager::getInstance()->getBuildSetComponentTypeName(idx));
 
-    return CBuildSetManager::getInstance()->getBuildSetComponentName(idx);
+    return CBuildSetManager::getInstance()->getBuildSetComponentTypeName(idx);
 }
 
 int openConfigurationFile(const char* pFile)

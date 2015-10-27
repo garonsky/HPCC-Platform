@@ -53,8 +53,37 @@ void CJSONMarkUpHelper::getNavigatorJSON(::StringBuffer &strJSON)
             strJSON.append(JSON_NAVIGATOR_NODES);
             strJSON.append(JSON_NAVIGATOR_NODE_BEGIN);
         }
-        strJSON.append(JSON_NAVIGATOR_TEXT).append("\"").append(CBuildSetManager::getInstance()->getBuildSetComponentName(i)).append("\",").append("\n");
+
+        StringBuffer strComponentTypeName(CBuildSetManager::getInstance()->getBuildSetComponentTypeName(i));
+        StringBuffer strComponentProcessName(CBuildSetManager::getInstance()->getBuildSetProcessName(i));
+
+        strJSON.append(JSON_NAVIGATOR_TEXT).append("\"").append(strComponentTypeName.str()).append("\",").append("\n");
         strJSON.append(JSON_NAVIGATOR_KEY).append("\"").append(CBuildSetManager::getInstance()->getBuildSetComponentFileName(i)).append("\"");
+
+        int nInstanceCount = CConfigSchemaHelper::getInstance()->getInstancesOfComponentType(strComponentTypeName.str());
+
+        for (int ii = 0; ii < nInstanceCount; ii++)
+        {
+            if (ii == 0)
+            {
+                strJSON.append(",\n");
+                strJSON.append(JSON_NAVIGATOR_NODES);
+                strJSON.append(JSON_NAVIGATOR_NODE_BEGIN);
+            }
+
+            strJSON.append(JSON_NAVIGATOR_TEXT).append("\"").append(CConfigSchemaHelper::getInstance()->getInstanceNameOfComponentType(strComponentProcessName.str(),ii)).append("\",").append("\n");
+            strJSON.append(JSON_NAVIGATOR_KEY).append("\"").append(strComponentProcessName.str()).append("[").append(ii+1).append("]").append("\"\n");
+
+            if (ii+1 < nInstanceCount)
+            {
+                strJSON.append("},\n{");
+            }
+            else
+            {
+                strJSON.append("\n");
+                strJSON.append(JSON_NAVIGATOR_NODE_END);
+            }
+        }
 
         if (i+1 < nComponents)
         {

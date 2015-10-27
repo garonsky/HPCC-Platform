@@ -736,3 +736,55 @@ void CConfigSchemaHelper::addKeyForReverseAssociation(const CKey *pKeyRef) const
 void CConfigSchemaHelper::processKeyReverseAssociation() const
 {
 }
+
+int CConfigSchemaHelper::getInstancesOfComponentType(const char *pCompType) const
+{
+    assert(pCompType != NULL && *pCompType != 0);
+
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
+    {
+        const char *pCompName = CBuildSetManager::getInstance()->getBuildSetComponentTypeName(idx);//  ->getBuildSetProcessName(idx);
+        const char *pProcessName = CBuildSetManager::getInstance()->getBuildSetProcessName(idx);
+
+        if (pCompName != NULL && strcmp(pCompName, pCompType) == 0)
+        {
+             CSchema *pSchema = m_pSchemaMapManager->getSchemaForXSD(CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx));
+
+             assert(pSchema != NULL);
+
+             int nCount = 0;
+             //VStringBuffer strXPath("./%s/%s/%s[%d]", XML_TAG_SOFTWARE, pProcessName, XML_TAG_INSTANCE, nCount+1);
+             ::VStringBuffer strXPath("./%s/%s[%d]", XML_TAG_SOFTWARE, pProcessName, 1);
+
+             while (true)
+             {
+                 ::IPropertyTree *pTree = CConfigSchemaHelper::getInstance()->getEnvPropertyTree();
+
+                 //if ( const_cast<const ::IPropertyTree*>(this->getEnvPropertyTree())->queryPropTree(strXPath.str() == NULL) )
+                 if (pTree->queryPropTree(strXPath.str()) == NULL)
+                 {
+                     return nCount;
+                 }
+                 nCount++;
+
+                 strXPath.setf("./%s/%s[%d]", XML_TAG_SOFTWARE, pProcessName, nCount+1);
+             }
+        }
+    }
+    return 0;
+}
+
+const char* CConfigSchemaHelper::getInstanceNameOfComponentType(const char *pCompType, int idx)
+{
+    //assert(const_cast<::IPropertyTree*>(this->getEnvPropertyTree())->queryPropTree(strXPath.str()) != NULL);
+
+    //::VStringBuffer strXPath("./%s/%s/%s[%d]/[%s]", XML_TAG_SOFTWARE, pCompType, XML_TAG_INSTANCE, idx+1, XML_ATTR_NAME);
+    ::VStringBuffer strXPath("./%s/%s[%d]", XML_TAG_SOFTWARE, pCompType, idx+1);
+
+    typedef ::IPropertyTree jlibIPropertyTree;
+    const ::IPropertyTree *pTree = const_cast<const jlibIPropertyTree*>(this->getEnvPropertyTree()->queryPropTree(strXPath.str()));
+
+    return pTree->queryProp(XML_ATTR_NAME);
+
+//    return  (const_cast< const jlibIPropertyTree*>(this->getEnvPropertyTree()))->queryProp(strXPath.str());
+}
