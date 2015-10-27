@@ -482,7 +482,7 @@ const char* CComplexTypeArray::getXML(const char* /*pComponent*/)
 void CComplexTypeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     this->setEnvXPath(strXPath);
-    QUICK_ENV_XPATH_WITH_INDEX(strXPath, index)
+    QUICK_ENV_XPATH_WITH_INDEX(strXPath, 1); // can only have 1 complex type array
 }
 
 void CComplexTypeArray::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)

@@ -145,6 +145,10 @@ public:
         return m_strEnvFilePath.str();
     }
 
+    int getInstancesOfComponentType(const char *pCompType) const;
+
+    const char* getInstanceNameOfComponentType(const char *pCompType, int idx);
+
 protected:
 
     CConfigSchemaHelper(const char* pBuildSetFile = DEFAULT_BUILD_SET_XML_FILE, const char* pBuildSetDir = DEFAULT_BUILD_SET_DIRECTORY, const char* pDefaultDirOverride = NULL);
