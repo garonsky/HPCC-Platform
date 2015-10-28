@@ -42,7 +42,7 @@ static const char* JSON_NAVIGATOR_NODE_BEGIN("[{\n");
 static const char* JSON_NAVIGATOR_NODE_END("}]\n");
 static const char* JSON_NAVIGATOR_TEXT("\"text\":");
 //static const char* JSON_NAVIGATOR_TYPE("\"type\":");
-static const char* JSON_NAVIGATOR_KEY("\"key\":");
+static const char* JSON_NAVIGATOR_KEY("\"href\": ");
 //static const char* JSON_NAVIGATOR_KEY(JSON_DEFAULT_VALUE);
 static const char* JSON_NAVIGATOR_SELECTABLE("\"selectable\":");
 static const char* JSON_NAVIGATOR_NODES("\"nodes\":");
