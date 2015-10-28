@@ -57,10 +57,10 @@ bool Cws_configuratorEx::onopenConfigurationFile(IEspContext &context, IEspOpenC
 
 bool Cws_configuratorEx::ongetJSONForComponent(IEspContext &context, IEspGetJSONForComponentRequest &req, IEspGetJSONForComponentResponse &resp)
 {
-    //if (CONFIGURATOR_API::getreq.getComponent(())
     char *pJSON = NULL;
-    CONFIGURATOR_API::getJSONByComponentName(req.getComponentName(), &pJSON, 0);
+    CONFIGURATOR_API::getJSONByComponentKey(req.getComponentName(), &pJSON);
     resp.setJSON(pJSON);
+    free(pJSON);
     return true;
 }
 
@@ -85,10 +85,3 @@ bool Cws_configuratorEx::ongetNavigatorJSON(IEspContext &context, IEspGetNavigat
     resp.setJSON(pJSON);
     return true;
 }
-
-/*bool Cws_configuratorEx::onopenConfigurationFile(IEspContext &context, IEspOpenConfigurationFileRequest &req, IEspOpenConfigurationFileResponse &resp)
-{
-    int nResult = CONFIGURATOR_API::openConfigurationFile(req->getFileName());
-
-    return true;
-}*/

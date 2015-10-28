@@ -501,6 +501,11 @@ void getJSONByComponentName(const char *pComponentName, char **pOutput, int nIdx
     CConfigSchemaHelper::getInstance()->printJSON(pComponentName, pOutput, nIdx);
 }
 
+void getJSONByComponentKey(const char *pKey, char **pOutput)
+{
+    CConfigSchemaHelper::getInstance()->printJSONByKey(pKey, pOutput);
+}
+
 const char* getQMLFromFile(const char *pXSD, int idx)
 {
     if (pXSD == NULL || *pXSD == 0)

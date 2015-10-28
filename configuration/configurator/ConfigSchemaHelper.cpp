@@ -182,9 +182,6 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
     strJSON.clear();
     resetTables();
 
-    if (comp == NULL || *comp == 0)
-        return;
-
     CSchema* pSchema = NULL;
 
     LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
@@ -205,6 +202,66 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
 
                  return;
              }
+        }
+    }
+}
+
+void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput) const
+{
+    StringBuffer strKey(key);
+
+    if (! (key != NULL && *key != 0) )
+    {
+        DBGLOG("no component key provided for to generate JSON");
+        return;
+    }
+
+    assert(m_pSchemaMapManager != NULL);
+
+    StringBuffer strJSON;
+
+    strJSON.clear();
+    resetTables();
+
+    const char *pChar = strrchr(key,'[');
+    assert(pChar != NULL && strlen(pChar) >= 3);
+
+    int length = strlen(pChar);
+
+    StringBuffer strIdx;
+
+    pChar++;
+
+    int nTemp = 1;
+    while (*pChar+nTemp != ']')
+    {
+      strIdx.append(pChar+nTemp);
+      nTemp++;
+    }
+
+    int nIndexForJSON = atoi(strIdx.str());
+
+    strKey.setLength(strKey.length()-length);  // remove [N] from XPath;
+
+    CSchema* pSchema = NULL;
+
+    LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET
+    {
+        const char *pProcessName = CBuildSetManager::getInstance()->getBuildSetProcessName(idx);
+
+        if (pProcessName != NULL && strcmp(strKey.str(), pProcessName) == 0)
+        {
+            pSchema = m_pSchemaMapManager->getSchemaForXSD(CBuildSetManager::getInstance()->getBuildSetComponentFileName(idx));
+            assert(pSchema != NULL);
+
+            if (pSchema != NULL)
+            {
+                pSchema->getJSON(strJSON, 0, nIndexForJSON);
+                *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
+                sprintf(*pOutput,"%s",strJSON.str());
+
+                return;
+            }
         }
     }
 }
@@ -753,14 +810,12 @@ int CConfigSchemaHelper::getInstancesOfComponentType(const char *pCompType) cons
              assert(pSchema != NULL);
 
              int nCount = 0;
-             //VStringBuffer strXPath("./%s/%s/%s[%d]", XML_TAG_SOFTWARE, pProcessName, XML_TAG_INSTANCE, nCount+1);
              ::VStringBuffer strXPath("./%s/%s[%d]", XML_TAG_SOFTWARE, pProcessName, 1);
 
              while (true)
              {
                  ::IPropertyTree *pTree = CConfigSchemaHelper::getInstance()->getEnvPropertyTree();
 
-                 //if ( const_cast<const ::IPropertyTree*>(this->getEnvPropertyTree())->queryPropTree(strXPath.str() == NULL) )
                  if (pTree->queryPropTree(strXPath.str()) == NULL)
                  {
                      return nCount;
@@ -776,15 +831,10 @@ int CConfigSchemaHelper::getInstancesOfComponentType(const char *pCompType) cons
 
 const char* CConfigSchemaHelper::getInstanceNameOfComponentType(const char *pCompType, int idx)
 {
-    //assert(const_cast<::IPropertyTree*>(this->getEnvPropertyTree())->queryPropTree(strXPath.str()) != NULL);
-
-    //::VStringBuffer strXPath("./%s/%s/%s[%d]/[%s]", XML_TAG_SOFTWARE, pCompType, XML_TAG_INSTANCE, idx+1, XML_ATTR_NAME);
     ::VStringBuffer strXPath("./%s/%s[%d]", XML_TAG_SOFTWARE, pCompType, idx+1);
 
     typedef ::IPropertyTree jlibIPropertyTree;
     const ::IPropertyTree *pTree = const_cast<const jlibIPropertyTree*>(this->getEnvPropertyTree()->queryPropTree(strXPath.str()));
 
     return pTree->queryProp(XML_ATTR_NAME);
-
-//    return  (const_cast< const jlibIPropertyTree*>(this->getEnvPropertyTree()))->queryProp(strXPath.str());
 }

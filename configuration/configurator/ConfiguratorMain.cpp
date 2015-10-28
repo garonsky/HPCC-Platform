@@ -368,7 +368,7 @@ void usage()
         {
             char *pOutput = NULL;
 
-            pSchemaHelper->printJSON(arrXSDs.item(idx), &pOutput);
+            pSchemaHelper->printJSONByKey(/*arrXSDs.item(idx)*/"DaliServerProcess[1]", &pOutput);
             ::std::cout << pOutput;
 
             free(pOutput);
