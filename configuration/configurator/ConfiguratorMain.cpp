@@ -58,7 +58,7 @@ void usage()
     ::std::cout << "-l -list                          : list available xsd files" << ::std::endl;
     ::std::cout << "-m -xml                           : generate XML configuration file" << ::std::endl;
     ::std::cout << "-q -qml                           : prints QML" << ::std::endl;
-	::std::cout << "-j -json                          : prints JSON" << ::std::endl;
+    ::std::cout << "-j -json <component key>          : prints JSON" << ::std::endl;
     ::std::cout << "-c -env -config <path to env xml file> : load environment config xml file (e.g. environment.xml) " << ::std::endl;
 #ifdef CONFIGURATOR_LIB
         ::std::cout << "-s1 -server1 <qml file>           : run server using qml file" << ::std::endl;
@@ -88,6 +88,7 @@ void usage()
     char pEnvXMLPath[BUFF_SIZE];
     char pQMLFile[BUFF_SIZE];
 	StringBuffer strJSONFile;
+    StringBuffer strComponentKey;
 
     memset(pBuildSetFile, 0, sizeof(pBuildSetFile));
     memset(pBuildSetFileDir, 0, sizeof(pBuildSetFileDir));
@@ -253,7 +254,11 @@ void usage()
         else if (stricmp(argv[idx], "-qml") == 0 || stricmp(argv[idx], "-q") == 0)
             bGenQML = true;
 		else if (stricmp(argv[idx], "-json") == 0 || stricmp(argv[idx], "-j") == 0)
+        {
             bGenJSON = true;
+            idx++;
+            strComponentKey.set(argv[idx]);
+        }
         idx++;
     }
 
@@ -368,7 +373,8 @@ void usage()
         {
             char *pOutput = NULL;
 
-            pSchemaHelper->printJSONByKey(/*arrXSDs.item(idx)*/"DaliServerProcess[1]", &pOutput);
+            //pSchemaHelper->printJSONByKey(/*arrXSDs.item(idx)*/"DaliServerProcess[2]", &pOutput);
+            pSchemaHelper->printJSONByKey(strComponentKey.str(), &pOutput);
             ::std::cout << pOutput;
 
             free(pOutput);
@@ -386,7 +392,9 @@ void usage()
             pFileIO.setown(pFile->open(IFOcreaterw));
 
             char *pJSON = NULL;
-            pSchemaHelper->printJSON(arrXSDs.item(idx), &pJSON);
+            //pSchemaHelper->printJSON(arrXSDs.item(idx), &pJSON);
+            //pSchemaHelper->printJSONByKey(/*arrXSDs.item(idx)*/"#DaliServerProcess[2]", &pJSON);
+            pSchemaHelper->printJSONByKey(strComponentKey.str(), &pJSON);
 
             if (pJSON == NULL)
             {

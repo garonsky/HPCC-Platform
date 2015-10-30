@@ -123,7 +123,11 @@ int initialize(int argc, char *argv[])
 int getValue(const char *pXPath, char *pValue)
 {
     // By Default, return xPath as value.
-    strcpy(pValue, pXPath);
+
+    if (pXPath == NULL || *pXPath == 0)
+        return 0;
+
+    strcpy(pValue, pXPath[0] == '#' ? &(pXPath[1]) : pXPath); // href for frontend
     CAttribute *pAttribute = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getAttributeFromXPath(pXPath);
 
     if(pAttribute == NULL)
@@ -133,7 +137,8 @@ int getValue(const char *pXPath, char *pValue)
         strcpy(pValue, pAttribute->getInstanceValue());
         ::std::cout << "xPath: " << pXPath << "| value: " << pValue << ::std::endl;
     }
-    return true;
+
+    return 1;
 }
 
 void setValue(const char *pXPath, const char *pValue)

@@ -39,12 +39,7 @@
               <viewType>none</viewType>
             </xs:appinfo>
           </xs:annotation>
-          <xs:complexType>
-            <xs:complexContent>
-              <xs:extension base="SimpleProcessBase"/>
-            </xs:complexContent>
-          </xs:complexType>
-        </xs:element>
+       </xs:element>
         <xs:element name="ThorSlaveProcess" maxOccurs="unbounded">
           <xs:annotation>
             <xs:documentation>Describes a thor slave</xs:documentation>
@@ -52,11 +47,6 @@
               <viewType>none</viewType>
             </xs:appinfo>
           </xs:annotation>
-          <xs:complexType>
-            <xs:complexContent>
-              <xs:extension base="SimpleProcessBase"/>
-            </xs:complexContent>
-          </xs:complexType>
         </xs:element>
         <xs:element name="ThorMasterProcess">
           <xs:annotation>
@@ -65,11 +55,6 @@
               <viewType>none</viewType>
             </xs:appinfo>
           </xs:annotation>
-          <xs:complexType>
-            <xs:complexContent>
-              <xs:extension base="SimpleProcessBase"/>
-            </xs:complexContent>
-          </xs:complexType>
         </xs:element>
         <xs:element name="Topology">
           <xs:annotation>
