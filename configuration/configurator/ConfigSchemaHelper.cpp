@@ -208,8 +208,6 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
 
 void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput) const
 {
-    StringBuffer strKey(key);
-
     if (! (key != NULL && *key != 0) )
     {
         DBGLOG("no component key provided for to generate JSON");
@@ -218,6 +216,10 @@ void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput) const
 
     assert(m_pSchemaMapManager != NULL);
 
+    if (key[0] == '#')
+        key = &(key[1]);
+
+    StringBuffer strKey(key);
     StringBuffer strJSON;
 
     strJSON.clear();
