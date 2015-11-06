@@ -334,9 +334,13 @@ void CElement::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) co
 
     if (m_pComplexTypeArray != NULL  && m_pComplexTypeArray->length() > 0)
     {
-        CJSONMarkUpHelper::createUIContent(strJSON, offset, this->getMaxOccursInt() > 1 ? JSON_TYPE_TABLE : JSON_TYPE_TAB, this->getTitle(), this->getEnvXPath());
+        CJSONMarkUpHelper::createUIContent(strJSON, offset, (this->getMaxOccursInt() > 1 || strlen(this->getMinOccurs()) > 0) ? JSON_TYPE_TABLE : JSON_TYPE_TAB, this->getTitle(), this->getEnvXPath());
 
         m_pComplexTypeArray->getJSON(strJSON, offset);
+    }
+    else
+    {
+        //CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TABLE, this->getTitle(), this->getEnvXPath());
     }
 }
 

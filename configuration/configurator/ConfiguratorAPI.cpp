@@ -493,17 +493,18 @@ void getQML(void *pData, char **pOutput, int nIdx)
 
 void getJSON(void *pData, char **pOutput, int nIdx)
 {
-    CConfigSchemaHelper::getInstance()->printJSON(CONFIGURATOR_API::getFileName(pData), pOutput, nIdx);
+    CConfigSchemaHelper::getInstance()->printJSON(CONFIGURATOR_API::getFileName(pData), pOutput, nIdx, true);
+
 }
 
 void getNavigatorJSON(char **pOutput)
 {
-    CConfigSchemaHelper::getInstance()->printNavigatorJSON(pOutput);
+    CConfigSchemaHelper::getInstance()->printNavigatorJSON(pOutput, true);
 }
 
 void getJSONByComponentName(const char *pComponentName, char **pOutput, int nIdx)
 {
-    CConfigSchemaHelper::getInstance()->printJSON(pComponentName, pOutput, nIdx);
+    CConfigSchemaHelper::getInstance()->printJSON(pComponentName, pOutput, nIdx, true);
 }
 
 void getJSONByComponentKey(const char *pKey, char **pOutput)
