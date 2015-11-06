@@ -59,9 +59,18 @@ bool Cws_configuratorEx::ongetJSONForComponent(IEspContext &context, IEspGetJSON
 {
     char *pJSON = NULL;
     CONFIGURATOR_API::getJSONByComponentKey(req.getComponentName(), &pJSON);
-    resp.setJSON(pJSON);
-    free(pJSON);
-    return true;
+
+    if (pJSON != NULL)
+    {
+        resp.setJSON(pJSON);
+        free(pJSON);
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 bool Cws_configuratorEx::ongetNumberOfAvailableComponents(IEspContext &context, IEspGetNumberOfAvailableComponentsRequest &req, IEspGetNumberOfAvailableComponentsResponse &resp)
