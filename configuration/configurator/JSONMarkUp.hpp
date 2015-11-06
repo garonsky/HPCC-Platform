@@ -19,14 +19,16 @@ static const char* JSON_END("\n\
 }\n");*/
 
 static const char* JSON_BEGIN("\
-{\n\
-    \"content\": {\n\
-        \"inntercontent\": [\n");
+[\
+    {\n\
+        \"content\": {\n\
+            \"innercontent\": [\n");
 
 static const char* JSON_END("\
-                       ]\n\
-    }\n\
-}\n");
+                              ]\n\
+                      }\n\
+        }\n\
+]\n");
 
 static const char* JSON_CONTENT_BEGIN(",\"content\" : {\n");
 
