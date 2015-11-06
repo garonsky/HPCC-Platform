@@ -168,7 +168,7 @@ const char* CConfigSchemaHelper::printDocumentation(const char* comp)
     }
     return NULL;
 }
-void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) const
+void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx, bool bClearLF) const
 {
     if (! (comp != NULL && *comp != 0) )
     {
@@ -198,6 +198,10 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
              {
                  pSchema->getJSON(strJSON, 0, nIdx);
                  *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
+
+                 if (bClearLF == true)
+                     this->clearLF(strJSON);
+
                  sprintf(*pOutput,"%s",strJSON.str());
 
                  return;
@@ -206,7 +210,7 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx) 
     }
 }
 
-void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput) const
+void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput, bool bClearLF) const
 {
     if (! (key != NULL && *key != 0) )
     {
@@ -260,6 +264,10 @@ void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput) const
             {
                 pSchema->getJSON(strJSON, 0, nIndexForJSON);
                 *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
+
+                if (bClearLF == true)
+                    this->clearLF(strJSON);
+
                 sprintf(*pOutput,"%s",strJSON.str());
 
                 return;
@@ -268,13 +276,16 @@ void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput) const
     }
 }
 
-void CConfigSchemaHelper::printNavigatorJSON(char **pOutput) const
+void CConfigSchemaHelper::printNavigatorJSON(char **pOutput, bool bClearLF) const
 {
     StringBuffer strJSON;
 
     CJSONMarkUpHelper::getNavigatorJSON(strJSON);
 
     *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
+
+    if (bClearLF == true)
+        this->clearLF(strJSON);
 
     sprintf(*pOutput,"%s",strJSON.str());
 
@@ -839,4 +850,9 @@ const char* CConfigSchemaHelper::getInstanceNameOfComponentType(const char *pCom
     const ::IPropertyTree *pTree = const_cast<const jlibIPropertyTree*>(this->getEnvPropertyTree()->queryPropTree(strXPath.str()));
 
     return pTree->queryProp(XML_ATTR_NAME);
+}
+
+void CConfigSchemaHelper::clearLF(::StringBuffer& strToClear)
+{
+    strToClear.replaceString("\n","");
 }

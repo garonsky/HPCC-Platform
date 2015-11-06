@@ -119,15 +119,20 @@ public:
 
     int getMaxOccursInt() const
     {
-        if (strcmp(m_strMaxOccurs.str(), TAG_UNBOUNDED) == 0)
-            return __SHRT_MAX__;
+        if (m_strMaxOccurs.length() == 0)  // not set
+            return SHRT_MIN;
+        else if (strcmp(m_strMaxOccurs.str(), TAG_UNBOUNDED) == 0)
+            return SHRT_MAX;
         else
             return atoi(m_strMaxOccurs.str());
     }
 
     int getMinOccursInt() const
     {
-        return atoi(m_strMinOccurs.str());
+        if (m_strMinOccurs.length() == 0)
+            return -1;
+        else
+            return atoi(m_strMinOccurs.str());
     }
 
     static CElement* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath, bool bIsInXSD = true);
