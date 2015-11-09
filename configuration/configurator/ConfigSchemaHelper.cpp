@@ -191,21 +191,23 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx, 
 
         if (pSchemaName != NULL && strcmp(comp, pSchemaName) == 0)
         {
-             pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
-             assert(pSchema != NULL);
+            pSchema = m_pSchemaMapManager->getSchemaForXSD(pSchemaName);
+            assert(pSchema != NULL);
 
-             if (pSchema != NULL)
-             {
-                 pSchema->getJSON(strJSON, 0, nIdx);
-                 *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
+            if (pSchema != NULL)
+            {
+                pSchema->getJSON(strJSON, 0, nIdx);
+                *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
 
-                 if (bClearLF == true)
-                     this->clearLF(strJSON);
+                if (bClearLF == true)
+                    this->clearLF(strJSON);
 
-                 sprintf(*pOutput,"%s",strJSON.str());
+                strJSON.replaceString("\\","\\\\");
 
-                 return;
-             }
+                sprintf(*pOutput,"%s",strJSON.str());
+
+                return;
+            }
         }
     }
 }
@@ -268,6 +270,11 @@ void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput, bool b
                 if (bClearLF == true)
                     this->clearLF(strJSON);
 
+                strJSON.replaceString("\\","\\\\");
+
+//                char ch = '\\';
+//                encodeJSON(strJSON, &ch);
+
                 sprintf(*pOutput,"%s",strJSON.str());
 
                 return;
@@ -286,6 +293,8 @@ void CConfigSchemaHelper::printNavigatorJSON(char **pOutput, bool bClearLF) cons
 
     if (bClearLF == true)
         this->clearLF(strJSON);
+
+    strJSON.replaceString("\\","\\\\");
 
     sprintf(*pOutput,"%s",strJSON.str());
 
