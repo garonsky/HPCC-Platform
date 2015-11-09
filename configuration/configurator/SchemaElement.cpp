@@ -340,7 +340,7 @@ void CElement::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) co
     }
     else
     {
-        //CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TABLE, this->getTitle(), this->getEnvXPath());
+        CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TABLE, this->getTitle(), this->getEnvXPath());
     }
 }
 

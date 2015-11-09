@@ -4,7 +4,7 @@
 namespace CONFIGURATOR
 {
 
-static const char* JSON_BEGIN("\
+/*static const char* JSON_BEGIN("\
 {\n\
     \"data\": \n\
     {\n\
@@ -16,9 +16,9 @@ static const char* JSON_BEGIN("\
 static const char* JSON_END("\n\
         ]\n\
     }\n\
-}\n");
+}\n");*/
 
-/*static const char* JSON_BEGIN("\
+static const char* JSON_BEGIN("\
 {\n\
     \"content\": {\n\
         \"innercontent\": [\n");
@@ -26,7 +26,7 @@ static const char* JSON_END("\n\
 static const char* JSON_END("\
                        ]\n\
     }\n\
-}\n");*/
+}\n");
 
 static const char* JSON_CONTENT_BEGIN(",\"content\" : {\n");
 
