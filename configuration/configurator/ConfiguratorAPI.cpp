@@ -494,7 +494,6 @@ void getQML(void *pData, char **pOutput, int nIdx)
 void getJSON(void *pData, char **pOutput, int nIdx)
 {
     CConfigSchemaHelper::getInstance()->printJSON(CONFIGURATOR_API::getFileName(pData), pOutput, nIdx, true);
-
 }
 
 void getNavigatorJSON(char **pOutput)
