@@ -147,7 +147,7 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
         {
             if (lidx > 0)
             {
-                strValues.append(", ");
+                strValues.append("\" , \"");
             }
             strValues.append(this->getSimpleTypeArray()->item(0).getRestriction()->getEnumerationArray()->item(lidx).getValue());
         }
