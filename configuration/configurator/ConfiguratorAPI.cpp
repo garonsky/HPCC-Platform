@@ -145,17 +145,19 @@ void setValue(const char *pXPath, const char *pValue)
 {
     assert(pXPath != NULL && pXPath[0] != 0);
     assert(pValue != NULL);
-    CAttribute *pAttribute = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getAttributeFromXPath(pXPath);
+
+    StringBuffer strXPath(pXPath);
+    strXPath.replace('_','/');
+
+    CAttribute *pAttribute = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getAttributeFromXPath(strXPath.str());
 
     assert(pAttribute != NULL);
     pAttribute->setEnvValueFromXML(pValue);
 
-    StringBuffer strXPath(pXPath);
-
-    if (strstr(pValue, "/") == NULL)
+    /*if (strstr(pValue, "/") == NULL)
     {
         strXPath.replace('_','/');
-    }
+    }*/
 
     CConfigSchemaHelper::getInstance()->setEnvTreeProp(strXPath.str(), pValue);
 }

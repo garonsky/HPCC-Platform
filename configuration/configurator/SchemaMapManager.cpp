@@ -398,6 +398,38 @@ void CSchemaMapManager::addMapOfXSDXPathToElement(const char* pXPath, CElement *
     }
 }
 
+void CSchemaMapManager::addMapOfXPathToElementArray(const char* pXPath, CElementArray *pElementArray)
+{
+    assert(pXPath != NULL && *pXPath != 0);
+    assert(pElementArray);
+
+    PROGLOG("Mapping Env XML XPath %s to %p elementarray", pXPath, pElementArray);
+
+    if (pElementArray != NULL && pXPath != NULL && *pXPath != 0)
+    {
+        StringBuffer strXPath(pXPath);
+        stripTrailingIndex(strXPath);
+
+        this->m_pElementArrayPtrsMap->setValue(strXPath.str(), pElementArray);
+    }
+}
+
+void CSchemaMapManager::removeMapOfXPathToElementArray(const char* pXPath)
+{
+    assert(pXPath != NULL && *pXPath != 0);
+    assert(m_pElementArrayPtrsMap->find(pXPath) != NULL);
+
+    this-m_pElementArrayPtrsMap->remove(pXPath);
+}
+
+CElementArray* CSchemaMapManager::getElementArrayFromXPath(const char *pXPath)
+{
+    assert(pXPath != NULL && *pXPath != 0);
+    assert(m_pElementArrayPtrsMap->getValue(pXPath) != NULL);
+
+    return *(this->m_pElementArrayPtrsMap->getValue(pXPath));
+}
+
 CElement* CSchemaMapManager::getElementFromXSDXPath(const char *pXPath) const
 {
     UNIMPLEMENTED;
