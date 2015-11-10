@@ -405,6 +405,24 @@ static void QuickOut(::std::ostream &cout, const char* pLabel, int value, unsign
     cout << pLabel << ": " << value << ::std::endl;
 }
 
+static const char* stripTrailingIndex(StringBuffer& strXPath)  // should this replace int CConfigSchemaHelper::stripXPathIndex(StringBuffer &strXPath)?
+{
+    if (strXPath.length() == 0 || strXPath[strXPath.length()-1] != ']')
+        return strXPath.str();
+
+    while (1)
+    {
+        if (strXPath[strXPath.length()-1] == '[')
+        {
+            strXPath.setLength(strXPath.length()-1);
+            break;
+        }
+        strXPath.setLength(strXPath.length()-1);
+    }
+
+    return strXPath.str();
+}
+
 class InterfaceImpl : public IInterface
 {
 public:

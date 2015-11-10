@@ -332,15 +332,21 @@ void CElement::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) co
 
     assert(strlen(this->getName()) > 0);
 
+    StringBuffer strXPath(this->getEnvXPath());
+
+    stripTrailingIndex(strXPath);
+
     if (m_pComplexTypeArray != NULL  && m_pComplexTypeArray->length() > 0)
     {
-        CJSONMarkUpHelper::createUIContent(strJSON, offset, (this->getMaxOccursInt() > 1 || strlen(this->getMinOccurs()) > 0) ? JSON_TYPE_TABLE : JSON_TYPE_TAB, this->getTitle(), this->getEnvXPath());
+        //CJSONMarkUpHelper::createUIContent(strJSON, offset, (this->getMaxOccursInt() > 1 || strlen(this->getMinOccurs()) > 0) ? JSON_TYPE_TABLE : JSON_TYPE_TAB, this->getTitle(), this->getEnvXPath());
+        CJSONMarkUpHelper::createUIContent(strJSON, offset, (this->getMaxOccursInt() > 1 || strlen(this->getMinOccurs()) > 0) ? JSON_TYPE_TABLE : JSON_TYPE_TAB, this->getTitle(), strXPath.str());
 
         m_pComplexTypeArray->getJSON(strJSON, offset);
     }
     else
     {
-        CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TABLE, this->getTitle(), this->getEnvXPath());
+        //CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TABLE, this->getTitle(), this->getEnvXPath());
+        CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TABLE, this->getTitle(), strXPath.str());
     }
 }
 
@@ -800,7 +806,7 @@ void CElementArray::getQML3(::StringBuffer &strQML, int idx) const
     {
         StringArray keyspace;
         ::MapStringTo<bool,bool> isList;
-	typedef ::StringBuffer jlibStringBuffer;
+        typedef ::StringBuffer jlibStringBuffer;
         ::MapStringTo<jlibStringBuffer,const char *> elementGroups;
 
         for (int i = 0; i < this->length(); i++) // Go through Element Array to initialize elementGroups
@@ -915,6 +921,12 @@ void CElementArray::populateEnvXPath(::StringBuffer strXPath, unsigned int index
             elemCount++;
 
         this->item(idx).populateEnvXPath(strXPath, elemCount);
+
+        if (elemCount == 1)
+        {
+            StringBuffer strXPathCopy(this->item(idx).getEnvXPath());
+            CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElementArray(stripTrailingIndex(strXPathCopy), this);
+        }
     }
 }
 
@@ -967,8 +979,8 @@ void CElementArray::loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
                 int nIndexOfElement =  (static_cast<CElementArray*>(pElement->getParentNode()))->getCountOfSiblingElements(pElement->getXSDXPath())+1;
                 pElement->populateEnvXPath(this->getEnvXPath(), subIndex);
 
-                PROGLOG("XSD Xpath to non-native element to %s", pElement->getXSDXPath());
-                PROGLOG("XML Xpath to non-native element to %s", pElement->getEnvXPath());
+                //PROGLOG("XSD Xpath to non-native element to %s", pElement->getXSDXPath());
+                //PROGLOG("XML Xpath to non-native element to %s", pElement->getEnvXPath());
 
                 pElement->setTopLevelElement(false);
 
@@ -976,7 +988,7 @@ void CElementArray::loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
                 CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXSDXPathToElementArray(pElement/*->getConstParentNode()*/->getXSDXPath(), (static_cast<CElementArray*>(pElement->getParentNode())));
 
                 this->append(*pElement);
-                PROGLOG("Added element %p with xsd xpath=%s array is size=%d with xpath of %s", pElement, pElement->getXSDXPath(),this->length(), this->getXSDXPath());
+                //PROGLOG("Added element %p with xsd xpath=%s array is size=%d with xpath of %s", pElement, pElement->getXSDXPath(),this->length(), this->getXSDXPath());
             }
             else
             {
@@ -986,7 +998,7 @@ void CElementArray::loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
                     pElement->setTopLevelElement(true);
 
                 CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXSDXPathToElementArray(pElement/*->getConstParentNode()*/->getXSDXPath(), (static_cast<CElementArray*>(pElement->getParentNode())));
-                PROGLOG("Added element %p with xsd xpath=%s array is size=%d with xpath of %s", pElement, pElement->getXSDXPath(),this->length(), this->getXSDXPath());
+                //PROGLOG("Added element %p with xsd xpath=%s array is size=%d with xpath of %s", pElement, pElement->getXSDXPath(),this->length(), this->getXSDXPath());
             }
             pElement->loadXMLFromEnvXml(pEnvTree);
 
@@ -1011,8 +1023,8 @@ CElementArray* CElementArray::load(const char* pSchemaFile)
 
     CElementArray *pElemArray = CElementArray::load(NULL, pSchemaRoot, XSD_TAG_ELEMENT);
 
-    PROGLOG("Function: %s() at %s:%d", __func__, __FILE__, __LINE__);
-    PROGLOG("pElemArray = %p", pElemArray);
+    //PROGLOG("Function: %s() at %s:%d", __func__, __FILE__, __LINE__);
+    //PROGLOG("pElemArray = %p", pElemArray);
 
     return pElemArray;
 }

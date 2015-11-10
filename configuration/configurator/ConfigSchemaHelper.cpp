@@ -168,7 +168,7 @@ const char* CConfigSchemaHelper::printDocumentation(const char* comp)
     }
     return NULL;
 }
-void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx, bool bClearLF) const
+void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx, bool bCleanUp) const
 {
     if (! (comp != NULL && *comp != 0) )
     {
@@ -199,10 +199,11 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx, 
                 pSchema->getJSON(strJSON, 0, nIdx);
                 *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
 
-                if (bClearLF == true)
+                if (bCleanUp == true)
+                {
                     this->clearLF(strJSON);
-
-                strJSON.replaceString("\\","\\\\");
+                    strJSON.replaceString("\\","\\\\");
+                }
 
                 sprintf(*pOutput,"%s",strJSON.str());
 
@@ -212,7 +213,7 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx, 
     }
 }
 
-void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput, bool bClearLF) const
+void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput, bool bCleanUp) const
 {
     if (! (key != NULL && *key != 0) )
     {
@@ -267,13 +268,11 @@ void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput, bool b
                 pSchema->getJSON(strJSON, 0, nIndexForJSON);
                 *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
 
-                if (bClearLF == true)
+                if (bCleanUp == true)
+                {
                     this->clearLF(strJSON);
-
-                strJSON.replaceString("\\","\\\\");
-
-//                char ch = '\\';
-//                encodeJSON(strJSON, &ch);
+                    strJSON.replaceString("\\","\\\\");
+                }
 
                 sprintf(*pOutput,"%s",strJSON.str());
 
@@ -283,7 +282,7 @@ void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput, bool b
     }
 }
 
-void CConfigSchemaHelper::printNavigatorJSON(char **pOutput, bool bClearLF) const
+void CConfigSchemaHelper::printNavigatorJSON(char **pOutput, bool bCleanUp) const
 {
     StringBuffer strJSON;
 
@@ -291,10 +290,11 @@ void CConfigSchemaHelper::printNavigatorJSON(char **pOutput, bool bClearLF) cons
 
     *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
 
-    if (bClearLF == true)
+    if (bCleanUp == true)
+    {
         this->clearLF(strJSON);
-
-    strJSON.replaceString("\\","\\\\");
+        strJSON.replaceString("\\","\\\\");
+    }
 
     sprintf(*pOutput,"%s",strJSON.str());
 
@@ -699,12 +699,16 @@ int CConfigSchemaHelper::getElementArraySize(const char *pXPath) const
     assert(pXPath != NULL);
     assert(m_pSchemaMapManager != NULL);
 
-    CElementArray *pElementArray = m_pSchemaMapManager->getElementArrayFromXSDXPath(pXPath);
+    //CElementArray *pElementArray = m_pSchemaMapManager->getElementArrayFromXSDXPath(pXPath);
+    CElementArray *pElementArray = m_pSchemaMapManager->getElementArrayFromXPath(pXPath);
 
     if (pElementArray == NULL)
         return 0;
 
-    return pElementArray->getCountOfSiblingElements(pXPath);
+    //return pElementArray->getCountOfSiblingElements(pXPath);
+    VStringBuffer strXPath("%s[1]",pElementArray->getXSDXPath());
+    //return pElementArray->getCountOfSiblingElements(pElementArray->getXSDXPath());
+    return pElementArray->getCountOfSiblingElements(strXPath.str());
 }
 
 const char* CConfigSchemaHelper::getAttributeXSDXPathFromEnvXPath(const char* pEnvXPath) const

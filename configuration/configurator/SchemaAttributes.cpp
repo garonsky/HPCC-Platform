@@ -250,7 +250,7 @@ void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     strXPath.append("/").append("[@").append(this->getName()).append("]");
     this->setEnvXPath(strXPath.str());
 
-    PROGLOG("Mapping attribute with XPATH of %s to %p", this->getEnvXPath(), this);
+    //PROGLOG("Mapping attribute with XPATH of %s to %p", this->getEnvXPath(), this);
 
     CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToAttribute(this->getEnvXPath(), this);
     CConfigSchemaHelper::getInstance()->appendAttributeXPath(this->getEnvXPath());

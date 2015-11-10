@@ -77,6 +77,10 @@ public:
     void removeMapOfXPathToElement(const char* pXPath);
     CElement* getElementFromXPath(const char *pXPath);
 
+    void addMapOfXPathToElementArray(const char* pXPath, CElementArray *pElementArray);
+    void removeMapOfXPathToElementArray(const char* pXPath);
+    CElementArray* getElementArrayFromXPath(const char *pXPath);
+
     void addMapOfXSDXPathToElement(const char* pXPath, CElement *pElement);
     CElement* getElementFromXSDXPath(const char *pXPath) const;
 

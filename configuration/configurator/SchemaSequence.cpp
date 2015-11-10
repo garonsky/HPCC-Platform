@@ -116,7 +116,7 @@ void CSequence::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) con
 void CSequence::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     if (m_pElementArray != NULL)
-        m_pElementArray->populateEnvXPath(strXPath);
+        m_pElementArray->populateEnvXPath(strXPath, index);
 
     this->setEnvXPath(strXPath);
 }
