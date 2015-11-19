@@ -34,6 +34,7 @@ static const char* JSON_CONTENT_END("}\n");
 
 static const char* JSON_LABEL("\"label\":");
 static const char* JSON_VALUES("\"values\":");
+static const char* JSON_VALUE("\"value\":");
 static const char* JSON_TYPE("\"type\":");
 static const char* JSON_TYPE_TAB("tab");
 static const char* JSON_TYPE_TABLE("table");
@@ -66,7 +67,7 @@ class CJSONMarkUpHelper
 {
 
 public:
-    static void createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, const char *pToolTip = "", const char *pDefaultValue = "", const char* pValues = "");
+    static void createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, const char *pToolTip = "", const char *pDefaultValue = "", const char* pValues = "", const char*  pValue = "");
     static void getNavigatorJSON(::StringBuffer &strJSON);
 };
 }

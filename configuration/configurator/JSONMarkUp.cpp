@@ -7,7 +7,7 @@
 using namespace CONFIGURATOR;
 
 void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, \
-                                        const char *pToolTip, const char *pDefaultValue, const char *pValues)
+                                        const char *pToolTip, const char *pDefaultValue, const char *pValues, const char *pValue)
 {
     assert(pUIType);
 
@@ -23,6 +23,7 @@ void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &o
 
     strJSON.appendf(" %s \"%s\",", JSON_TOOLTIP, pToolTip);
     strJSON.appendf(" %s \"%s\"", JSON_DEFAULT_VALUE, pDefaultValue);
+    strJSON.appendf(" %s \"%s\"", JSON_VALUE, pValue);
 
     if (strcmp(pUIType, JSON_TYPE_DROP_DOWN) == 0 && pValues && *pValues)
     {
