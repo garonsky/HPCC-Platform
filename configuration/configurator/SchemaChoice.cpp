@@ -39,13 +39,13 @@ CChoice* CChoice::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRo
     StringBuffer strXPathExt(xpath);
     strXPathExt.append("/").append(XSD_TAG_ELEMENT);
 
-    CElementArray *pElemArray = CElementArray::load(NULL, pSchemaRoot, strXPathExt.str());
-    assert(pElemArray);
+    CArrayOfElementArrays *pArrayOfElemArrays = CArrayOfElementArrays::load(NULL, pSchemaRoot, strXPathExt.str());
+    assert(pArrayOfElemArrays);
 
-    if (pElemArray == NULL)
+    if (pArrayOfElemArrays == NULL)
         return NULL;
 
-    CChoice *pChoice  = new CChoice(pParentNode, pElemArray);
+    CChoice *pChoice  = new CChoice(pParentNode, pArrayOfElemArrays);
     assert(pChoice);
 
     if (pChoice == NULL)
@@ -53,7 +53,7 @@ CChoice* CChoice::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRo
 
     pChoice->setXSDXPath(xpath);
 
-    SETPARENTNODE(pElemArray, pChoice);
+    SETPARENTNODE(pArrayOfElemArrays, pChoice);
 
     return pChoice;
 }
@@ -61,8 +61,8 @@ CChoice* CChoice::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRo
 const char* CChoice::getXML(const char* /*pComponent*/)
 {
     if (m_strXML.length() == 0)
-        if (m_pElementArray != NULL)
-            m_strXML.append(m_pElementArray->getXML(NULL));
+        if (m_pArrayOfElementArrays != NULL)
+            m_strXML.append(m_pArrayOfElementArrays->getXML(NULL));
 
     return m_strXML.str();
 }
@@ -78,16 +78,16 @@ void CChoice::dump(::std::ostream &cout, unsigned int offset) const
     QUICK_OUT(cout, MaxOccurs,  offset);
     QUICK_OUT(cout, XSDXPath,   offset);
 
-    if (m_pElementArray != NULL)
-        m_pElementArray->dump(cout, offset);
+    if (m_pArrayOfElementArrays != NULL)
+        m_pArrayOfElementArrays->dump(cout, offset);
 
     QuickOutFooter(cout, XSD_CHOICE_STR, offset);
 }
 
 void CChoice::getDocumentation(StringBuffer &strDoc) const
 {
-    if (m_pElementArray != NULL)
-        m_pElementArray->getDocumentation(strDoc);
+    if (m_pArrayOfElementArrays != NULL)
+        m_pArrayOfElementArrays->getDocumentation(strDoc);
 }
 
 void CChoice::getJSON(StringBuffer &strJSON, int idx) const
@@ -96,8 +96,8 @@ void CChoice::getJSON(StringBuffer &strJSON, int idx) const
 
 void CChoice::getQML(StringBuffer &strQML, int idx) const
 {
-    if (m_pElementArray != NULL)
-        m_pElementArray->getQML(strQML);
+    if (m_pArrayOfElementArrays != NULL)
+        m_pArrayOfElementArrays->getQML(strQML);
 }
 
 
@@ -105,19 +105,19 @@ void CChoice::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     this->setEnvXPath(strXPath);
 
-    if (m_pElementArray != NULL)
-        m_pElementArray->populateEnvXPath(strXPath);
+    if (m_pArrayOfElementArrays != NULL)
+        m_pArrayOfElementArrays->populateEnvXPath(strXPath);
 }
 
 void CChoice::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
     assert (pEnvTree != NULL);
 
-    if (m_pElementArray != NULL)
+    if (m_pArrayOfElementArrays != NULL)
     {
         try
         {
-            m_pElementArray->loadXMLFromEnvXml(pEnvTree);
+            m_pArrayOfElementArrays->loadXMLFromEnvXml(pEnvTree);
         }
         catch (...)
         {

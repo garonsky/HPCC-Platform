@@ -666,10 +666,13 @@ void CElement::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
 {
     assert(strXPath.length() > 0);
 
-    strXPath.append("/").append(this->getName()).append("[").append(index).append("]");
+    //strXPath.append("/").append(this->getName()).append("[").append(index).append("]");
+    strXPath.append("[").append(index).append("]");
 
-    PROGLOG("Setting element to envpath of %s, previous path: %s", strXPath.str(), this->getEnvXPath());
+    //PROGLOG("Setting element to envpath of %s, previous path: %s", strXPath.str(), this->getEnvXPath());
     this->setEnvXPath(strXPath);
+
+    CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(this->getEnvXPath(), this);
 
     if (m_pComplexTypeArray != NULL)
         m_pComplexTypeArray->populateEnvXPath(strXPath, index);
@@ -682,7 +685,7 @@ void CElement::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
 void CElement::loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
 {
     //PROGLOG("Mapping element with XPATH of %s to %p", this->getEnvXPath(), this);
-    CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(this->getEnvXPath(), this);
+    //CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(this->getEnvXPath(), this);
 
     if (m_pComplexTypeArray != NULL)
     {
@@ -881,25 +884,28 @@ void CElementArray::getJSON(::StringBuffer &strJSON, unsigned int offset, int id
     offset += STANDARD_OFFSET_2;
     QuickOutPad(strJSON, offset);
 
-    int lidx=0;
+    int lidx = (idx == -1 ? 0 : idx);
 
-    for (lidx=0; lidx < this->length(); lidx++)
+    for (; lidx < this->length(); lidx++)
     {
-        if (this->item(lidx).getIsInXSD() == false)
+        /*if (this->item(lidx).getIsInXSD() == false)
         {
             break;
-        }
+        }*/
         strJSON.append("{");
 
         (this->item(lidx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, lidx);
 
-        if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length())
+        if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length() && idx == -1)
         {
             QuickOutPad(strJSON, offset);
             strJSON.append(" },\n ");
             QuickOutPad(strJSON, offset);
         }
         offset -= STANDARD_OFFSET_1;
+
+        if (idx != -1)
+            break;
     }
     offset += STANDARD_OFFSET_2;
     QuickOutPad(strJSON, offset);
@@ -909,24 +915,14 @@ void CElementArray::getJSON(::StringBuffer &strJSON, unsigned int offset, int id
 
 void CElementArray::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
 {
-    int elemCount = 1;
-
+    strXPath.appendf("/%s", this->item(0).getName());
     this->setEnvXPath(strXPath);
 
     for (int idx=0; idx < this->length(); idx++)
     {
-        if (this->item(idx).getIsInXSD() == true)
-            elemCount == 1;
-        else
-            elemCount++;
-
-        this->item(idx).populateEnvXPath(strXPath, elemCount);
-
-        if (elemCount == 1)
-        {
-            StringBuffer strXPathCopy(this->item(idx).getEnvXPath());
-            CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElementArray(stripTrailingIndex(strXPathCopy), this);
-        }
+        //strXPath.appendf("[%d]", idx+1);
+        this->item(idx).populateEnvXPath(strXPath.str(), idx+1);
+        CConfigSchemaHelper::stripXPathIndex(strXPath);
     }
 }
 
@@ -950,62 +946,41 @@ const char* CElementArray::getXML(const char* /*pComponent*/)
 
 void CElementArray::loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
 {
-    int nUniqueElements = this->length();
+    ::StringBuffer strEnvXPath(this->getEnvXPath());
+    int subIndex = 1;
 
-    for (int idx = 0; idx < nUniqueElements; idx++)
+    do
     {
-        ::StringBuffer strXPath(this->item(idx).getEnvXPath());
+        CElement *pElement = NULL;
 
-        if (pEnvTree->hasProp(strXPath.str()) == false)
-            continue;
+        strEnvXPath.appendf("[%d]", subIndex);
+        if (pEnvTree->hasProp(strEnvXPath.str()) == false)
+             return;
 
-        int subIndex = 1;
-
-        do
+        if (subIndex == 1)
         {
-            ::StringBuffer strEnvXPath(this->item(idx).getEnvXPath());
-            CConfigSchemaHelper::stripXPathIndex(strEnvXPath);
-
-            strEnvXPath.appendf("[%d]",subIndex);
-
-            if (pEnvTree->queryPropTree(strEnvXPath.str()) == NULL)
-                break;
-
-            CElement *pElement = NULL;
-            if (subIndex > 1)
-            {
-                pElement = CElement::load(this, this->getSchemaRoot(), this->item(idx).getXSDXPath(), false);
-
-                int nIndexOfElement =  (static_cast<CElementArray*>(pElement->getParentNode()))->getCountOfSiblingElements(pElement->getXSDXPath())+1;
-                pElement->populateEnvXPath(this->getEnvXPath(), subIndex);
-
-                //PROGLOG("XSD Xpath to non-native element to %s", pElement->getXSDXPath());
-                //PROGLOG("XML Xpath to non-native element to %s", pElement->getEnvXPath());
-
-                pElement->setTopLevelElement(false);
-
-                CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToElement(pElement->getEnvXPath(), pElement);
-                CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXSDXPathToElementArray(pElement/*->getConstParentNode()*/->getXSDXPath(), (static_cast<CElementArray*>(pElement->getParentNode())));
-
-                this->append(*pElement);
-                //PROGLOG("Added element %p with xsd xpath=%s array is size=%d with xpath of %s", pElement, pElement->getXSDXPath(),this->length(), this->getXSDXPath());
-            }
-            else
-            {
-                pElement = &(this->item(idx));
-
-                if (pElement->getConstAncestorNode(2)->getNodeType() == XSD_SCHEMA)
-                    pElement->setTopLevelElement(true);
-
-                CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXSDXPathToElementArray(pElement/*->getConstParentNode()*/->getXSDXPath(), (static_cast<CElementArray*>(pElement->getParentNode())));
-                //PROGLOG("Added element %p with xsd xpath=%s array is size=%d with xpath of %s", pElement, pElement->getXSDXPath(),this->length(), this->getXSDXPath());
-            }
-            pElement->loadXMLFromEnvXml(pEnvTree);
-
-            subIndex++;
+            pElement =  CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getElementFromXPath(strEnvXPath.str());
         }
-        while (true);
-    }
+        else
+        {
+            pElement = CElement::load(this, this->getSchemaRoot(), this->getXSDXPath(), false);
+            this->append(*pElement);
+        }
+
+        assert(pElement);
+
+        if (subIndex > 1)
+        {
+            pElement->populateEnvXPath(this->getEnvXPath(), subIndex);
+        }
+
+        pElement->setTopLevelElement(false);
+        pElement->loadXMLFromEnvXml(pEnvTree);
+
+        CConfigSchemaHelper::stripXPathIndex(strEnvXPath);
+
+        subIndex++;
+    } while (true);
 }
 
 CElementArray* CElementArray::load(const char* pSchemaFile)
@@ -1044,8 +1019,27 @@ CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const ::IPropertyT
     ::StringBuffer strXPathExt(xpath);
     pElemArray->setXSDXPath(xpath);
 
-    typedef ::IPropertyTreeIterator jlibIPropertyTreeIterator;
+    CElement *pElem = CElement::load(pElemArray, pSchemaRoot, strXPathExt.str());
+
+    assert(pElem);
+    pElemArray->append(*pElem);
+
+    SETPARENTNODE(pElemArray, pParentNode);
+
+    return pElemArray;
+
+
+/*    typedef ::IPropertyTreeIterator jlibIPropertyTreeIterator;
     Owned<jlibIPropertyTreeIterator> elemIter = pSchemaRoot->getElements(xpath);
+
+    CElement *pElem = CElement::load(pElemArray, pSchemaRoot, strXPathExt.str());
+
+    assert(pElem);
+    pElemArray->append(*pElem);
+
+    SETPARENTNODE(pElemArray, pParentNode);
+
+    return pElemArray;
 
     int count = 1;
 
@@ -1070,7 +1064,7 @@ CElementArray* CElementArray::load(CXSDNodeBase* pParentNode, const ::IPropertyT
 
     SETPARENTNODE(pElemArray, pParentNode);
 
-    return pElemArray;
+    return pElemArray;*/
 }
 
 int CElementArray::getCountOfSiblingElements(const char *pXPath) const
@@ -1190,4 +1184,80 @@ bool CElement::hasChildElements() const
         }
     }
     return false;
+}
+
+
+CArrayOfElementArrays* CArrayOfElementArrays::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath)
+{
+    assert(pSchemaRoot != NULL);
+    if (pSchemaRoot == NULL)
+        return NULL;
+
+    CArrayOfElementArrays *pArrayOfElementArrays = new CArrayOfElementArrays(pParentNode);
+
+    /*pSchemaRoot->Link();
+    pArrayOfElementArrays->setSchemaRoot(pSchemaRoot);*/
+
+    ::StringBuffer strXPathExt(xpath);
+    pArrayOfElementArrays->setXSDXPath(xpath);
+
+    typedef ::IPropertyTreeIterator jlibIPropertyTreeIterator;
+    Owned<jlibIPropertyTreeIterator> elemIter = pSchemaRoot->getElements(xpath);
+
+    int count = 1;
+
+    ForEach(*elemIter)
+    {
+        strXPathExt.set(xpath);
+        strXPathExt.appendf("[%d]", count);
+
+        CElementArray *pElemArray = CElementArray::load(pArrayOfElementArrays, pSchemaRoot, strXPathExt.str());
+
+        assert(pElemArray);
+        pArrayOfElementArrays->append(*pElemArray);
+
+        count++;
+    }
+
+    return pArrayOfElementArrays;
+}
+
+void CArrayOfElementArrays::getDocumentation(::StringBuffer &strDoc) const
+{
+    for (int i = 0; i < this->length(); i++)
+    {
+        this->item(i).getDocumentation(strDoc);
+    }
+}
+
+void CArrayOfElementArrays::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
+{
+    ::StringBuffer strCopy(strXPath);
+    CConfigSchemaHelper::stripXPathIndex(strCopy);
+    this->setEnvXPath(strCopy);
+
+    for (int i = 0; i < this->length(); i++)
+    {
+        this->item(i).populateEnvXPath(strXPath.str());
+        CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXSDXPathToElementArray(this->item(i).getXSDXPath(), &(this->item(i)));
+    }
+}
+
+void CArrayOfElementArrays::loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
+{
+    for (int i = 0; i < this->ordinality(); i++)
+    {
+        this->item(i).loadXMLFromEnvXml(pEnvTree);
+    }
+}
+
+void CArrayOfElementArrays::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) const
+{
+    for (int i = 0; i < this->ordinality(); i++)
+    {
+        this->item(i).getJSON(strJSON, offset);
+
+        if (i+1 < this->ordinality())
+            strJSON.append(",\n");
+    }
 }

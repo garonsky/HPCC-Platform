@@ -171,7 +171,7 @@ protected:
 private:
 };
 
-class CElementArray : public ::CIArrayOf<CElement>, public InterfaceImpl, public CXSDNodeBase
+class CElementArray : public ::CIArrayOf<CElement>, /*public InterfaceImpl,*/ public CXSDNodeBase, public CInterface
 {
     friend class CElement;
 public:
@@ -235,6 +235,35 @@ private:
     CElementArray() : CXSDNodeBase::CXSDNodeBase(NULL, XSD_ELEMENT_ARRAY)
     {
     }
+};
+
+class CArrayOfElementArrays : public ::CIArrayOf<CElementArray>, public InterfaceImpl, public CXSDNodeBase
+{
+    friend class CElementArray;
+
+public:
+    CArrayOfElementArrays(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot = NULL) : CXSDNodeBase::CXSDNodeBase(pParentNode, XSD_ARRAY_OF_ELEMENT_ARRAYS)
+    {
+    }
+
+    virtual ~CArrayOfElementArrays()
+    {
+        this->clear();
+    }
+
+    virtual void dump(::std::ostream &cout, unsigned int offset = 0) const
+    {
+        UNIMPLEMENTED;
+    }
+
+    virtual void getJSON(::StringBuffer &strJSON, unsigned int offset = 0, int idx = -1) const;
+
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
+
+    static CArrayOfElementArrays* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = DEFAULT_ELEMENT_ARRAY_XPATH);
+
 };
 
 }

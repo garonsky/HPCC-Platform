@@ -241,12 +241,13 @@ void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput, bool b
 
     pChar++;
 
-    int nTemp = 1;
-    while (*pChar+nTemp != ']')
+    int nTemp = 0;
+
+    do
     {
-      strIdx.append(pChar+nTemp);
-      nTemp++;
-    }
+        strIdx.append(*(pChar+nTemp));
+        nTemp++;
+    }while (*(pChar+nTemp) != ']');
 
     int nIndexForJSON = atoi(strIdx.str());
 
@@ -265,7 +266,7 @@ void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput, bool b
 
             if (pSchema != NULL)
             {
-                pSchema->getJSON(strJSON, 0, nIndexForJSON);
+                pSchema->getJSON(strJSON, 0, nIndexForJSON-1);
                 *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
 
                 if (bCleanUp == true)

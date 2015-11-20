@@ -60,8 +60,8 @@ static const char* JSON_NAVIGATOR_NODES("\"nodes\":");
 
 
 #define CONTENT_INNER_CONTENT_BEGIN strJSON.append(JSON_CONTENT_BEGIN);offset += STANDARD_OFFSET_1;QuickOutPad(strJSON, offset);strJSON.append(JSON_INNER_CONTENT_BEGIN_1);
-#define INNER_CONTENT_END offset -= STANDARD_OFFSET_1;/*QuickOutPad(strJSON, offset);*/strJSON.append(JSON_INNER_CONTENT_END);
-#define CONTENT_CONTENT_END offset -= STANDARD_OFFSET_1;/*QuickOutPad(strJSON, offset);*/strJSON.append(JSON_CONTENT_END);
+#define INNER_CONTENT_END offset -= STANDARD_OFFSET_1;strJSON.append(JSON_INNER_CONTENT_END);
+#define CONTENT_CONTENT_END offset -= STANDARD_OFFSET_1;strJSON.append(JSON_CONTENT_END);
 
 class CJSONMarkUpHelper
 {

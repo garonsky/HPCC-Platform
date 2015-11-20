@@ -23,13 +23,13 @@
 namespace CONFIGURATOR
 {
 
-class CElementArray;
+class CArrayOfElementArrays;
 
 class CSequence : public CXSDNode
 {
 public:
 
-    CSequence(CXSDNodeBase* pParentNode = NULL, CElementArray* pElemArray = NULL) : CXSDNode::CXSDNode(pParentNode, XSD_SEQUENCE), m_pElementArray(pElemArray)
+    CSequence(CXSDNodeBase* pParentNode = NULL, CArrayOfElementArrays* pArrayOfElemArrays = NULL) : CXSDNode::CXSDNode(pParentNode, XSD_SEQUENCE), m_pArrayOfElementArrays(pArrayOfElemArrays)
     {
     }
     virtual ~CSequence()
@@ -50,7 +50,7 @@ public:
 
 protected:
 
-    CElementArray *m_pElementArray;
+    CArrayOfElementArrays *m_pArrayOfElementArrays;
 
 private:
 };
