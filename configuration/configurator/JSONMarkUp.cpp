@@ -22,7 +22,7 @@ void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &o
     strJSON.appendf(" %s \"%s\",", JSON_KEY, strKey.str());
 
     strJSON.appendf(" %s \"%s\",", JSON_TOOLTIP, pToolTip);
-    strJSON.appendf(" %s \"%s\"", JSON_DEFAULT_VALUE, pDefaultValue);
+    strJSON.appendf(" %s \"%s\",", JSON_DEFAULT_VALUE, pDefaultValue);
     strJSON.appendf(" %s \"%s\"", JSON_VALUE, pValue);
 
     if (strcmp(pUIType, JSON_TYPE_DROP_DOWN) == 0 && pValues && *pValues)
