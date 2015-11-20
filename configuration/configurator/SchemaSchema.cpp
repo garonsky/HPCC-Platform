@@ -70,7 +70,8 @@ CSchema* CSchema::load(const char* pSchemaLocation, const IPropertyTree *pSchema
     CComplexTypeArray* pComplexTypeArray = CComplexTypeArray::load(pSchema, pSchemaRoot, strXPathExt);
 
     strXPathExt.clear().append(xpath).append(XSD_TAG_ELEMENT);
-    CElementArray* pElemArray = CElementArray::load(pSchema, pSchemaRoot, strXPathExt.str());
+    //CElementArray* pElemArray = CElementArray::load(pSchema, pSchemaRoot, strXPathExt.str());
+    CArrayOfElementArrays* pArrayOfElemArray = CArrayOfElementArrays::load(pSchema, pSchemaRoot, strXPathExt.str());
 
     strXPathExt.clear().append(xpath).append(XSD_TAG_ATTRIBUTE_GROUP);
     CAttributeGroupArray* pAttributeGroupArray = CAttributeGroupArray::load(pSchema, pSchemaRoot, strXPathExt);
@@ -79,7 +80,7 @@ CSchema* CSchema::load(const char* pSchemaLocation, const IPropertyTree *pSchema
     CAnnotation* pAnnotation = CAnnotation::load(pSchema, pSchemaRoot, strXPathExt);
     pSchema->m_pAnnotation = pAnnotation;
 
-    pSchema->m_pElementArray = pElemArray;
+    pSchema->m_pArrayElementOfArrays = pArrayOfElemArray;
     pSchema->m_pComplexTypeArray = pComplexTypeArray;
 
     if (pSchema->m_pAttributeGroupArray == NULL)
@@ -140,8 +141,8 @@ void CSchema::dump(::std::ostream& cout, unsigned int offset) const
     QUICK_OUT(cout, XSDXPath,  offset);
     QUICK_OUT(cout, EnvXPath,  offset);
 
-    if (m_pElementArray != NULL)
-        m_pElementArray->dump(cout, offset);
+    if (m_pArrayElementOfArrays != NULL)
+        m_pArrayElementOfArrays->dump(cout, offset);
     if (m_pComplexTypeArray != NULL)
         m_pComplexTypeArray->dump(cout, offset);
     if (m_pSimpleTypeArray != NULL)
@@ -158,8 +159,8 @@ void CSchema::dump(::std::ostream& cout, unsigned int offset) const
 
 void CSchema::getDocumentation(StringBuffer &strDoc) const
 {
-    if (m_pElementArray != NULL)
-        m_pElementArray->getDocumentation(strDoc);
+    if (m_pArrayElementOfArrays != NULL)
+        m_pArrayElementOfArrays->getDocumentation(strDoc);
     if (m_pComplexTypeArray != NULL)
         m_pComplexTypeArray->getDocumentation(strDoc);
     if (m_pAttributeGroupArray != NULL)
@@ -179,9 +180,12 @@ void CSchema::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) const
     QuickOutPad(strJSON, offset);
 
     //offset -= STANDARD_OFFSET_1;
-    if (m_pElementArray != NULL)
+    if (m_pArrayElementOfArrays != NULL)
     {
-        m_pElementArray->getJSON(strJSON, offset, idx);
+        //strJSON.append("{");
+        m_pArrayElementOfArrays->item(0).getJSON(strJSON, offset, idx);
+        //strJSON.append("}");
+        //m_pArrayElementOfArrays->getJSON(strJSON, offset, idx);
         //DEBUG_MARK_JSON;
     }
     if (m_pComplexTypeArray != NULL)
@@ -205,8 +209,8 @@ void CSchema::getQML(StringBuffer &strQML, int idx) const
     strQML.append(QML_SCROLL_BAR_TRANSITIONS);
     DEBUG_MARK_QML;
 
-    if (m_pElementArray != NULL)
-        m_pElementArray->getQML(strQML, idx);
+    if (m_pArrayElementOfArrays != NULL)
+        m_pArrayElementOfArrays->getQML(strQML, idx);
     if (m_pComplexTypeArray != NULL)
         m_pComplexTypeArray->getQML(strQML);
     if (m_pAttributeGroupArray != NULL)
@@ -228,11 +232,11 @@ void CSchema::getQML2(StringBuffer &strQML, int idx) const
     strQML.append(QML_TAB_VIEW_BEGIN);
     DEBUG_MARK_QML;
 
-    if (m_pElementArray != NULL)
+    if (m_pArrayElementOfArrays != NULL)
     {
         DEBUG_MARK_QML;
-        m_pElementArray->setUIType(QML_UI_EMPTY);
-        m_pElementArray->getQML2(strQML, idx);
+        m_pArrayElementOfArrays->setUIType(QML_UI_EMPTY);
+        m_pArrayElementOfArrays->getQML2(strQML, idx);
         DEBUG_MARK_QML;
     }
     if (m_pComplexTypeArray != NULL)
@@ -277,10 +281,10 @@ void CSchema::getQML3(StringBuffer &strQML, int idx) const
     DEBUG_MARK_QML;
     strQML.append(QML_FILE_START);
 
-    if (m_pElementArray != NULL)
+    if (m_pArrayElementOfArrays != NULL)
     {
         DEBUG_MARK_QML;
-        m_pElementArray->getQML3(strQML, idx);
+        m_pArrayElementOfArrays->getQML3(strQML, idx);
         DEBUG_MARK_QML;
     }
     strQML.append(QML_DOUBLE_END_BRACKET);
@@ -290,10 +294,10 @@ void  CSchema::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
     strXPath.append("./").append(XML_TAG_SOFTWARE);
 
-    if (m_pElementArray != NULL)
+    if (m_pArrayElementOfArrays != NULL)
     {
-        m_pElementArray->populateEnvXPath(strXPath);
-        CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXSDXPathToElementArray(m_pElementArray->getXSDXPath(), m_pElementArray);
+        m_pArrayElementOfArrays->populateEnvXPath(strXPath);
+        //CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXSDXPathToElementArray(m_pArrayElementOfArrays->getXSDXPath(), m_pArrayElementOfArrays);
     }
     if (m_pAttributeGroupArray != NULL)
         m_pAttributeGroupArray->populateEnvXPath(strXPath);
@@ -313,8 +317,8 @@ void CSchema::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
 {
     assert(pEnvTree != NULL);
 
-    if (m_pElementArray != NULL)
-        m_pElementArray->loadXMLFromEnvXml(pEnvTree);
+    if (m_pArrayElementOfArrays != NULL)
+        m_pArrayElementOfArrays->loadXMLFromEnvXml(pEnvTree);
     if (m_pComplexTypeArray != NULL)
         m_pComplexTypeArray->loadXMLFromEnvXml(pEnvTree);
     if (m_pAttributeGroupArray != NULL)
@@ -325,23 +329,31 @@ void CSchema::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
         m_pIncludeArray->loadXMLFromEnvXml(pEnvTree);
     if (m_pAttributeGroupArray != NULL)
         m_pAttributeGroupArray->loadXMLFromEnvXml(pEnvTree);
+
+    CConfigSchemaHelper::getInstance()->processAttributeGroupArr();
 }
 
 const char* CSchema::getXML(const char* /*pComponent*/)
 {
     if (m_strXML.length() == 0)
     {
-        int length =  m_pElementArray->length();
+        int length =  m_pArrayElementOfArrays->length();
 
-        if (m_pElementArray != NULL)
+        if (m_pArrayElementOfArrays != NULL)
         {
             for (int idx = 0; idx < length; idx++)
             {
-                CElement &Element = m_pElementArray->item(idx);
-                m_strXML.append(Element.getXML(NULL));
+                CElementArray &ElementArray = m_pArrayElementOfArrays->item(idx);
 
-                if (idx+1 < length)
-                    m_strXML.append("\n");
+                for (int idx2 = 0; idx2 < ElementArray.ordinality(); idx2++)
+                {
+                    CElement &Element = ElementArray.item(idx2);
+
+                    m_strXML.append(Element.getXML(NULL));
+
+                    if (idx+2 < length)
+                        m_strXML.append("\n");
+                }
             }
         }
         if (m_pAttributeGroupArray != NULL)

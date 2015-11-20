@@ -74,6 +74,9 @@ CXSDNodeBase::CXSDNodeBase(CXSDNodeBase* pParentNode, NODE_TYPES eNodeType) : m_
    case(XSD_ELEMENT_ARRAY):
        strcpy(m_pNodeType, XSD_ELEMENT_ARRAY_STR);
        break;
+   case(XSD_ARRAY_OF_ELEMENT_ARRAYS):
+       strcpy(m_pNodeType, XSD_ARRAY_ELEMENT_ARRAY_STR);
+       break;
    case(XSD_EXTENSION):
        strcpy(m_pNodeType, XSD_EXTENSION_STR);
        break;

@@ -24,7 +24,7 @@
 namespace CONFIGURATOR
 {
 
-class CElementArray;
+class CArrayOfElementArrays;
 
 class CChoice : public CXSDNode
 {
@@ -50,11 +50,11 @@ public:
 
 protected:
 
-    CChoice(CXSDNodeBase* pParentNode, CElementArray *pElemArray = NULL) : CXSDNode::CXSDNode(pParentNode, XSD_CHOICE), m_pElementArray(pElemArray)
+    CChoice(CXSDNodeBase* pParentNode, CArrayOfElementArrays *pArrayOfElemArrays = NULL) : CXSDNode::CXSDNode(pParentNode, XSD_CHOICE), m_pArrayOfElementArrays(pArrayOfElemArrays)
     {
     }
 
-    CElementArray *m_pElementArray;
+    CArrayOfElementArrays *m_pArrayOfElementArrays;
 
 private:
 

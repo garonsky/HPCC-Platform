@@ -139,6 +139,7 @@ enum NODE_TYPES
     XSD_DOCUMENTATION,
     XSD_ELEMENT,
     XSD_ELEMENT_ARRAY,
+    XSD_ARRAY_OF_ELEMENT_ARRAYS,
     XSD_EXTENSION,
     XSD_FIELD,
     XSD_FIELD_ARRAY,
@@ -270,6 +271,7 @@ static const char* XSD_COMPLEX_TYPE_ARRAY_STR("ComplexTypeArray");
 static const char* XSD_DOCUMENTATION_STR("Documentation");
 static const char* XSD_ELEMENT_STR("Element");
 static const char* XSD_ELEMENT_ARRAY_STR("ElementArray");
+static const char* XSD_ARRAY_ELEMENT_ARRAY_STR("ArrayOfElementArrays");
 static const char* XSD_ERROR_STR("ERROR");
 static const char* XSD_ENUMERATION_STR("Enumeration");
 static const char* XSD_ENUMERATION_ARRAY_STR("EnumerationArray");
