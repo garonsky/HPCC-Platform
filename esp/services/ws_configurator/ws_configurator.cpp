@@ -121,3 +121,13 @@ bool Cws_configuratorEx::ongetNavigatorJSON(IEspContext &context, IEspGetNavigat
     resp.setJSON(pJSON);
     return true;
 }
+
+bool Cws_configuratorEx::onsaveConfigurationFile(IEspContext &context, IEspSaveConfigurationFileRequest &req, IEspSaveConfigurationFileResponse &resp)
+{
+    return CONFIGURATOR_API::saveConfigurationFile();
+}
+
+bool Cws_configuratorEx::onsaveConfigurationFileAs(IEspContext &context, IEspSaveConfigurationFileAsRequest &req, IEspSaveConfigurationFileAsResponse &resp)
+{
+    return CONFIGURATOR_API::saveConfigurationFileAs(req.getFilePath());
+}
