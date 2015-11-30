@@ -286,7 +286,7 @@ int openConfigurationFile(const char* pFile)
     CBuildSetManager::getInstance()->setBuildSetArray(arrXSDS);
     s_pConfigSchemaHelper->populateSchema();*/
 
-    CConfigSchemaHelper::getInstance()->loadEnvFromConfig(pFile);
+    CConfigSchemaHelper::getNewInstance()->loadEnvFromConfig(pFile);
     return 1;
 }
 
@@ -535,6 +535,14 @@ const char* getDocBookByIndex(int idx)
 bool saveConfigurationFile()
 {
     return CConfigSchemaHelper::getInstance()->saveConfigurationFile();
+}
+
+bool saveConfigurationFileAs(const char *pFilePath)
+{
+    if (pFilePath == NULL || *pFilePath == 0)
+        return false;
+
+    return CConfigSchemaHelper::getInstance()->saveConfigurationFileAs(pFilePath);
 }
 
 int getNumberOfNotificationTypes()

@@ -46,7 +46,6 @@ public:
 
     virtual ~CElement()
     {
-        assert(false);
     }
 
     virtual const CXSDNodeBase* getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const;

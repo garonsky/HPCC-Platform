@@ -805,6 +805,26 @@ bool CConfigSchemaHelper::saveConfigurationFile() const
         return false;
 }
 
+bool CConfigSchemaHelper::saveConfigurationFileAs(const char *pFilePath)
+{
+    assert(pFilePath && *pFilePath);
+
+    if (pFilePath == NULL || *pFilePath == 0)
+        return false;
+
+    StringBuffer strXML;
+    strXML.appendf("<"XML_HEADER">\n<!-- Edited with THE CONFIGURATOR -->\n");
+    ::toXML(this->getConstEnvPropertyTree(), strXML, 0, XML_SortTags | XML_Format);
+
+    if (CConfigFileUtils::getInstance()->writeConfigurationToFile(pFilePath, strXML.str(), strXML.length()) == CConfigFileUtils::CF_NO_ERROR)
+    {
+        m_strEnvFilePath.set(pFilePath);
+        return true;
+    }
+    else
+        return false;
+}
+
 void CConfigSchemaHelper::addKeyRefForReverseAssociation(const CKeyRef *pKeyRef) const
 {
 }
@@ -869,4 +889,18 @@ const char* CConfigSchemaHelper::getInstanceNameOfComponentType(const char *pCom
 void CConfigSchemaHelper::clearLF(::StringBuffer& strToClear)
 {
     strToClear.replaceString("\n","");
+}
+
+CConfigSchemaHelper* CConfigSchemaHelper::getNewInstance(const char* pDefaultDirOverride)
+{
+    if (CConfigSchemaHelper::s_pCConfigSchemaHelper != NULL)
+    {
+        delete CConfigSchemaHelper::s_pCConfigSchemaHelper;
+        CConfigSchemaHelper::s_pCConfigSchemaHelper = NULL;
+    }
+
+    CConfigSchemaHelper::getInstance(pDefaultDirOverride);
+    CConfigSchemaHelper::getInstance()->populateSchema();
+
+    return CConfigSchemaHelper::getInstance();
 }

@@ -73,6 +73,7 @@ extern "C" const char* getQMLFromFile(const char *pXSD, int idx);
 extern "C" void getQMLByIndex(int idx, char *pOutput);
 extern "C" const char* getDocBookByIndex(int idx);
 extern "C" bool saveConfigurationFile();
+extern "C" bool saveConfigurationFileAs(const char *pFilePath);
 extern "C" int getNumberOfNotificationTypes();
 extern "C" const char* getNotificationTypeName(int type);
 extern "C" int getNumberOfNotifications(int type);

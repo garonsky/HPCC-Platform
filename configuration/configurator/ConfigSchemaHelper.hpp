@@ -45,6 +45,7 @@ public:
 
     static CConfigSchemaHelper* getInstance(const char* pDefaultDirOverride =  NULL);
     static CConfigSchemaHelper* getInstance(const char* pBuildSetFileName, const char *pBaseDirectory, const char *pDefaultDirOverride = NULL);
+    static CConfigSchemaHelper* getNewInstance(const char* pDefaultDirOverride =  NULL);
 
     virtual ~CConfigSchemaHelper();
 
@@ -140,6 +141,7 @@ public:
         m_nTables = 0;
     }
     bool saveConfigurationFile() const;
+    bool saveConfigurationFileAs(const char *pFilePath = NULL);
 
     const char* getEnvFilePath() const
     {
