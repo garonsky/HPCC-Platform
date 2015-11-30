@@ -71,16 +71,16 @@ public:
 protected:
 
     CSchema(const char * pSchemaLocation, const char* pXMLNS_XS = NULL, const char* pElementFormDefault = NULL, const char* pAttributeFormDefault = NULL,
-            CElementArray* pElementArray = NULL, CComplexTypeArray* pComplexTypeArray = NULL, CAttributeGroupArray* pAttributeGroupArray = NULL,
+            CArrayOfElementArrays* pArrayOfElementArrays = NULL, CComplexTypeArray* pComplexTypeArray = NULL, CAttributeGroupArray* pAttributeGroupArray = NULL,
             CSimpleTypeArray* pSimpleTypeArray = NULL, CIncludeArray* pIncludeArray = NULL, CAnnotation *pAnnotation = NULL) : CXSDNodeBase::CXSDNodeBase(NULL, XSD_SCHEMA), m_strSchemaLocation(pSchemaLocation),
                 m_strXMLNS_XS(pXMLNS_XS), m_strElementFormDefault(pElementFormDefault), m_strAttributeFormDefault(pAttributeFormDefault),
-                m_pElementArray(pElementArray), m_pComplexTypeArray(pComplexTypeArray), m_pAttributeGroupArray(pAttributeGroupArray),
+                m_pArrayElementOfArrays(pArrayOfElementArrays), m_pComplexTypeArray(pComplexTypeArray), m_pAttributeGroupArray(pAttributeGroupArray),
                 m_pSimpleTypeArray(pSimpleTypeArray), m_pIncludeArray(pIncludeArray), m_pAnnotation(pAnnotation)
     {
     }
 
     StringBuffer            m_strSchemaLocation;
-    CElementArray*          m_pElementArray;
+    CArrayOfElementArrays*  m_pArrayElementOfArrays;
     CComplexTypeArray*      m_pComplexTypeArray;
     CAttributeGroupArray*   m_pAttributeGroupArray;
     CSimpleTypeArray*       m_pSimpleTypeArray;
