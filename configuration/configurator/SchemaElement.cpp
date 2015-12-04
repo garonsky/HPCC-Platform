@@ -120,9 +120,9 @@ CElement* CElement::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSche
         {
             const char *pRef = iterAttrib->queryValue();
 
-            assert (pRef != NULL && *pRef != 0 && pElement->getConstAncestorNode(2)->getNodeType() != XSD_SCHEMA);
+            assert (pRef != NULL && *pRef != 0 && pElement->getConstAncestorNode(3)->getNodeType() != XSD_SCHEMA);
 
-            if (pRef != NULL && *pRef != 0 && pElement->getConstAncestorNode(2)->getNodeType() != XSD_SCHEMA)
+            if (pRef != NULL && *pRef != 0 && pElement->getConstAncestorNode(3)->getNodeType() != XSD_SCHEMA)
             {
                 pElement->setRef(pRef);
                 CConfigSchemaHelper::getInstance()->addElementForRefProcessing(pElement);
@@ -132,9 +132,28 @@ CElement* CElement::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSche
                 // TODO:  throw exception
             }
         }
+        else if (strcmp(iterAttrib->queryName(), XML_ATTR_DEFAULT) == 0)
+        {
+            const char *pDefault = iterAttrib->queryValue();
+
+            assert(pDefault != NULL);
+            assert(strlen(pElement->getDefault()) == 0);
+            pElement->setDefault(pDefault);
+        }
         assert(iterAttrib->queryValue() != NULL);
     }
     assert(strlen(pElement->getName()) > 0);
+
+    if (strlen(pElement->getRef()) != 0)
+    {
+        assert(pElement->getComplexTypeArray()->length() == 0);
+        assert(pElement->getSimpleType() == NULL);
+        assert(strlen(pElement->getDefault()) == 0);
+        assert(strlen(pElement->getType()) == 0);
+        /*assert(pElement->getKey() == NULL);
+        assert(pElement->getKeyRef() == NULL);
+        assert(pElement->getUnique() == NULL);*/
+    }
 
     ::StringBuffer strXPathExt(xpath);
 
@@ -325,7 +344,7 @@ void CElement::getDocumentation(::StringBuffer &strDoc) const
 
 void CElement::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) const
 {
-    assert(this->getConstAncestorNode(2) != NULL);
+    assert(this->getConstAncestorNode(3) != NULL);
 
     if (m_pAnnotation != NULL && m_pAnnotation->getAppInfo() != NULL && m_pAnnotation->getAppInfo()->getViewType() != NULL && stricmp(m_pAnnotation->getAppInfo()->getViewType(), "none") == 0)
         return;
@@ -347,6 +366,8 @@ void CElement::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) co
     {
         //CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TABLE, this->getTitle(), this->getEnvXPath());
         CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TABLE, this->getTitle(), strXPath.str());
+        // add values
+        //CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_INPUT, this->getTitle(),  strXPath.str());
     }
 }
 
@@ -612,7 +633,7 @@ bool CElement::isATab() const
     const CAttributeGroupArray *pAttributeGroupArray = (pComplexTypArray != NULL && pComplexTypArray->length() > 0) ? pComplexTypArray->item(0).getAttributeGroupArray() : NULL;
     const CAttributeArray *pAttributeArray = (pComplexTypArray != NULL && pComplexTypArray->length() > 0) ? pComplexTypArray->item(0).getAttributeArray() : NULL;
 
-    if (this->getConstAncestorNode(2)->getNodeType() != XSD_SCHEMA && \
+    if (this->getConstAncestorNode(3)->getNodeType() != XSD_SCHEMA && \
             (this->hasChildElements() == true || \
              (this->hasChildElements() == false && (static_cast<const CElementArray*>(this->getConstParentNode()))->anyElementsHaveMaxOccursGreaterThanOne() == false)/* || \
              (this->isTopLevelElement() == true && (pAttributeGroupArray != NULL || pAttributeArray != NULL))*/))
@@ -629,11 +650,11 @@ bool CElement::isATab() const
         return false;
     }
     // Any element that is in sequence of complex type will be a tab
-    else*/ if (this->getConstAncestorNode(2)->getNodeType() == XSD_SEQUENCE && this->getConstAncestorNode(3)->getNodeType() == XSD_COMPLEX_TYPE)
+    else*/ if (this->getConstAncestorNode(3)->getNodeType() == XSD_SEQUENCE && this->getConstAncestorNode(3)->getNodeType() == XSD_COMPLEX_TYPE)
     {
         return true;
     }
-    else if (/*this->getConstAncestorNode(2)->getNodeType == XSD_COMPLEX_TYPE &&*/ this->getConstAncestorNode(3)->getNodeType() == XSD_ELEMENT)
+    else if (/*this->getConstAncestorNode(3)->getNodeType == XSD_COMPLEX_TYPE &&*/ this->getConstAncestorNode(3)->getNodeType() == XSD_ELEMENT)
     {
         const CElement *pElement = dynamic_cast<const CElement*>(this->getConstAncestorNode(3));
 
@@ -888,10 +909,6 @@ void CElementArray::getJSON(::StringBuffer &strJSON, unsigned int offset, int id
 
     for (; lidx < this->length(); lidx++)
     {
-        /*if (this->item(lidx).getIsInXSD() == false)
-        {
-            break;
-        }*/
         strJSON.append("{");
 
         (this->item(lidx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, lidx);

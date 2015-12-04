@@ -144,12 +144,13 @@ public:
     GETTERSETTER(Title)
     GETTERSETTER(InstanceName)
     GETTERSETTER(Ref)
+    GETTERSETTER(Default)
 
 protected:
 
     CElement(CXSDNodeBase* pParentNode, const char* pName = "") : CXSDNodeWithType::CXSDNodeWithType(pParentNode, XSD_ELEMENT), m_strMinOccurs("1"), m_strMaxOccurs("1"), m_strName(pName), m_pAnnotation(NULL),
         m_pComplexTypeArray(NULL), m_pKeyArray(NULL), m_pKeyRefArray(NULL), m_pReverseKeyRefArray(NULL), m_pElementRefNode(NULL), m_pSimpleType(NULL),\
-        m_bTopLevelElement(false), m_nParentIndex(-1), m_bIsInXSD(true)
+        m_bTopLevelElement(false), m_nParentIndex(-1), m_bIsInXSD(true), m_strDefault("")
     {
     }
 
@@ -262,7 +263,6 @@ public:
     virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
 
     static CArrayOfElementArrays* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = DEFAULT_ELEMENT_ARRAY_XPATH);
-
 };
 
 }

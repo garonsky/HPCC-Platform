@@ -17,7 +17,6 @@
 
 
 #include "jregexp.hpp"
-
 #include "SchemaCommon.hpp"
 #include "ConfigSchemaHelper.hpp"
 #include "SchemaMapManager.hpp"
@@ -318,6 +317,14 @@ CXSDBuiltInDataType::CXSDBuiltInDataType(CXSDNodeBase* pParentNode, enum NODE_TY
 
 CXSDBuiltInDataType::~CXSDBuiltInDataType()
 {
+}
+
+void CXSDBuiltInDataType::loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
+{
+    if (this->getNodeType() == XSD_DT_STRING)
+    {
+
+    }
 }
 
 void CXSDBuiltInDataType::dump(::std::ostream& cout, unsigned int offset) const

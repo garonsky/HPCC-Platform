@@ -31,12 +31,17 @@
 #include "ConfigFileUtils.hpp"
 #include "JSONMarkUp.hpp"
 
+
+#define SUCCESS 0
+#define FAILURE 1
 #define LOOP_THRU_BUILD_SET_MANAGER_BUILD_SET \
 int nComponentCount = CBuildSetManager::getInstance()->getBuildSetComponentCount();         \
 \
 for (int idx = 0; idx < nComponentCount; idx++)
 
 using namespace CONFIGURATOR;
+
+
 
 CConfigSchemaHelper* CConfigSchemaHelper::s_pCConfigSchemaHelper = NULL;
 
@@ -209,6 +214,10 @@ void CConfigSchemaHelper::printJSON(const char* comp, char **pOutput, int nIdx, 
 
                 return;
             }
+            else
+            {
+                *pOutput = NULL;
+            }
         }
     }
 }
@@ -279,6 +288,10 @@ void CConfigSchemaHelper::printJSONByKey(const char* key, char **pOutput, bool b
 
                 return;
             }
+            else
+            {
+                *pOutput = NULL;
+            }
         }
     }
 }
@@ -288,6 +301,9 @@ void CConfigSchemaHelper::printNavigatorJSON(char **pOutput, bool bCleanUp) cons
     StringBuffer strJSON;
 
     CJSONMarkUpHelper::getNavigatorJSON(strJSON);
+
+    if (strJSON.length() == 0)
+        *pOutput = NULL;
 
     *pOutput = (char*)malloc((sizeof(char))* (strJSON.length())+1);
 
@@ -361,6 +377,10 @@ void CConfigSchemaHelper::printQML(const char* comp, char **pOutput, int nIdx) c
                  sprintf(*pOutput,"%s",strQML.str());
 
                  return;
+             }
+             else
+             {
+                 *pOutput = NULL;
              }
         }
     }
@@ -795,6 +815,9 @@ bool CConfigSchemaHelper::saveConfigurationFile() const
     if (m_strEnvFilePath.length() == 0)
         return false;
 
+    if (this->getConstEnvPropertyTree() == NULL)
+        return false;
+
     StringBuffer strXML;
     strXML.appendf("<"XML_HEADER">\n<!-- Edited with THE CONFIGURATOR -->\n");
     ::toXML(this->getConstEnvPropertyTree(), strXML, 0, XML_SortTags | XML_Format);
@@ -810,6 +833,9 @@ bool CConfigSchemaHelper::saveConfigurationFileAs(const char *pFilePath)
     assert(pFilePath && *pFilePath);
 
     if (pFilePath == NULL || *pFilePath == 0)
+        return false;
+
+    if (this->getConstEnvPropertyTree() == NULL)
         return false;
 
     StringBuffer strXML;
@@ -856,6 +882,9 @@ int CConfigSchemaHelper::getInstancesOfComponentType(const char *pCompType) cons
 
              assert(pSchema != NULL);
 
+             if (pSchema == NULL)
+                 return FAILURE;
+
              int nCount = 0;
              ::VStringBuffer strXPath("./%s/%s[%d]", XML_TAG_SOFTWARE, pProcessName, 1);
 
@@ -863,21 +892,27 @@ int CConfigSchemaHelper::getInstancesOfComponentType(const char *pCompType) cons
              {
                  ::IPropertyTree *pTree = CConfigSchemaHelper::getInstance()->getEnvPropertyTree();
 
-                 if (pTree->queryPropTree(strXPath.str()) == NULL)
-                 {
-                     return nCount;
-                 }
-                 nCount++;
+                 if (pTree == NULL)
+                     return FAILURE;
 
+                 if (pTree->queryPropTree(strXPath.str()) == NULL)
+                     return nCount;
+
+                 nCount++;
                  strXPath.setf("./%s/%s[%d]", XML_TAG_SOFTWARE, pProcessName, nCount+1);
              }
         }
     }
-    return 0;
+    return SUCCESS;
 }
 
 const char* CConfigSchemaHelper::getInstanceNameOfComponentType(const char *pCompType, int idx)
 {
+    if (pCompType == NULL || *pCompType == 0)
+        return NULL;  // throw exception?
+    if (this->getEnvPropertyTree() == NULL)
+        return NULL;  // throw exception?
+
     ::VStringBuffer strXPath("./%s/%s[%d]", XML_TAG_SOFTWARE, pCompType, idx+1);
 
     typedef ::IPropertyTree jlibIPropertyTree;
