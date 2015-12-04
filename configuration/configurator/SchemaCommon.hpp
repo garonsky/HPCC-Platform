@@ -336,7 +336,6 @@ static const char* TAG_TOOLTIP("tooltip");
 static const char* TAG_COLINDEX("colIndex");
 static const char* TAG_TITLE("title");
 static const char* TAG_WIDTH("width");
-//static const char* TAG_TOOLTIP("tooltip");
 static const char* TAG_AUTOGENWIZARD("autogenforwizard");
 static const char* TAG_AUTOGENDEFAULTVALUE("autogendefaultvalue");
 static const char* TAG_AUTOGENDEFAULTVALUEFORMULTINODE("autogendefaultformultinode");
@@ -345,8 +344,8 @@ static const char* TAG_DOC_ID("docid");
 static const char* TAG_DOC_USE_LINE_BREAK("docuselinebreak");
 static const char* TAG_UNBOUNDED("unbounded");
 
-#define TAG_OPTIONAL                    "optional"
-#define TAG_REQUIRED                    "required"
+#define TAG_OPTIONAL                   "optional"
+#define TAG_REQUIRED                   "required"
 #define XML_ATTR_ATTRIBUTEFORMDEFAULT  "@attributeFormDefault"
 #define XML_ATTR_ELEMENTFORMDEFAULT    "@elementFormDefault"
 #define XML_ATTR_ID                    "@id"
@@ -470,7 +469,6 @@ public:
 
     GETTERSETTER(XSDXPath)
     GETTERSETTER(EnvXPath)
-    //GETTERSETTER2(EnvXPath)
     GETTERSETTER(EnvValueFromXML)
 
     void dumpStdOut() const;
@@ -491,7 +489,10 @@ public:
     virtual const CXSDNodeBase* getNodeByTypeAndNameAscending(NODE_TYPES eNodeType[], const char *pName, int length = 1) const;
     virtual const CXSDNodeBase* getNodeByTypeAndNameAscending(NODE_TYPES eNodeType, const char *pName) const
     {
-        return getNodeByTypeAndNameAscending(&eNodeType, pName);
+        if (this->getNodeType() == eNodeType)
+            return this;
+        else
+            return this->getConstParentNode()->getNodeByTypeAndNameAscending(eNodeType, pName);
     }
     virtual const CXSDNodeBase* getNodeByTypeAndNameDescending(NODE_TYPES eNodeType[], const char *pName, int length = 1) const;
     virtual const CXSDNodeBase* getNodeByTypeAndNameDescending(NODE_TYPES eNodeType, const char *pName) const
@@ -667,6 +668,11 @@ public:
     {
     }
 
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
+    {
+        UNIMPLEMENTED_X("Should be implemented in the derived class");
+    }
+
     void setTypeNode(CXSDNode* pCXSDNode)
     {
         m_pXSDNode = pCXSDNode;
@@ -714,7 +720,7 @@ public:
     static CXSDBuiltInDataType* create(CXSDNodeBase* pParentNode, const char* pNodeType);
 
     virtual ~CXSDBuiltInDataType();
-
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree);
     virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
     virtual void getDocumentation(::StringBuffer &strDoc) const;
     virtual bool checkConstraint(const char *pValue) const;

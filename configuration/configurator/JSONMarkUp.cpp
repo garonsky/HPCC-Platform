@@ -6,33 +6,72 @@
 
 using namespace CONFIGURATOR;
 
-void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, \
+void CJSONMarkUpHelper::markUpString(::StringBuffer &str)
+{
+    //str.replaceString("\"","\\\"");
+    //str.replace("[","\\[");
+    //str.replace("]","/]");
+}
+
+/*void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, \
                                         const char *pToolTip, const char *pDefaultValue, const char *pValues, const char *pValue)
 {
     assert(pUIType);
 
     offset+= STANDARD_OFFSET_1;
 
-    strJSON.appendf(" %s \"%s\",", JSON_LABEL, pLabel);
-    strJSON.appendf(" %s \"%s\",", JSON_TYPE, pUIType);
+    strJSON.appendf(" %s \"%s\"", JSON_LABEL, pLabel);
+    strJSON.appendf(", %s \"%s\"", JSON_TYPE, pUIType);
 
-    //strJSON.appendf(" %s \"%s\",", JSON_KEY, pKey);
     StringBuffer strKey(pKey);
     strKey.replace('/','_'); // for frontend
-    strJSON.appendf(" %s \"%s\",", JSON_KEY, strKey.str());
+    strJSON.appendf(", %s \"%s\"", JSON_KEY, strKey.str());
 
-    strJSON.appendf(" %s \"%s\",", JSON_TOOLTIP, pToolTip);
-    strJSON.appendf(" %s \"%s\",", JSON_DEFAULT_VALUE, pDefaultValue);
-    strJSON.appendf(" %s \"%s\"", JSON_VALUE, pValue);
+    strJSON.appendf(", %s \"%s\"", JSON_TOOLTIP, pToolTip);
+    strJSON.appendf(", %s \"%s\"", JSON_DEFAULT_VALUE, pDefaultValue);
+
+    if (strcmp(pUIType, JSON_TYPE_TABLE) != 0 && strcmp(pUIType, JSON_TYPE_TAB) != 0)
+        strJSON.appendf(", %s %s", JSON_VALUE, pValue);
 
     if (strcmp(pUIType, JSON_TYPE_DROP_DOWN) == 0 && pValues && *pValues)
-    {
         strJSON.appendf(", %s [ \"%s\" ]", JSON_VALUES, pValues);
-    }
     else if (strcmp(pUIType, JSON_TYPE_TABLE) == 0 && pValues && *pValues)
-    {
         strJSON.appendf(", %s [ \"%s\" ]", JSON_COLUMN_NAMES_VALUE, pValues);
-    }
+}*/
+
+
+
+void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, ::StringBuffer strUIType, ::StringBuffer strLabel, ::StringBuffer strKey, ::StringBuffer strToolTip, ::StringBuffer strDefaultValue,\
+                                        ::StringBuffer strValues, ::StringBuffer strValue)
+{
+    assert(strUIType.length() > 0);
+
+    CJSONMarkUpHelper::markUpString(strUIType);
+    CJSONMarkUpHelper::markUpString(strLabel);
+    CJSONMarkUpHelper::markUpString(strToolTip);
+    CJSONMarkUpHelper::markUpString(strDefaultValue);
+    CJSONMarkUpHelper::markUpString(strValues);
+    CJSONMarkUpHelper::markUpString(strValue);
+
+
+    offset+= STANDARD_OFFSET_1;
+
+    strJSON.appendf(" %s \"%s\"", JSON_LABEL, strLabel.str());
+    strJSON.appendf(", %s \"%s\"", JSON_TYPE, strUIType.str());
+
+    strKey.replace('/','_'); // for frontend
+    strJSON.appendf(", %s \"%s\"", JSON_KEY, strKey.str());
+
+    strJSON.appendf(", %s \"%s\"", JSON_TOOLTIP, strToolTip.str());
+    strJSON.appendf(", %s \"%s\"", JSON_DEFAULT_VALUE, strDefaultValue.str());
+
+    if (strcmp(strUIType.str(), JSON_TYPE_TABLE) != 0 && strcmp(strUIType.str(), JSON_TYPE_TAB) != 0)
+        strJSON.appendf(", %s %s", JSON_VALUE, strValue.str());
+
+    if (strcmp(strUIType.str(), JSON_TYPE_DROP_DOWN) == 0 && strValues.length() > 0)
+        strJSON.appendf(", %s [ \"%s\" ]", JSON_VALUES, strValues.str());
+    else if (strcmp(strUIType.str(), JSON_TYPE_TABLE) == 0 && strValues.length() > 0)
+        strJSON.appendf(", %s [ \"%s\" ]", JSON_COLUMN_NAMES_VALUE, strValues.str());
 }
 
 void CJSONMarkUpHelper::getNavigatorJSON(::StringBuffer &strJSON)

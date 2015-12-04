@@ -17,7 +17,7 @@ bool Cws_configuratorEx::ongetValue(IEspContext &context, IEspGetValueRequest &r
     StringBuffer strXPath(req.getXPath());
     strXPath.replace('_','/');
 
-    char *pValue = new char[1024];
+    char *pValue = new char[4096];
     CONFIGURATOR_API::getValue(strXPath.str(), pValue);
 
     resp.setValue(pValue);
