@@ -243,7 +243,14 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
            strJSON.append("{");
         }
 
-        if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
+        const CElement *pElement = dynamic_cast<const CElement*>(this->getParentNodeByType(XSD_ELEMENT));
+        assert(pElement != NULL);
+
+        if (pElement && (pElement->getMaxOccursInt() > 0 || strlen(pElement->getMinOccurs()) > 0))
+        {
+            CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TABLE, "Attributes", this->getEnvXPath());
+        }
+        else if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
         {
             CJSONMarkUpHelper::createUIContent(strJSON, offset, JSON_TYPE_TAB, "Attributes", this->getEnvXPath());
         }

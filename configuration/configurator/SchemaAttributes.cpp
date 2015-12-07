@@ -154,9 +154,8 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
         }
     }
 
+    StringBuffer strInstanceValues;
     const CElementArray *pElementArray = dynamic_cast<const CElementArray*>(this->getParentNodeByType(XSD_ELEMENT_ARRAY));
-
-    StringBuffer strInstanceValues("[");
 
     if (pElementArray != NULL && pElementArray->getParentNodeByType(XSD_ELEMENT_ARRAY) != NULL &&  pElementArray->getParentNodeByType(XSD_ELEMENT_ARRAY)->getNodeType() != XSD_SCHEMA)
     {
@@ -164,6 +163,8 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
         {
             if (i != 0)
                 strInstanceValues.append(", ");
+            else
+                strInstanceValues.append("[");
 
             const CAttribute *pAttribute = const_cast<const CAttribute*>(&(pElementArray->item(i).getComplexTypeArray()->item(0).getAttributeArray()->item(idx)));
             assert(pAttribute != NULL);
@@ -177,7 +178,7 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
     }
     else
     {
-        strInstanceValues.appendf("\"%s\"]",this->getInstanceValue());
+        strInstanceValues.appendf("\"%s\"",this->getInstanceValue());
     }
 
     CJSONMarkUpHelper::createUIContent(strJSON, offset, strValues.length() > 0 ? JSON_TYPE_DROP_DOWN : JSON_TYPE_INPUT, this->getTitle(),\
