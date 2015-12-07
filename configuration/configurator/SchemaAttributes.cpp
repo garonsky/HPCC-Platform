@@ -177,7 +177,7 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
     }
     else
     {
-        strInstanceValues.appendf("%s]",this->getInstanceValue());
+        strInstanceValues.appendf("\"%s\"]",this->getInstanceValue());
     }
 
     CJSONMarkUpHelper::createUIContent(strJSON, offset, strValues.length() > 0 ? JSON_TYPE_DROP_DOWN : JSON_TYPE_INPUT, this->getTitle(),\

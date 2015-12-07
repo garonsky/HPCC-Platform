@@ -13,11 +13,11 @@ void CJSONMarkUpHelper::markUpString(::StringBuffer &str)
     //str.replace("]","/]");
 }
 
-/*void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, \
+void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, \
                                         const char *pToolTip, const char *pDefaultValue, const char *pValues, const char *pValue)
 {
-    assert(pUIType);
 
+    assert(pUIType);
     offset+= STANDARD_OFFSET_1;
 
     strJSON.appendf(" %s \"%s\"", JSON_LABEL, pLabel);
@@ -25,23 +25,30 @@ void CJSONMarkUpHelper::markUpString(::StringBuffer &str)
 
     StringBuffer strKey(pKey);
     strKey.replace('/','_'); // for frontend
+
     strJSON.appendf(", %s \"%s\"", JSON_KEY, strKey.str());
 
-    strJSON.appendf(", %s \"%s\"", JSON_TOOLTIP, pToolTip);
+    StringBuffer strToolTip;
+    if (pToolTip)
+    {
+        strToolTip.set(pToolTip);
+        strToolTip.replaceString("\"","\\"");
+    }
+
+    strJSON.appendf(", %s \"%s\"", JSON_TOOLTIP, strToolTip.str());
     strJSON.appendf(", %s \"%s\"", JSON_DEFAULT_VALUE, pDefaultValue);
 
     if (strcmp(pUIType, JSON_TYPE_TABLE) != 0 && strcmp(pUIType, JSON_TYPE_TAB) != 0)
         strJSON.appendf(", %s %s", JSON_VALUE, pValue);
-
     if (strcmp(pUIType, JSON_TYPE_DROP_DOWN) == 0 && pValues && *pValues)
         strJSON.appendf(", %s [ \"%s\" ]", JSON_VALUES, pValues);
     else if (strcmp(pUIType, JSON_TYPE_TABLE) == 0 && pValues && *pValues)
         strJSON.appendf(", %s [ \"%s\" ]", JSON_COLUMN_NAMES_VALUE, pValues);
-}*/
+}
 
 
 
-void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, ::StringBuffer strUIType, ::StringBuffer strLabel, ::StringBuffer strKey, ::StringBuffer strToolTip, ::StringBuffer strDefaultValue,\
+/*void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, ::StringBuffer strUIType, ::StringBuffer strLabel, ::StringBuffer strKey, ::StringBuffer strToolTip, ::StringBuffer strDefaultValue,\
                                         ::StringBuffer strValues, ::StringBuffer strValue)
 {
     assert(strUIType.length() > 0);
@@ -72,7 +79,7 @@ void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &o
         strJSON.appendf(", %s [ \"%s\" ]", JSON_VALUES, strValues.str());
     else if (strcmp(strUIType.str(), JSON_TYPE_TABLE) == 0 && strValues.length() > 0)
         strJSON.appendf(", %s [ \"%s\" ]", JSON_COLUMN_NAMES_VALUE, strValues.str());
-}
+}*/
 
 void CJSONMarkUpHelper::getNavigatorJSON(::StringBuffer &strJSON)
 {
@@ -102,19 +109,31 @@ void CJSONMarkUpHelper::getNavigatorJSON(::StringBuffer &strJSON)
 
         int nInstanceCount = CConfigSchemaHelper::getInstance()->getInstancesOfComponentType(strComponentTypeName.str());
 
-        for (int ii = 0; ii < nInstanceCount; ii++)
+        if (CConfigSchemaHelper::getInstance()->getEnvFilePath() != NULL && strlen(CConfigSchemaHelper::getInstance()->getEnvFilePath()) > 0)
         {
-            if (ii == 0)
+            for (int ii = 0; ii < nInstanceCount; ii++)
             {
-                strJSON.append(",\n");
-                strJSON.append(JSON_NAVIGATOR_NODES);
-                strJSON.append(JSON_NAVIGATOR_NODE_BEGIN);
+                if (ii == 0)
+                {
+                    strJSON.append(",\n");
+                    strJSON.append(JSON_NAVIGATOR_NODES);
+                    strJSON.append(JSON_NAVIGATOR_NODE_BEGIN);
+                }
+
+                strJSON.append(JSON_NAVIGATOR_TEXT).append("\"").append(CConfigSchemaHelper::getInstance()->getInstanceNameOfComponentType(strComponentProcessName.str(),ii)).append("\",").append("\n");
+                strJSON.append(JSON_NAVIGATOR_KEY).append("\"#").append(strComponentProcessName.str()).append("[").append(ii+1).append("]").append("\"\n");
+
+                if (ii+1 < nInstanceCount)
+                {
+                    strJSON.append("},\n{");
+                }
+                else
+                {
+                    strJSON.append("\n");
+                    strJSON.append(JSON_NAVIGATOR_NODE_END);
+                }
             }
-
-            strJSON.append(JSON_NAVIGATOR_TEXT).append("\"").append(CConfigSchemaHelper::getInstance()->getInstanceNameOfComponentType(strComponentProcessName.str(),ii)).append("\",").append("\n");
-            strJSON.append(JSON_NAVIGATOR_KEY).append("\"#").append(strComponentProcessName.str()).append("[").append(ii+1).append("]").append("\"\n");
-
-            if (ii+1 < nInstanceCount)
+            if (i+1 < nComponents)
             {
                 strJSON.append("},\n{");
             }
@@ -124,17 +143,15 @@ void CJSONMarkUpHelper::getNavigatorJSON(::StringBuffer &strJSON)
                 strJSON.append(JSON_NAVIGATOR_NODE_END);
             }
         }
-
-        if (i+1 < nComponents)
+        else if (i+1 < nComponents)
         {
-            strJSON.append("},\n{");
+            strJSON.append(",");
         }
         else
         {
             strJSON.append("\n");
             strJSON.append(JSON_NAVIGATOR_NODE_END);
         }
-
     }
     strJSON.append(JSON_NAVIGATOR_END);
 }
