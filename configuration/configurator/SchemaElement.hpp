@@ -148,7 +148,7 @@ public:
 
 protected:
 
-    CElement(CXSDNodeBase* pParentNode, const char* pName = "") : CXSDNodeWithType::CXSDNodeWithType(pParentNode, XSD_ELEMENT), m_strMinOccurs("1"), m_strMaxOccurs("1"), m_strName(pName), m_pAnnotation(NULL),
+    CElement(CXSDNodeBase* pParentNode, const char* pName = "") : CXSDNodeWithType::CXSDNodeWithType(pParentNode, XSD_ELEMENT), m_strMinOccurs(""), m_strMaxOccurs(""), m_strName(pName), m_pAnnotation(NULL),
         m_pComplexTypeArray(NULL), m_pKeyArray(NULL), m_pKeyRefArray(NULL), m_pReverseKeyRefArray(NULL), m_pElementRefNode(NULL), m_pSimpleType(NULL),\
         m_bTopLevelElement(false), m_nParentIndex(-1), m_bIsInXSD(true), m_strDefault("")
     {
