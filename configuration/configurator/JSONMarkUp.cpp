@@ -32,7 +32,7 @@ void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &o
     if (pToolTip)
     {
         strToolTip.set(pToolTip);
-        strToolTip.replaceString("\"","\\"");
+        strToolTip.replaceString("\"","\'");
     }
 
     strJSON.appendf(", %s \"%s\"", JSON_TOOLTIP, strToolTip.str());
