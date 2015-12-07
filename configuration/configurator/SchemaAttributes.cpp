@@ -158,7 +158,7 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
 
     StringBuffer strInstanceValues("[");
 
-    if (pElementArray != NULL)
+    if (pElementArray != NULL && pElementArray->getParentNodeByType(XSD_ELEMENT_ARRAY) != NULL &&  pElementArray->getParentNodeByType(XSD_ELEMENT_ARRAY)->getNodeType() != XSD_SCHEMA)
     {
         for (int i = 0; i < pElementArray->ordinality(); i++)
         {

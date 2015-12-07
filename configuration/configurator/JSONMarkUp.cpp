@@ -16,7 +16,6 @@ void CJSONMarkUpHelper::markUpString(::StringBuffer &str)
 void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, \
                                         const char *pToolTip, const char *pDefaultValue, const char *pValues, const char *pValue)
 {
-
     assert(pUIType);
     offset+= STANDARD_OFFSET_1;
 
