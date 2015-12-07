@@ -67,8 +67,8 @@ class CJSONMarkUpHelper
 {
 
 public:
-    //static void createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, const char *pToolTip = "", const char *pDefaultValue = "", const char* pValues = "", const char*  pValue = "");
-    static void createUIContent(::StringBuffer &strJSON, unsigned int &offset, ::StringBuffer strUIType, ::StringBuffer strLabel, ::StringBuffer strKey, ::StringBuffer strToolTip = "", ::StringBuffer strDefaultValue = "", ::StringBuffer strValues = "", ::StringBuffer strValue = "");
+    static void createUIContent(::StringBuffer &strJSON, unsigned int &offset, const char *pUIType, const char* pLabel, const char* pKey, const char *pToolTip = "", const char *pDefaultValue = "", const char* pValues = "", const char*  pValue = "");
+    //static void createUIContent(::StringBuffer &strJSON, unsigned int &offset, ::StringBuffer strUIType, ::StringBuffer strLabel, ::StringBuffer strKey, ::StringBuffer strToolTip = "", ::StringBuffer strDefaultValue = "", ::StringBuffer strValues = "", ::StringBuffer strValue = "");
     static void getNavigatorJSON(::StringBuffer &strJSON);
 private:
     static void markUpString(::StringBuffer &str);
