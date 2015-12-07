@@ -909,13 +909,13 @@ void CElementArray::getJSON(::StringBuffer &strJSON, unsigned int offset, int id
 
     int lidx = (idx == -1 ? 0 : idx);
 
-    for (; lidx < this->length(); lidx++)
+//    for (; lidx < this->length(); lidx++)
     {
         strJSON.append("{");
 
         (this->item(lidx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, lidx);
 
-        if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length() && idx == -1)
+        /*if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length() && idx == -1)
         {
             QuickOutPad(strJSON, offset);
             strJSON.append(" },\n ");
@@ -924,7 +924,7 @@ void CElementArray::getJSON(::StringBuffer &strJSON, unsigned int offset, int id
         offset -= STANDARD_OFFSET_1;
 
         if (idx != -1)
-            break;
+            break;*/
     }
     offset += STANDARD_OFFSET_2;
     QuickOutPad(strJSON, offset);
