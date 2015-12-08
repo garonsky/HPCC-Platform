@@ -155,6 +155,7 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
     }
 
     StringBuffer strInstanceValues;
+    StringBuffer strKeys;
     const CElementArray *pElementArray = dynamic_cast<const CElementArray*>(this->getParentNodeByType(XSD_ELEMENT_ARRAY));
 
     if (pElementArray != NULL && pElementArray->getParentNodeByType(XSD_ELEMENT_ARRAY) != NULL &&  pElementArray->getParentNodeByType(XSD_ELEMENT_ARRAY)->getNodeType() != XSD_SCHEMA)
@@ -162,19 +163,25 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
         for (int i = 0; i < pElementArray->ordinality(); i++)
         {
             if (i != 0)
+            {
                 strInstanceValues.append(", ");
+                strKeys.append(",");
+            }
             else
+            {
                 strInstanceValues.append("[");
+                strKeys.append("[");
+            }
 
             const CAttribute *pAttribute = const_cast<const CAttribute*>(&(pElementArray->item(i).getComplexTypeArray()->item(0).getAttributeArray()->item(idx)));
             assert(pAttribute != NULL);
 
-            strInstanceValues.append("\"");
-            strInstanceValues.append(pAttribute->getInstanceValue());
-            strInstanceValues.append("\"");
+            strInstanceValues.appendf("\"%s\"",pAttribute->getInstanceValue());
+            strKeys.appendf("\"%s\"",pAttribute->getEnvXPath());
         }
 
         strInstanceValues.append("]");
+        strKeys.append("]");
     }
     else
     {
@@ -182,7 +189,7 @@ void CAttribute::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) co
     }
 
     CJSONMarkUpHelper::createUIContent(strJSON, offset, strValues.length() > 0 ? JSON_TYPE_DROP_DOWN : JSON_TYPE_INPUT, this->getTitle(),\
-                                       this->getEnvXPath(), strToolTip.str(), this->getDefault(), strValues.str(), strInstanceValues.str());
+                                       strKeys.length() > 0 ? strKeys.str() : this->getEnvXPath(), strToolTip.str(), this->getDefault(), strValues.str(), strInstanceValues.str());
 }
 
 void CAttribute::getQML2(StringBuffer &strQML, int idx) const

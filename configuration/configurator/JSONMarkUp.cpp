@@ -25,7 +25,10 @@ void CJSONMarkUpHelper::createUIContent(::StringBuffer &strJSON, unsigned int &o
     StringBuffer strKey(pKey);
     strKey.replace('/','_'); // for frontend
 
-    strJSON.appendf(", %s \"%s\"", JSON_KEY, strKey.str());
+    if (strKey[0] == '[') //check for array
+        strJSON.appendf(", %s %s", JSON_KEY, strKey.str());
+    else
+        strJSON.appendf(", %s \"%s\"", JSON_KEY, strKey.str());
 
     StringBuffer strToolTip;
     if (pToolTip)

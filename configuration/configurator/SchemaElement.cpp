@@ -901,7 +901,6 @@ void CElementArray::getQML3(::StringBuffer &strQML, int idx) const
         (this->item(0)).getQML3(strQML,0);
 }
 
-
 void CElementArray::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) const
 {
     offset += STANDARD_OFFSET_2;
@@ -909,26 +908,12 @@ void CElementArray::getJSON(::StringBuffer &strJSON, unsigned int offset, int id
 
     int lidx = (idx == -1 ? 0 : idx);
 
-//    for (; lidx < this->length(); lidx++)
-    {
-        strJSON.append("{");
+    strJSON.append("{");
 
-        (this->item(lidx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, lidx);
+    (this->item(lidx)).getJSON(strJSON, offset+STANDARD_OFFSET_2, lidx);
 
-        /*if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length() && idx == -1)
-        {
-            QuickOutPad(strJSON, offset);
-            strJSON.append(" },\n ");
-            QuickOutPad(strJSON, offset);
-        }
-        offset -= STANDARD_OFFSET_1;
-
-        if (idx != -1)
-            break;*/
-    }
     offset += STANDARD_OFFSET_2;
     QuickOutPad(strJSON, offset);
-
     strJSON.append("}");
 }
 
