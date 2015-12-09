@@ -92,6 +92,21 @@ void CChoice::getDocumentation(StringBuffer &strDoc) const
 
 void CChoice::getJSON(StringBuffer &strJSON, int idx) const
 {
+    // this is really not correct but roxie.xsd is not correct and probably others
+    bool bSkip = true;
+    for (int i = 0; m_pArrayOfElementArrays->length() > i; i++)
+    {
+        if (m_pArrayOfElementArrays->item(i).length() == 0)
+            continue;
+
+        if (bSkip == false)
+        {
+            strJSON.append(",");
+        }
+        bSkip = false;
+
+        m_pArrayOfElementArrays->item(i).getJSON(strJSON);
+    }
 }
 
 void CChoice::getQML(StringBuffer &strQML, int idx) const

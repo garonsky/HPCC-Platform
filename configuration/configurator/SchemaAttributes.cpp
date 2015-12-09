@@ -320,7 +320,7 @@ void CAttribute::loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
     }
 }
 
-void CAttribute::setEnvValueFromXML(const char *p)
+bool CAttribute::setEnvValueFromXML(const char *p)
 {
     if (p == NULL)
     {
@@ -328,17 +328,17 @@ void CAttribute::setEnvValueFromXML(const char *p)
         {
             this->setInstanceValue(this->getDefault());
             this->setInstanceAsValid(true);
-            return;
+            return true;
         }
 
         if (this->getUse() != NULL && stricmp(this->getUse(), TAG_REQUIRED) != 0)
-            return;
+            return true;
         else
         {
             this->setInstanceAsValid(false);
-            assert (!"Missing attribute property, property not marked as optional");
+            //assert (!"Missing attribute property, property not marked as optional");
 
-            return;
+            return false;
         }
     }
 
@@ -349,9 +349,9 @@ void CAttribute::setEnvValueFromXML(const char *p)
         if (pNodeBuiltInType != NULL && pNodeBuiltInType->checkConstraint(p) == false)
         {
             this->setInstanceAsValid(false);
-            assert (!"Invalid value for data type");
+            //assert (!"Invalid value for data type");
 
-            return;
+            return false;
         }
 
         if (this->getTypeNode()->getNodeType() == XSD_SIMPLE_TYPE)
@@ -369,12 +369,14 @@ void CAttribute::setEnvValueFromXML(const char *p)
                 this->setInstanceAsValid(false);
                 assert (!"Constraint Violated");
 
-                return;
+                return false;
             }
         }
     }
     this->setInstanceValue(p);
     this->setInstanceAsValid(true);
+
+    return true;
 }
 
 void CAttribute::appendReverseKeyRef(const CKeyRef *pKeyRef)
