@@ -30,8 +30,7 @@ bool Cws_configuratorEx::onsetValue(IEspContext &context, IEspSetValueRequest &r
     StringBuffer strXPath(req.getXPath());
     strXPath.replace('_','/');
 
-    CONFIGURATOR_API::setValue(strXPath.str(), req.getValue());
-    return true;
+    return CONFIGURATOR_API::setValue(strXPath.str(), req.getValue());
 }
 
 bool Cws_configuratorEx::ongetTableValue(IEspContext &context, IEspGetTableValueRequest &req, IEspGetTableValueResponse &resp)
@@ -88,6 +87,10 @@ bool Cws_configuratorEx::ongetJSONForComponent(IEspContext &context, IEspGetJSON
 
     if (pJSON != NULL)
     {
+        //StringBuffer strJSON;
+        //encodeJSON(strJSON, strlen(pJSON), pJSON);
+
+        //resp.setJSON(strJSON.str());
         resp.setJSON(pJSON);
         free(pJSON);
 

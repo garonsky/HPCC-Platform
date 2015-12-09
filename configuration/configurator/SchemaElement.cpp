@@ -346,8 +346,8 @@ void CElement::getJSON(::StringBuffer &strJSON, unsigned int offset, int idx) co
 {
     assert(this->getConstAncestorNode(3) != NULL);
 
-    if (m_pAnnotation != NULL && m_pAnnotation->getAppInfo() != NULL && m_pAnnotation->getAppInfo()->getViewType() != NULL && stricmp(m_pAnnotation->getAppInfo()->getViewType(), "none") == 0)
-        return;
+//    if (m_pAnnotation != NULL && m_pAnnotation->getAppInfo() != NULL && m_pAnnotation->getAppInfo()->getViewType() != NULL && stricmp(m_pAnnotation->getAppInfo()->getViewType(), "none") == 0)
+//        return;
 
     assert(strlen(this->getName()) > 0);
 
@@ -1259,9 +1259,8 @@ void CArrayOfElementArrays::getJSON(::StringBuffer &strJSON, unsigned int offset
 {
     for (int i = 0; i < this->ordinality(); i++)
     {
-        this->item(i).getJSON(strJSON, offset);
-
-        if (i+1 < this->ordinality())
+        if (i != 0)
             strJSON.append(",\n");
+        this->item(i).getJSON(strJSON, offset);
     }
 }

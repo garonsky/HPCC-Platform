@@ -225,20 +225,20 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
 {
 	bool bAddComma = false;
 
-	if ( m_pAttributeArray->length() > 0 || m_pSequence != NULL || m_pAttributeGroupArray != NULL)
+    if ((m_pAttributeArray != NULL && m_pAttributeArray->length() > 0) || m_pSequence != NULL || m_pAttributeGroupArray != NULL)
 	{
         strJSON.append("\n");
         offset += STANDARD_OFFSET_2;
         QuickOutPad(strJSON, offset);
         CONTENT_INNER_CONTENT_BEGIN
 
-		bAddComma = true;
+        //bAddComma = true;
 	}
 
     if (m_pAttributeArray != NULL && m_pAttributeArray->length() > 0)
     {
         QuickOutPad(strJSON, offset);
-        if (bAddComma)
+        //if (bAddComma)
         {
            strJSON.append("{");
         }
@@ -280,6 +280,17 @@ void CComplexType::getJSON(StringBuffer &strJSON, unsigned int offset, int idx) 
 
         m_pSequence->getJSON(strJSON, offset);
         bAddComma = true;
+    }
+
+    if (m_pChoice != NULL)
+    {
+        if (bAddComma)
+        {
+            strJSON.append(",");
+        }
+
+        m_pChoice->getJSON(strJSON, offset);
+        //bAddComma = true;
     }
 
     if(m_pAttributeGroupArray != NULL && m_pAttributeGroupArray->length() > 0)

@@ -83,7 +83,7 @@ public:
     }
 
     bool isHidden();
-    virtual void setEnvValueFromXML(const char *p);
+    virtual bool setEnvValueFromXML(const char *p);
     void appendReverseKey(const CKey *pKey);
     void appendReverseKeyRef(const CKeyRef *pKeyRef);
 

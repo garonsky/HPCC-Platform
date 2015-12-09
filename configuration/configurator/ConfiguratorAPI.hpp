@@ -36,7 +36,7 @@ extern "C" int getNumberOfAvailableServices();
 extern "C" const char* getServiceName(int idx, char *pName = 0);
 extern "C" const char* getComponentName(int idx, char *pName = 0);
 extern "C" int getValue(const char *pXPath, char *pValue);
-extern "C" void setValue(const char *pXPath, const char *pValue);
+extern "C" bool setValue(const char *pXPath, const char *pValue);
 extern "C" int getIndex(const char *pXPath);
 extern "C" void setIndex(const char *pXPath, int newIndex);
 extern "C" const char* getTableValue(const char *pXPath, int nRow);

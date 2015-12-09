@@ -469,7 +469,21 @@ public:
 
     GETTERSETTER(XSDXPath)
     GETTERSETTER(EnvXPath)
-    GETTERSETTER(EnvValueFromXML)
+    //GETTERSETTER(EnvValueFromXML)
+    virtual const char* getEnvValueFromXML() const
+    {
+        return m_strEnvValueFromXML;
+    }
+
+    virtual bool setEnvValueFromXML(const char* p)
+    {
+        if (p != NULL)
+        {
+            m_strEnvValueFromXML.set(p);
+            return true;
+        }
+        return false;
+    }
 
     void dumpStdOut() const;
 
@@ -559,6 +573,7 @@ protected:
     NODE_TYPES                  m_eNodeType;
     char                        m_pNodeType[1024];
     mutable QML_UI_TYPE         m_eUIType;
+    StringBuffer                m_strEnvValueFromXML;
 
 private:
 
