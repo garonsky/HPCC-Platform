@@ -47,10 +47,12 @@ public:
     static CSelector* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTER(ID)
-    GETTERSETTER(XPath)
+    const char* getXPath(bool bStripDotSlash = false) const;
+    SETTER(XPath)
 
 protected:
 
+    StringBuffer m_strXPath;
     CSelector(CXSDNodeBase* pParentNode) : CXSDNode::CXSDNode(pParentNode, XSD_SELECTOR)
     {
     }

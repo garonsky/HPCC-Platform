@@ -172,9 +172,9 @@ CElement* CElement::load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSche
     else
         pElement->setTitle(pElement->getName());
 
-/*    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_KEY);
+    strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_KEY);
     pElement->m_pKeyArray = CKeyArray::load(pElement, pSchemaRoot, strXPathExt.str());
-
+/*
     strXPathExt.clear().append(xpath).append("/").append(XSD_TAG_KEYREF);
     pElement->m_pKeyRefArray = CKeyRefArray::load(pElement, pSchemaRoot, strXPathExt.str());
 */

@@ -68,10 +68,6 @@
               <xs:element name="Node" type="NodeType" minOccurs="0"/>
             </xs:sequence>
           </xs:complexType>
-          <xs:keyref name="thorProcessKeyRef1" refer="thorProcessKey">
-            <xs:selector xpath=".//*"/>
-            <xs:field xpath="@process"/>
-          </xs:keyref>
         </xs:element>
         <xs:element name="SSH">
           <xs:annotation>
@@ -626,9 +622,5 @@
         </xs:annotation>
       </xs:attribute>
     </xs:complexType>
-    <xs:key name="thorProcessKey1">
-      <xs:selector xpath="./ThorMasterProcess|./ThorSlaveProcess"/>
-      <xs:field xpath="@name"/>
-    </xs:key>
   </xs:element>
 </xs:schema>

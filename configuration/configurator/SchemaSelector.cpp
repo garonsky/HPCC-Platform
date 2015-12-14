@@ -45,6 +45,7 @@ CSelector* CSelector::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSche
         if (pTree == NULL)
         {
             assert(!"Selector required");
+            return NULL;
             // TODO: throw MakeExceptionFromMap("EX_STR_MISSING_SELECTOR_MISSING");
         }
         const char* pXPath = pSchemaRoot->getPropTree(xpath)->queryProp(XML_ATTR_XPATH);
@@ -65,6 +66,7 @@ CSelector* CSelector::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSche
         else
         {
             assert(!"selector can not be be empty!");
+            return NULL;
             // TODO: throw MakeExceptionFromMap(EX_STR_MISSING_VALUE_ATTRIBUTE_IN_LENGTH);
         }
 
@@ -91,4 +93,12 @@ void CSelector::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     this->setEnvXPath(&(strXPath.str()[1]));  // strip out .
     PROGLOG("Function: %s() at %s:%d", __func__, __FILE__, __LINE__);
     PROGLOG("Setting selector %s to EnvXPath = %s", this->getXSDXPath(), this->getEnvXPath());
+}
+
+const char* CSelector::getXPath(bool bStripDotSlash) const
+{
+    if (bStripDotSlash && m_strEnvXPath.length() > 2 && m_strEnvXPath[0] == '.' && m_strEnvXPath[0] == '.')
+        return &(m_strXPath.str()[2]);
+    else
+        return m_strXPath.str();
 }

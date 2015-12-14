@@ -155,7 +155,13 @@ bool setValue(const char *pXPath, const char *pValue)
         return false;
 
     assert(pAttribute != NULL);
-    pAttribute->setEnvValueFromXML(pValue);
+    if (pAttribute->setEnvValueFromXML(pValue) == false)
+    {
+        return false;
+    }
+
+    // need to check for element to set value
+
 
     /*if (strstr(pValue, "/") == NULL)
     {
