@@ -418,10 +418,6 @@
       <xs:attributeGroup ref="SSH"/>
       <xs:attributeGroup ref="Debug"/>
     </xs:complexType>
-    <xs:key name="thorProcessKey1">
-      <xs:selector xpath="./ThorMasterProcess|./ThorSlaveProcess"/>
-      <xs:field xpath="@name"/>
-    </xs:key>
   </xs:element>
  <xs:attributeGroup name="LDAP">
     <xs:attribute name="ldapUser" type="xs:string" use="optional" default="roxie">

@@ -402,32 +402,36 @@ bool CXSDBuiltInDataType::checkConstraint(const char *pValue) const
         }
         else if(XSD_DT_NON_NEG_INTEGER == eNodeType)
         {
-            RegExpr expr("^\\d+$");
+            RegExpr expr("^[0-9]+$");
 
-            if ((expr.find(pValue)) && (expr.findlen(0) == strlen(pValue)) == false)
+            if (expr.find(pValue, 0, strlen(pValue)) == NULL)
                 return false;
         }
         else if(XSD_DT_NON_POS_INTEGER == eNodeType)
         {
-            RegExpr expr("^\\d-$");
+            RegExpr expr("^-[0-9]+$|^0+$");
 
-            if ((expr.find(pValue)) && (expr.findlen(0) == strlen(pValue)) == false)
+            if (expr.find(pValue, 0, strlen(pValue)) == NULL)
                 return false;
         }
         else if(XSD_DT_NEG_INTEGER == eNodeType)
         {
-            UNIMPLEMENTED;
+            RegExpr expr("^-[0-9]+$");
+
+            if (expr.find(pValue, 0, strlen(pValue)) == NULL)
+                return false;
         }
         else if(XSD_DT_POS_INTEGER == eNodeType)
         {
-            UNIMPLEMENTED;
+            RegExpr expr("^+[0-9]+$|^[0-9]+$");
+
+            if (expr.find(pValue, 0, strlen(pValue)) == NULL)
+                return false;
         }
         else if(XSD_DT_BOOLEAN == eNodeType)
         {
-            if (stricmp(pValue,"true") != 0 && stricmp(pValue,"false") != 0)
+            if (stricmp(pValue,"true") != 0 && stricmp(pValue,"false") != 0  &&  stricmp(pValue,"0") != 0 && stricmp(pValue,"1") != 0)
                 return false;
-            else
-                assert("!Unknown datatype");
         }
     }
     return true;

@@ -42,7 +42,7 @@ CKey* CKey::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, co
         return NULL;
     }
 
-    CKey *pKey = new CKey(pParentNode);
+    CKey *pKey = NULL;
 
     if (xpath != NULL && *xpath != 0)
     {
@@ -69,7 +69,7 @@ CKey* CKey::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, co
          if (pID != NULL)
              pKey->setID(pID);
 
-         StringBuffer strXPathExt(xpath);
+         ::StringBuffer strXPathExt(xpath);
          strXPathExt.append("/").append(XSD_TAG_FIELD);
 
          if (strXPathExt.charAt(0) == '@')
@@ -80,19 +80,18 @@ CKey* CKey::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, co
          strXPathExt.clear().set(xpath);
          strXPathExt.append("/").append(XSD_TAG_SELECTOR);
 
-         if (strXPathExt.charAt(0) == '.')
-             strXPathExt.remove(0,2); // remove leading ./
-
          pKey->m_pSelector = CSelector::load(pKey, pSchemaRoot, strXPathExt.str());
          assert(pKey->m_pFieldArray != NULL && pKey->m_pSelector != NULL);
 
          strXPathExt.append("/").append(XSD_TAG_ANNOTATION);
          pKey->m_pAnnotation = CAnnotation::load(pKey, pSchemaRoot, strXPathExt.str());
     }
+    StringBuffer strTemp;
+    pKey->getEnvXPathToKey(strTemp);
     return pKey;
 }
 
-void CKey::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+void CKey::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
 {
     assert(this->m_pSelector != NULL);
 
@@ -120,7 +119,7 @@ bool CKey::checkConstraint(const char *pValue) const
             if (m_pField == NULL)
                 return false;
 
-            StringBuffer strXPathForConstraintCheck(this->getEnvXPath());
+            ::StringBuffer strXPathForConstraintCheck(this->getEnvXPath());
             strXPathForConstraintCheck.appendf("/%s", this->m_pSelector->getXPath());
 
             const CElement *pElement = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getElementFromXPath(strXPathForConstraintCheck.str());
@@ -154,6 +153,17 @@ void CKey::dump(::std::ostream& cout, unsigned int offset) const
     QuickOutFooter(cout, XSD_KEY_STR, offset);
 }
 
+void CKey::getEnvXPathToKey(::StringBuffer &strXPath, int idx) const
+{
+    const CElement *pElement = dynamic_cast<const CElement*>(this->getParentNodeByType(XSD_ELEMENT));
+
+    if (pElement != NULL && this->getSelector() != NULL && this->getSelector()->getXPath(true) != NULL && \
+            (this->getSelector()->getXPath(true))[0] != 0 && this->getFieldArray() != NULL && idx < this->getFieldArray()->length())
+        strXPath.setf("%s/%s[%s]", pElement->getEnvXPath(), this->getSelector()->getXPath(true), this->getFieldArray()->item(idx).getXPath(false));
+    else
+        assert(!"Problem with Key, possible missing fields");
+}
+
 CKeyArray* CKeyArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath)
 {
     assert(pSchemaRoot != NULL);
@@ -162,7 +172,7 @@ CKeyArray* CKeyArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSche
     if (pSchemaRoot == NULL || xpath == NULL)
         return NULL;
 
-    StringBuffer strXPathExt(xpath);
+    ::StringBuffer strXPathExt(xpath);
 
     CKeyArray *pKeyArray = new CKeyArray(pParentNode);
     pKeyArray->setXSDXPath(xpath);
@@ -215,7 +225,7 @@ void CKeyArray::dump(::std::ostream &cout, unsigned int offset) const
     QuickOutFooter(cout, XSD_KEY_ARRAY_STR, offset);
 }
 
-void CKeyArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
+void CKeyArray::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
 {
     this->setEnvXPath(strXPath);
     QUICK_ENV_XPATH_WITH_INDEX(strXPath, index)

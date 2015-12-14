@@ -40,12 +40,12 @@ public:
     }
 
     virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
@@ -54,6 +54,19 @@ public:
     {
         return m_pAnnotation;
     }
+
+    const CSelector* getSelector() const
+    {
+        return m_pSelector;
+    }
+
+    const CFieldArray* getFieldArray() const
+    {
+        return m_pFieldArray;
+    }
+
+    void getEnvXPathToKey(::StringBuffer &strXPath, int idx = 0) const;
+
     static CKey* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
     GETTERSETTER(Name)
@@ -81,23 +94,23 @@ public:
     }
 
     virtual void dump(::std::ostream& cout, unsigned int offset = 0) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
 
-    virtual void getDocumentation(StringBuffer &strDoc) const
+    virtual void getDocumentation(::StringBuffer &strDoc) const
     {
         UNIMPLEMENTED;
     }
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const
     {
         UNIMPLEMENTED;
     }
-    virtual void loadXMLFromEnvXml(const IPropertyTree *pEnvTree)
+    virtual void loadXMLFromEnvXml(const ::IPropertyTree *pEnvTree)
     {
         UNIMPLEMENTED;
     }
     virtual bool checkConstraint(const char *pValue) const;
 
-    static CKeyArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CKeyArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 

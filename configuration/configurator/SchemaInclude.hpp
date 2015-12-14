@@ -48,7 +48,7 @@ public:
         return m_pIncludedSchema;
     }
 
-    static CInclude* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath = NULL);
+    static CInclude* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath = NULL);
 
 protected:
 
@@ -75,7 +75,7 @@ class CIncludeArray : public CIArrayOf<CInclude>, public InterfaceImpl, public C
 {
 public:
 
-    CIncludeArray(CXSDNodeBase* pParentNode, IPropertyTree *pSchemaRoot) : CXSDNodeBase::CXSDNodeBase(pParentNode, XSD_INCLUDE_ARRAY), m_pSchemaRoot(pSchemaRoot)
+    CIncludeArray(CXSDNodeBase* pParentNode, ::IPropertyTree *pSchemaRoot) : CXSDNodeBase::CXSDNodeBase(pParentNode, XSD_INCLUDE_ARRAY), m_pSchemaRoot(pSchemaRoot)
     {
     }
 
@@ -84,16 +84,16 @@ public:
     }
 
     virtual void dump(::std::ostream &cout, unsigned int offset = 0) const;
-    virtual void getDocumentation(StringBuffer &strDoc) const;
-    virtual void getQML(StringBuffer &strQML, int idx = -1) const;
-    virtual void populateEnvXPath(StringBuffer strXPath, unsigned int index = 1);
+    virtual void getDocumentation(::StringBuffer &strDoc) const;
+    virtual void getQML(::StringBuffer &strQML, int idx = -1) const;
+    virtual void populateEnvXPath(::StringBuffer strXPath, unsigned int index = 1);
     virtual const char* getXML(const char* /*pComponent*/);
 
-    static CIncludeArray* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
+    static CIncludeArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 
 protected:
 
-    IPropertyTree *m_pSchemaRoot;
+    ::IPropertyTree *m_pSchemaRoot;
 
 private:
 

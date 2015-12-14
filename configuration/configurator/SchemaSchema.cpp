@@ -60,7 +60,7 @@ CSchema* CSchema::load(const char* pSchemaLocation, const IPropertyTree *pSchema
     StringBuffer strXPathExt(xpath);
     strXPathExt.clear().append(xpath).append(XSD_TAG_INCLUDE);
 
-    CIncludeArray* pIncludeArray = NULL;//CIncludeArray::load(pSchema, pSchemaRoot, strXPathExt); // change this back to be uncommented
+    CIncludeArray* pIncludeArray = CIncludeArray::load(pSchema, pSchemaRoot, strXPathExt.str());
 
     strXPathExt.clear().append(xpath).append(XSD_TAG_SIMPLE_TYPE);
 
@@ -70,7 +70,6 @@ CSchema* CSchema::load(const char* pSchemaLocation, const IPropertyTree *pSchema
     CComplexTypeArray* pComplexTypeArray = CComplexTypeArray::load(pSchema, pSchemaRoot, strXPathExt);
 
     strXPathExt.clear().append(xpath).append(XSD_TAG_ELEMENT);
-    //CElementArray* pElemArray = CElementArray::load(pSchema, pSchemaRoot, strXPathExt.str());
     CArrayOfElementArrays* pArrayOfElemArray = CArrayOfElementArrays::load(pSchema, pSchemaRoot, strXPathExt.str());
 
     strXPathExt.clear().append(xpath).append(XSD_TAG_ATTRIBUTE_GROUP);

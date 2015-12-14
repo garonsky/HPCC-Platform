@@ -47,7 +47,8 @@ CAttribute::~CAttribute()
 
 bool CAttribute::isHidden()
 {
-    if(this->getAnnotation()->getAppInfo() != NULL && !stricmp(this->getAnnotation()->getAppInfo()->getViewType(),"hidden"))
+    if(this->getAnnotation() != NULL && this->getAnnotation()->getAppInfo() != NULL && this->getAnnotation()->getAppInfo()->getViewType() != NULL && \
+            stricmp(this->getAnnotation()->getAppInfo()->getViewType(),"hidden") == 0)
         return true;
 
     return false;
@@ -286,7 +287,7 @@ void CAttribute::populateEnvXPath(StringBuffer strXPath, unsigned int index)
     strXPath.append("/").append("[@").append(this->getName()).append("]");
     this->setEnvXPath(strXPath.str());
 
-    //PROGLOG("Mapping attribute with XPATH of %s to %p", this->getEnvXPath(), this);
+    PROGLOG("Mapping attribute with XPATH of %s to %p", this->getEnvXPath(), this);
 
     CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXPathToAttribute(this->getEnvXPath(), this);
     CConfigSchemaHelper::getInstance()->appendAttributeXPath(this->getEnvXPath());
@@ -337,7 +338,6 @@ bool CAttribute::setEnvValueFromXML(const char *p)
         {
             this->setInstanceAsValid(false);
             //assert (!"Missing attribute property, property not marked as optional");
-
             return false;
         }
     }
@@ -354,8 +354,18 @@ bool CAttribute::setEnvValueFromXML(const char *p)
             return false;
         }
 
-        if (this->getTypeNode()->getNodeType() == XSD_SIMPLE_TYPE)
+        /*if (this->getTypeNode()->getNodeType() == XSD_SIMPLE_TYPE)
+        {
             const CSimpleType *pNodeSimpleType = dynamic_cast<const CSimpleType*>(this->getTypeNode());
+            assert(pNodeSimpleType != NULL);
+
+            if (pNodeSimpleType != NULL && pNodeSimpleType->getRestriction() != NULL && pNodeSimpleType->getRestriction()->getPattern() != NULL)
+            {
+
+            }
+            else if ()
+                return false;
+                */
     }
     if (this->m_ReverseKeyRefArray.length() > 0)
     {
@@ -428,7 +438,6 @@ CAttribute* CAttribute::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSc
             }
         }
     }
-
 
     StringBuffer strXPathExt(xpath);
     strXPathExt.append("/").append(XSD_TAG_ANNOTATION);
@@ -706,18 +715,27 @@ void CAttributeArray::getJSON(StringBuffer &strJSON, unsigned int offset, int id
 
     int lidx=0;
 
+    bool bOnce = true;
+
     for (lidx=0; lidx < this->length(); lidx++)
     {
+        if (this->item(lidx).isHidden() == true)
+            continue;
+
         QuickOutPad(strJSON, offset);
-        strJSON.append("{");
+        if (bOnce == true)
+        {
+            strJSON.append("{");
+            bOnce = false;
+        }
+        else
+        {
+            strJSON.append(",\n{");
+        }
         (this->item(lidx)).getJSON(strJSON, offset, lidx);
 
-        if (lidx >= 0 && this->length() > 1 && lidx+1 < this->length())
-        {
-            strJSON.append("},\n");
-        }
+        strJSON.append("}\n");
     }
-    strJSON.append("}");
     offset -= STANDARD_OFFSET_2;
 }
 
