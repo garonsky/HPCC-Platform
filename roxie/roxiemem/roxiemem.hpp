@@ -17,11 +17,17 @@
 
 #ifndef _ROXIEMEM_INCL
 #define _ROXIEMEM_INCL
+#include "platform.h"
 #include "jlib.hpp"
 #include "jlog.hpp"
 #include "jdebug.hpp"
 #include "jstats.h"
 #include "errorlist.h"
+
+#if defined(_USE_TBB)
+//Release blocks of rows in parallel - always likely to improve performance
+#define PARALLEL_SYNC_RELEASE
+#endif
 
 #ifdef _WIN32
  #ifdef ROXIEMEM_EXPORTS
@@ -87,6 +93,7 @@ const static unsigned SpillAllCost = (unsigned)-1;
 interface IBufferedRowCallback
 {
     virtual unsigned getSpillCost() const = 0; // lower values get freed up first.
+    virtual unsigned getActivityId() const = 0;
     virtual bool freeBufferedRows(bool critical) = 0; // return true if and only if managed to free something.
 };
 
@@ -299,12 +306,9 @@ public:
 #define RoxieRowAllocatorId(row) roxiemem::HeapletBase::getAllocatorId(row)
 #define RoxieRowIsShared(row)  roxiemem::HeapletBase::isShared(row)
 
-inline void ReleaseRoxieRows(ConstPointerArray &data)
-{
-    ForEachItemIn(idx, data)
-        ReleaseRoxieRow(data.item(idx));
-    data.kill();
-}
+void roxiemem_decl ReleaseRoxieRowArray(size_t count, const void * * rows);
+void roxiemem_decl ReleaseRoxieRowRange(const void * * rows, size_t from, size_t to);
+void roxiemem_decl ReleaseRoxieRows(ConstPointerArray &rows);
 
 
 class OwnedRoxieRow;
@@ -457,7 +461,6 @@ interface IRowManager : extends IInterface
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize, unsigned activityId) = 0;
     virtual unsigned allocated() = 0;
     virtual unsigned numPagesAfterCleanup(bool forceFreeAll) = 0; // calls releaseEmptyPages() then returns
-    virtual bool releaseEmptyPages(bool forceFreeAll) = 0; // ensures any empty pages are freed back to the heap
     virtual unsigned getMemoryUsage() = 0;
     virtual bool attachDataBuff(DataBuffer *dataBuff) = 0 ;
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
@@ -487,6 +490,7 @@ interface IRowManager : extends IInterface
     virtual void setMinimizeFootprint(bool value, bool critical) = 0;
     //If set, and changes to the callback list always triggers the callbacks to be called.
     virtual void setReleaseWhenModifyCallback(bool value, bool critical) = 0;
+    virtual IRowManager * querySlaveRowManager(unsigned slave) = 0;  // 0..numSlaves-1
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
@@ -509,6 +513,7 @@ interface IActivityMemoryUsageMap : public IInterface
 };
 
 extern roxiemem_decl IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks = false, bool outputOOMReports = false);
+extern roxiemem_decl IRowManager *createGlobalRowManager(memsize_t memLimit, memsize_t globalLimit, unsigned numSlaves, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks, bool outputOOMReports);
 
 // Fixed size aggregated link-counted zero-overhead data Buffer manager
 

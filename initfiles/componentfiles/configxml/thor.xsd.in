@@ -141,10 +141,17 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="fileCrcDisabled" type="xs:boolean" use="optional" default="false">
+            <xs:attribute name="crcReadEnabled" type="xs:boolean" use="optional" default="true">
               <xs:annotation>
                 <xs:appinfo>
-                  <tooltip>Disables file CRC checking</tooltip>
+                  <tooltip>Verify that a read file's CRC matches the published meta data CRC</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="crcWriteEnabled" type="xs:boolean" use="optional" default="true">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Calculate and publish a CRC per published disk output file</tooltip>
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
@@ -171,7 +178,7 @@
 	      <docid>Th.t4</docid>
             </xs:appinfo>
           </xs:annotation>
-          <xs:attribute name="AutoSwapNode" type="xs:boolean" use="optional" default="false">
+          <xs:attribute name="AutoSwapNode" type="xs:boolean" default="false">
             <xs:annotation>
               <xs:appinfo>
                 <tooltip>Failing nodes will be automatically swapped for spare nodes</tooltip>
@@ -250,20 +257,6 @@
 	  	<docid>Th.t5</docid>
               </xs:appinfo>
            </xs:annotation>
-          <xs:attribute name="breakoutLimit" type="xs:nonNegativeInteger" use="optional" default="3600">
-            <xs:annotation>
-              <xs:appinfo>
-                <tooltip>Number of iterations of backup status check</tooltip>
-              </xs:appinfo>
-            </xs:annotation>
-          </xs:attribute>
-          <xs:attribute name="refreshRate" type="xs:nonNegativeInteger" use="optional" default="3">
-            <xs:annotation>
-              <xs:appinfo>
-                <tooltip>Time in seconds for each iteration of backup status check</tooltip>
-              </xs:appinfo>
-            </xs:annotation>
-          </xs:attribute>
           </xs:complexType>
         </xs:element>
         <xs:element name="Notes" maxOccurs="unbounded">
@@ -387,7 +380,7 @@
       <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" use="optional">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>Memory (in MB) to use for rows. If unset, default = [75% of physical memory] / slavesPerNode</tooltip>
+            <tooltip>Memory (in MB) to use for rows per Thor slave process. If unset, default = [75% of physical memory] / slavesPerNode</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
@@ -450,7 +443,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="slaveport" type="xs:nonNegativeInteger" default="20100" use="optional">
+      <xs:attribute name="slaveport" type="xs:nonNegativeInteger" default="20100">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Base port to use for slaves</tooltip>
@@ -464,21 +457,21 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" use="optional" default="1">
+      <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" default="1">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>This allows multiple slaves to exist on each node</tooltip>
+            <tooltip>Defines how many slave processes there are on each node</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="processPerSlave" type="xs:boolean" use="optional" default="true">
+      <xs:attribute name="channelsPerSlave" type="xs:nonNegativeInteger" default="1">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>Makes each slave run in it's own process</tooltip>
+            <tooltip>Defines how many slave channels per slave process</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" use="optional" default="200">
+      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" default="200">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Port increment between slaves on same node</tooltip>

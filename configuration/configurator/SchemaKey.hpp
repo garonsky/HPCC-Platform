@@ -27,6 +27,7 @@ namespace CONFIGURATOR
 class CSelector;
 class CFieldArray;
 class CAnnotation;
+class CAttribute;
 
 class CKey : public CXSDNode
 {
@@ -65,7 +66,9 @@ public:
         return m_pFieldArray;
     }
 
+    virtual bool checkConstraint(const CAttribute *pAttrib, const char *pValue) const;
     void getEnvXPathToKey(::StringBuffer &strXPath, int idx = 0) const;
+   // void getXSDXPathToKey(::StringBuffer &strXPath, int idx = 0) const;
 
     static CKey* load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char* xpath);
 
@@ -77,8 +80,6 @@ protected:
     CKey(CXSDNodeBase* pParentNode) : CXSDNode::CXSDNode(pParentNode, XSD_KEY), m_pFieldArray(NULL), m_pSelector(NULL), m_pAnnotation(NULL)
     {
     }
-
-    virtual bool checkConstraint(const char *pValue) const;
 
     CFieldArray *m_pFieldArray;
     CSelector *m_pSelector;
@@ -108,7 +109,7 @@ public:
     {
         UNIMPLEMENTED;
     }
-    virtual bool checkConstraint(const char *pValue) const;
+    virtual bool checkConstraint(const CAttribute *pAttrib, const char *pValue) const;
 
     static CKeyArray* load(CXSDNodeBase* pParentNode, const ::IPropertyTree *pSchemaRoot, const char* xpath);
 

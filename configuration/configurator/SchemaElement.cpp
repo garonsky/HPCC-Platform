@@ -687,6 +687,9 @@ bool CElement::isLastTab(const int idx) const
 
 void CElement::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
 {
+    if (strlen(this->getEnvXPath()) != 0)  // must have been set as a result of an include and more than 1x
+        return;
+
     assert(strXPath.length() > 0);
 
     //strXPath.append("/").append(this->getName()).append("[").append(index).append("]");

@@ -26,7 +26,7 @@ CSchemaMapManager::CSchemaMapManager()
     m_pSimpleTypePtrMap.setown(new MapStringToCSimpleType());
     m_pComplexTypePtrsMap.setown (new MapStringToCComplexType);
     m_pAttributeGroupTypePtrsMap.setown(new MapStringToCAttributeGroup);
-    m_pAttributePtrsMap.setown(new MapStringToCAttribute);
+    m_pAttributePtrsXPathMap.setown(new MapStringToCAttribute);
     m_pRestrictionPtrsMap.setown(new MapStringToCRestriction);
     m_pElementPtrsMap.setown(new MapStringToCElement);
     m_pElementNamePtrsMap.setown(new MapStringToCElement);
@@ -280,7 +280,7 @@ void CSchemaMapManager::addMapOfXPathToAttribute(const char*pXPath, CAttribute *
     assert(pXPath != NULL && *pXPath != 0);
 
     // TODO:: throw exception if problems here
-    CAttribute **ppAttribute = m_pAttributePtrsMap->getValue(pXPath);
+    CAttribute **ppAttribute = m_pAttributePtrsXPathMap->getValue(pXPath);
 
     if (ppAttribute != NULL && *ppAttribute != pAttribute)
         assert(!"Assigning different node with same xpath! delete it first!");
@@ -290,31 +290,31 @@ void CSchemaMapManager::addMapOfXPathToAttribute(const char*pXPath, CAttribute *
 
     StringBuffer strXPath(pXPath);
     strXPath.replace('/','_');
-    m_pAttributePtrsMap->setValue(pXPath, pAttribute);
-    m_pAttributePtrsMap->setValue(strXPath.str(), pAttribute);
+    m_pAttributePtrsXPathMap->setValue(pXPath, pAttribute);
+    m_pAttributePtrsXPathMap->setValue(strXPath.str(), pAttribute);
 }
 
 void CSchemaMapManager::removeMapOfXPathToAttribute(const char*pXPath)
 {
-    assert (m_pAttributePtrsMap->find(pXPath) != NULL);
+    assert (m_pAttributePtrsXPathMap->find(pXPath) != NULL);
 
     StringBuffer strXPath(pXPath);
     strXPath.replace('/','_');
 
-    m_pAttributePtrsMap->remove(pXPath);
-    m_pAttributePtrsMap->remove(strXPath.str());
+    m_pAttributePtrsXPathMap->remove(pXPath);
+    m_pAttributePtrsXPathMap->remove(strXPath.str());
 }
 
 CAttribute* CSchemaMapManager::getAttributeFromXPath(const char* pXPath)
 {
     assert(pXPath != NULL && *pXPath != 0);
-    CAttribute **pAttribute = m_pAttributePtrsMap->getValue(pXPath);
+    CAttribute **pAttribute = m_pAttributePtrsXPathMap->getValue(pXPath);
 
     if (pAttribute == NULL)
     {
         StringBuffer strXPath(pXPath);
         strXPath.replace('/','_');
-        pAttribute = m_pAttributePtrsMap->getValue(pXPath);
+        pAttribute = m_pAttributePtrsXPathMap->getValue(pXPath);
     }
 
     if (STRICTNESS_LEVEL >= DEFAULT_STRICTNESS)
@@ -323,6 +323,34 @@ CAttribute* CSchemaMapManager::getAttributeFromXPath(const char* pXPath)
         return NULL;
 
     return *pAttribute;
+}
+
+void CSchemaMapManager::addMapOfXSDXPathToAttribute(const char* pXPath, CAttribute *pAttribute)
+{
+    assert(pXPath != NULL && *pXPath != 0);
+    assert(pAttribute != NULL);
+    assert(m_pAttributePtrsXSDXPathMap->getValue(pXPath) == NULL);
+
+    m_pAttributePtrsXSDXPathMap->setValue(pXPath, pAttribute);
+}
+
+void CSchemaMapManager::removeMapOfXSDXPathToAttribute(const char* pXPath)
+{
+    UNIMPLEMENTED;
+}
+
+CAttribute* CSchemaMapManager::getAttributeFromXSDXPath(const char* pXPath)
+{
+    assert(pXPath != NULL && *pXPath != 0);
+
+    CAttribute **pAttribute = m_pAttributePtrsXSDXPathMap->getValue(pXPath);
+
+    assert(pAttribute != NULL);
+
+    if (pAttribute != NULL)
+        return *pAttribute;
+    else
+        return NULL;
 }
 
 void CSchemaMapManager::addMapOfXSDXPathToElementArray(const char*pXPath, CElementArray *pElementArray)

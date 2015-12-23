@@ -74,7 +74,8 @@ enum msgids
     GraphInit,
     GraphEnd,
     GraphAbort,
-    GraphGetResult
+    GraphGetResult,
+    DebugRequest
 };
 
 interface ICodeContextExt : extends ICodeContext
@@ -283,6 +284,12 @@ public:
     void releaseIOs();
     void addDependsOn(CGraphBase *graph, int controlId);
     IThorGraphDependencyIterator *getDependsIterator() const;
+    StringBuffer &getOpt(const char *prop, StringBuffer &out) const;
+    bool getOptBool(const char *prop, bool defVal=false) const;
+    int getOptInt(const char *prop, int defVal=0) const;
+    unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }
+    __int64 getOptInt64(const char *prop, __int64 defVal=0) const;
+    unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return (unsigned __int64)getOptInt64(prop, defVal); }
     void ActPrintLog(const char *format, ...)  __attribute__((format(printf, 2, 3)));
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
     void ActPrintLog(IException *e);
@@ -709,6 +716,7 @@ public:
 //  virtual void getResult(size32_t & retSize, void * & ret, unsigned id);
 //  virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
     virtual IEclGraphResults *evaluate(unsigned parentExtractSz, const byte * parentExtract);
+
 friend class CGraphElementBase;
 };
 
@@ -728,13 +736,11 @@ public:
 
 interface ILoadedDllEntry;
 interface IConstWorkUnit;
-interface IThorAllocator;
 class CThorCodeContextBase;
 
 class graph_decl CJobBase : public CInterface, implements IDiskUsage, implements IExceptionHandler
 {
 protected:
-    Owned<IThorAllocator> thorAllocator;
     CriticalSection crit;
     Owned<ILoadedDllEntry> querySo;
     IUserDescriptor *userDesc;
@@ -757,6 +763,10 @@ protected:
     Owned<IPerfMonHook> perfmonhook;
     size32_t oldNodeCacheMem;
     CIArrayOf<CJobChannel> jobChannels;
+    bool crcChecking;
+    bool usePackedAllocator;
+    unsigned memorySpillAt;
+
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -808,9 +818,6 @@ public:
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(IPropertyTree &xgmml);
 
-    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
-    roxiemem::IRowManager *queryRowManager() const;
-    IThorAllocator *queryThorAllocator() const { return thorAllocator; }
     bool queryUseCheckpoints() const;
     bool queryPausing() const { return pausing; }
     bool queryResumed() const { return resumed; }
@@ -845,8 +852,10 @@ public:
     unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
     __int64 getOptInt64(const char *opt, __int64 dft=0);
     unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
+    virtual IThorAllocator *createThorAllocator();
 
     virtual void abort(IException *e);
+    virtual void debugRequest(CMessageBuffer &msg, const char *request) const { }
 
 //
     virtual void addCreatedFile(const char *file) { assertex(false); }
@@ -872,6 +881,7 @@ interface IGraphExecutor : extends IInterface
     virtual void wait() = 0;
 };
 
+interface IThorAllocator;
 class graph_decl CJobChannel : public CInterface, implements IGraphCallback, implements IExceptionHandler
 {
 protected:
@@ -943,11 +953,13 @@ public:
 
     ICodeContext &queryCodeContext() const;
     IThorResult *getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId);
-    IThorAllocator *queryThorAllocator() const { return thorAllocator; }
+    IThorAllocator &queryThorAllocator() const { return *thorAllocator; }
     ICommunicator &queryJobComm() const { return *jobComm; }
     IMPServer &queryMPServer() const { return *mpServer; }
     const rank_t &queryMyRank() const { return myrank; }
     mptag_t deserializeMPTag(MemoryBuffer &mb);
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
+    roxiemem::IRowManager &queryRowManager() const;
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }
@@ -985,14 +997,16 @@ public:
     IMPLEMENT_IINTERFACE;
     CActivityBase(CGraphElementBase *container);
     ~CActivityBase();
+    inline activity_id queryId() const { return container.queryId(); }
     CGraphElementBase &queryContainer() const { return container; }
     CJobBase &queryJob() const { return container.queryJob(); }
     CJobChannel &queryJobChannel() const { return container.queryJobChannel(); }
     inline IMPServer &queryMPServer() const { return queryJobChannel().queryMPServer(); }
+    inline roxiemem::IRowManager &queryRowManager() const { return queryJobChannel().queryRowManager(); }
     CGraphBase &queryGraph() const { return container.queryOwner(); }
     CActivityBase &queryChannelActivity(unsigned channel) const
     {
-        return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), container.queryId());
+        return queryJob().queryChannelActivity(channel, queryGraph().queryGraphId(), queryId());
     }
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline bool queryAbortSoon() const { return abortSoon; }
@@ -1006,6 +1020,7 @@ public:
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJobChannel().queryMyRank(); }
     unsigned queryMaxCores() const { return maxCores; }
     IRowInterfaces *getRowInterfaces();
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
 
     bool appendRowXml(StringBuffer & target, IOutputMetaData & meta, const void * row) const;
     void logRow(const char * prefix, IOutputMetaData & meta, const void * row);
@@ -1036,15 +1051,15 @@ public:
     virtual IOutputRowSerializer * queryRowSerializer(); 
     virtual IOutputRowDeserializer * queryRowDeserializer(); 
     virtual IOutputMetaData *queryRowMetaData() { return baseHelper->queryOutputMeta(); }
-    virtual unsigned queryActivityId() { return (unsigned)container.queryId(); }
+    virtual unsigned queryActivityId() const { return (unsigned)queryId(); }
     virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
 
-    StringBuffer &getOpt(const char *prop, StringBuffer &out) const;
-    bool getOptBool(const char *prop, bool defVal=false) const;
-    int getOptInt(const char *prop, int defVal=0) const;
-    unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }
-    __int64 getOptInt64(const char *prop, __int64 defVal=0) const;
-    unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return (unsigned __int64)getOptInt64(prop, defVal); }
+    StringBuffer &getOpt(const char *prop, StringBuffer &out) const { return container.getOpt(prop, out); }
+    bool getOptBool(const char *prop, bool defVal=false) const { return container.getOptBool(prop, defVal); }
+    int getOptInt(const char *prop, int defVal=0) const { return container.getOptInt(prop, defVal); }
+    unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return container.getOptUInt(prop, defVal); }
+    __int64 getOptInt64(const char *prop, __int64 defVal=0) const { return container.getOptInt64(prop, defVal); }
+    unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return container.getOptUInt64(prop, defVal); }
 };
 
 interface IFileInProgressHandler : extends IInterface

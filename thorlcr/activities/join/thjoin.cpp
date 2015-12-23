@@ -40,6 +40,7 @@ class JoinActivityMaster : public CMasterActivity
     mptag_t mpTagRPC, barrierMpTag;
     Owned<IBarrier> barrier;
     Owned<ProgressInfo> lhsProgress, rhsProgress;
+    CThorStatsCollection extraStats;
 
     bool nosortPrimary()
     {
@@ -77,7 +78,7 @@ class JoinActivityMaster : public CMasterActivity
         }
     } *climitedcmp;
 public:
-    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info)
+    JoinActivityMaster(CMasterGraphElement * info, bool local) : CMasterActivity(info), extraStats(spillStatistics)
     {
         ActPrintLog("JoinActivityMaster");
         lhsProgress.setown(new ProgressInfo);
@@ -97,6 +98,11 @@ public:
         container.queryJob().freeMPTag(mpTagRPC);
         container.queryJob().freeMPTag(barrierMpTag);
         delete climitedcmp;
+    }
+    virtual void getActivityStats(IStatisticGatherer & stats)
+    {
+        CMasterActivity::getActivityStats(stats);
+        extraStats.getStats(stats);
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -184,10 +190,10 @@ public:
                 }
                 if (helper->getJoinFlags()&JFslidingmatch) // JCSMORE shouldn't be necessary
                     primaryKeySerializer = NULL;
-                Owned<IRowInterfaces> primaryRowIf = createRowInterfaces(primaryInput->queryHelper()->queryOutputMeta(), queryActivityId(), queryCodeContext());
+                Owned<IRowInterfaces> primaryRowIf = createRowInterfaces(primaryInput->queryHelper()->queryOutputMeta(), queryId(), queryCodeContext());
                 Owned<IRowInterfaces> secondaryRowIf;
                 if (secondaryInput)
-                    secondaryRowIf.setown(createRowInterfaces(secondaryInput->queryHelper()->queryOutputMeta(), queryActivityId(), queryCodeContext()));
+                    secondaryRowIf.setown(createRowInterfaces(secondaryInput->queryHelper()->queryOutputMeta(), queryId(), queryCodeContext()));
 
                 bool betweenjoin = (helper->getJoinFlags()&JFslidingmatch)!=0;
                 if (container.getKind() == TAKselfjoin)
@@ -229,7 +235,7 @@ public:
                 }
                 else if (!nosortPrimary()||betweenjoin)
                 {
-                    Owned<IRowInterfaces> secondaryRowIf = createRowInterfaces(secondaryInput->queryHelper()->queryOutputMeta(), queryActivityId(), queryCodeContext());
+                    Owned<IRowInterfaces> secondaryRowIf = createRowInterfaces(secondaryInput->queryHelper()->queryOutputMeta(), queryId(), queryCodeContext());
 
                     imaster->SortSetup(primaryRowIf, primaryCompare, primaryKeySerializer, false, true, NULL, NULL);
                     ActPrintLog("JOIN waiting for barrier.1");
@@ -341,6 +347,8 @@ public:
             mb.read(rhsProgressCount);
             rhsProgress->set(node, rhsProgressCount);
         }
+
+        extraStats.deserializeMerge(node, mb);
     }
     virtual void getEdgeStats(IStatisticGatherer & stats, unsigned idx)
     {

@@ -527,6 +527,7 @@ interface IConstWUClusterInfo : extends IInterface
     virtual unsigned getRoxieRedundancy() const = 0;
     virtual unsigned getChannelsPerNode() const = 0;
     virtual int getRoxieReplicateOffset() const = 0;
+    virtual const char *getAlias() const = 0;
 };
 
 //! IWorkflowItem
@@ -601,6 +602,7 @@ interface IConstWorkflowItem : extends IInterface
     virtual IStringVal & getPersistName(IStringVal & val) const = 0;
     virtual unsigned queryPersistWfid() const = 0;
     virtual int queryPersistCopies() const = 0;  // 0 - unmangled name,  < 0 - use default, > 0 - max number
+    virtual bool queryPersistRefresh() const = 0;
     virtual unsigned queryScheduleCountRemaining() const = 0;
     virtual WFState queryState() const = 0;
     virtual unsigned queryRetriesRemaining() const = 0;
@@ -632,7 +634,7 @@ interface IWorkflowItem : extends IRuntimeWorkflowItem
     virtual void setSchedulePriority(unsigned priority) = 0;
     virtual void setScheduleCount(unsigned count) = 0;
     virtual void addDependency(unsigned wfid) = 0;
-    virtual void setPersistInfo(const char * name, unsigned wfid, int maxCopies) = 0;
+    virtual void setPersistInfo(const char * name, unsigned wfid, int maxCopies, bool refresh) = 0;
     virtual void syncRuntimeData(const IConstWorkflowItem & other) = 0;
     virtual void setScheduledWfid(unsigned wfid) = 0;
     virtual void setCluster(const char * cluster) = 0;
@@ -1249,7 +1251,7 @@ enum WUQuerySortField
 typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 
-interface IWorkUnitFactory : extends IInterface
+interface IWorkUnitFactory : extends IPluggableFactory
 {
     virtual IWorkUnit *createWorkUnit(const char *app, const char *scope, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;
     virtual bool deleteWorkUnit(const char *wuid, ISecManager *secmgr = NULL, ISecUser *secuser = NULL) = 0;

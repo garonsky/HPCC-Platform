@@ -99,40 +99,59 @@ public:
 
 //==============================================================================================================
 
-typedef enum { heapSortAlgorithm, insertionSortAlgorithm,
-              quickSortAlgorithm, stableQuickSortAlgorithm, spillingQuickSortAlgorithm, stableSpillingQuickSortAlgorithm,
-              mergeSortAlgorithm, spillingMergeSortAlgorithm,
-              parallelMergeSortAlgorithm, spillingParallelMergeSortAlgorithm,
-              unknownSortAlgorithm } RoxieSortAlgorithm;
+//MORE: This should just contain the algorithm, and use a separate field for stable|spilling|parallel
+//Should be implemented in a subsequent pull request, which also uses ALGORITHM('x') instead of requiring STABLE/UNSTABLE
+typedef enum {
+    heapSortAlgorithm,                  // heap sort
+    insertionSortAlgorithm,             // insertion sort - purely for comparison
+    quickSortAlgorithm,                 // jlib implementation of quicksort
+    stableQuickSortAlgorithm,           // jlib version of quick sort that uses an extra array indirect to ensure it is stable
+    spillingQuickSortAlgorithm,         // quickSortAlgorithm with the ability to spill
+    stableSpillingQuickSortAlgorithm,   // stableQuickSortAlgorithm with the ability to spill
+    mergeSortAlgorithm,                 // stable merge sort
+    spillingMergeSortAlgorithm,         // stable merge sort that can spill to disk
+    parallelMergeSortAlgorithm,         // parallel version of stable merge sort
+    spillingParallelMergeSortAlgorithm, // parallel version of stable merge sort that can spill to disk
+    tbbQuickSortAlgorithm,              // (parallel) quick sort implemented by the TBB libraries
+    tbbStableQuickSortAlgorithm,        // stable version of tbbQuickSortAlgorithm
+    parallelQuickSortAlgorithm,         // parallel version of the internal quicksort implementation (for comparison)
+    parallelStableQuickSortAlgorithm,   // stable version of parallelQuickSortAlgorithm
+    unknownSortAlgorithm
+} RoxieSortAlgorithm;
 
 interface ISortAlgorithm : extends IInterface
 {
-    virtual void prepare(IInputBase *input) = 0;
+    virtual void prepare(IEngineRowStream *input) = 0;
     virtual const void *next() = 0;
     virtual void reset() = 0;
     virtual void getSortedGroup(ConstPointerArray & result) = 0;
+    virtual cycle_t getElapsedCycles(bool reset) = 0;
 };
 
 extern THORHELPER_API ISortAlgorithm *createQuickSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createParallelQuickSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createParallelStableQuickSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId);
 extern THORHELPER_API ISortAlgorithm *createHeapSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createSpillingQuickSortAlgorithm(ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId, bool _stable);
 extern THORHELPER_API ISortAlgorithm *createMergeSortAlgorithm(ICompare *_compare);
 extern THORHELPER_API ISortAlgorithm *createParallelMergeSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createTbbQuickSortAlgorithm(ICompare *_compare);
+extern THORHELPER_API ISortAlgorithm *createTbbStableQuickSortAlgorithm(ICompare *_compare);
 
 extern THORHELPER_API ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm algorithm, ICompare *_compare, roxiemem::IRowManager &_rowManager, IOutputMetaData * _rowMeta, ICodeContext *_ctx, const char *_tempDirectory, unsigned _activityId);
 
 //=========================================================================================
 
-interface IGroupedInput : extends IInterface, extends IInputBase
+interface IGroupedInput : extends IEngineRowStream  // MORE rename to IGroupedRowStream
 {
 };
 
-extern THORHELPER_API IGroupedInput *createGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare);
-extern THORHELPER_API IGroupedInput *createDegroupedInputReader(IInputBase *_input);
-extern THORHELPER_API IGroupedInput *createSortedInputReader(IInputBase *_input, ISortAlgorithm *_sorter);
-extern THORHELPER_API IGroupedInput *createSortedGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter);
+extern THORHELPER_API IGroupedInput *createGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare);
+extern THORHELPER_API IGroupedInput *createDegroupedInputReader(IEngineRowStream *_input);
+extern THORHELPER_API IGroupedInput *createSortedInputReader(IEngineRowStream *_input, ISortAlgorithm *_sorter);
+extern THORHELPER_API IGroupedInput *createSortedGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter);
 
 //=========================================================================================
 

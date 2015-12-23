@@ -30,7 +30,7 @@ using roxiemem::IRowManager;
 
 //=======================================================================================================================
 
-class InputProbe : public CInterface, implements IRoxieInput // base class for the edge probes used for tracing and debugging....
+class InputProbe : public CInterface, implements IRoxieInput, implements IEngineRowStream // base class for the edge probes used for tracing and debugging....
 {
 protected:
     IRoxieInput *in;
@@ -104,6 +104,10 @@ public:
     {
         return in->queryOutputMeta();
     }
+    IEngineRowStream &queryStream()
+    {
+        return *this;
+    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         // NOTE: totalRowCount/maxRowSize not reset, as we want them cumulative when working in a child query.
@@ -115,10 +119,10 @@ public:
         inMeta = in->queryOutputMeta();
         assertex(inMeta);
     }
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
         hasStopped = true;
-        in->stop(aborting);
+        in->stop();
     }
     virtual void reset()
     {
@@ -148,9 +152,9 @@ public:
         else
             return NULL;
     }
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
-        const void *ret = in->nextInGroup();
+        const void *ret = in->nextRow();
         if (ret)
         {
             size32_t size = inMeta->getRecordSize(ret);
@@ -161,9 +165,9 @@ public:
         }
         return ret;
     }
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        const void *ret = in->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+        const void *ret = in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
         if (ret && wasCompleteMatch)  // GH is this test right?
         {
             size32_t size = inMeta->getRecordSize(ret);
@@ -238,14 +242,14 @@ public:
         return ret;
     }
 
-    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         // MORE - should probably only note them when wasCompleteMatch is true?
-        return _next(InputProbe::nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra));
+        return _next(InputProbe::nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
     }
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
-        return _next(InputProbe::nextInGroup());
+        return _next(InputProbe::nextRow());
     }
 
     void getNodeProgressInfo(IPropertyTree &node)
@@ -278,7 +282,7 @@ public:
 
 class CProbeManager : public CInterface, implements IProbeManager
 {
-    IArrayOf<TraceProbe> probes; // May want to replace with hash table at some point....
+    IArrayOf<IRoxieInput> probes; // May want to replace with hash table at some point....
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -302,7 +306,7 @@ public:
         {
             idx++;
             if (idx>=probeCount) idx = 0;
-            TraceProbe &p = probes.item(idx);
+            TraceProbe &p = static_cast<TraceProbe &> (probes.item(idx));
             if (p.matches(edge, forNode))
             {
                 startat = idx;
@@ -851,14 +855,14 @@ public:
         targetAct->updateTimes(debugContext->querySequence());
     }
 
-    virtual void stop(bool aborting)
+    virtual void stop()
     {
-        InputProbe::stop(aborting);
+        InputProbe::stop();
         sourceAct->updateTimes(debugContext->querySequence());
         targetAct->updateTimes(debugContext->querySequence());
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         // Code is a little complex to avoid interpreting a skip on all rows in a group as EOF
         try
@@ -867,7 +871,7 @@ public:
                 return NULL;
             loop
             {
-                const void *ret = InputProbe::nextInGroup();
+                const void *ret = InputProbe::nextRow();
                 if (!ret)
                 {
                     if (EOGseen)
@@ -919,7 +923,7 @@ public:
         }
     }
 
-    virtual const void *nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    virtual const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         // MORE - not sure that skip is safe here? Should the incomplete matches even be returned?
         // Code is a little complex to avoid interpreting a skip on all rows in a group as EOF
@@ -930,7 +934,7 @@ public:
                 return NULL;
             loop
             {
-                const void *ret = InputProbe::nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+                const void *ret = InputProbe::nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
                 if (!ret)
                 {
                     if (EOGseen)

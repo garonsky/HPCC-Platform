@@ -1105,7 +1105,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
         {
             return meta;
         }
-        unsigned queryActivityId()
+        unsigned queryActivityId() const
         {
             return actid;
         }
@@ -1279,6 +1279,12 @@ public:
         return source.tell();
     }
 
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        if (fileio)
+            return fileio->getStatistic(kind);
+        return 0;
+    }
 
 };
 

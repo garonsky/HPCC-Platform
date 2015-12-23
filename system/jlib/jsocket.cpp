@@ -1308,7 +1308,9 @@ void CSocket::connect_wait(unsigned timems)
         }
         else {
             unsigned timeoutms = (exit||(remaining<10000))?10000:remaining;
+    #ifndef BLOCK_POLLED_SINGLE_CONNECTS
             unsigned polltime = 1;
+    #endif
             while (!blockselect && ((err == EINPROGRESS)||(err == EWOULDBLOCK))) {
                 T_FD_SET fds;
                 struct timeval tv;
@@ -1867,7 +1869,6 @@ size32_t CSocket::udp_write_to(const SocketEndpoint &ep, void const* buf, size32
     if (size==0)
         return 0;
     unsigned startt=usTick();
-    size32_t size_writ = size;
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
     }
@@ -1990,7 +1991,6 @@ EintrRetry:
     size32_t outbufsize = (total+n-1)/n;
     MemoryAttr ma;
     byte *outbuf = (byte *)ma.allocate(outbufsize);
-    size32_t outwr = 0;
     i = 0;
     size32_t os = 0;
     size32_t left = total;
@@ -2101,17 +2101,8 @@ bool CSocket::send_block(const void *blk,size32_t sz)
         STATS.longestblocksize = sz;
     }
 #ifdef TRACE_SLOW_BLOCK_TRANSFER
-    static unsigned lastreporttime=0;
-    static unsigned lastexceeded=0;
-    if (elapsed>1000000*60) { // over 1min
-        unsigned t = msTick();
-        if (1) { //((t-lastreporttime>1000*60) || // only report once per min
-                 // (elapsed>lastexceeded*2)) {
-            lastexceeded = elapsed;
-            lastreporttime = t;
-            WARNLOG("send_block took %ds to %s  (%d,%d,%d)",elapsed/1000000,tracename,startt2-startt,startt3-startt2,nowt-startt3);
-        }
-    }
+    if (elapsed>1000000*60)  // over 1min
+        WARNLOG("send_block took %ds to %s  (%d,%d,%d)",elapsed/1000000,tracename,startt2-startt,startt3-startt2,nowt-startt3);
 #endif
     return true;
 }
@@ -2659,7 +2650,7 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
     unsigned n = ifc.ifc_len/sizeof(struct ifreq);
     for (int loopback = 0; loopback <= 1; loopback++)
     {
-        for (int i=0; i<n; i++)
+        for (unsigned i=0; i<n; i++)
         {
             bool useLoopback = (loopback==1);
             struct ifreq *item = &ifr[i];
@@ -3704,7 +3695,6 @@ public:
     bool sockOk(T_SOCKET sock)
     {
         PROGLOG("CSocketBaseThread: sockOk testing %d",sock);
-        int err = 0;
         int t=0;
         socklen_t tl = sizeof(t);
         if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char *)&t, &tl)!=0) {
@@ -3927,7 +3917,9 @@ public:
     {
         // must be in CriticalBlock block(sect); 
         unsigned n = items.ordinality();
+#ifdef _WIN32
         bool hashupdateneeded = (n!=basesize); // additions all come at end
+#endif
         for (unsigned i=0;i<n;) {
             SelectItem &si = items.element(i);
             if (si.del) {
@@ -3942,11 +3934,14 @@ public:
                     EXCLOG(e,"CSocketSelectThread::updateItems");
                     e->Release();
                 }
+                // NOTE: si is a reference, put last item into remove slot
                 n--;
                 if (i<n) 
                     si = items.item(n);
                 items.remove(n);
+#ifdef _WIN32
                 hashupdateneeded = true;
+#endif
             }
             else
                 i++;
@@ -4331,8 +4326,7 @@ class CSocketEpollThread: public CSocketBaseThread
         // if another thread closed fd before here don't fail
         if ( (srtn < 0) && (op != EPOLL_CTL_DEL) ){
             int err = ERRNO();
-            LOGERR(err,1,"epoll_ctl");
-            THROWJSOCKEXCEPTION2(err);
+            WARNLOG("epoll_ctl failed op:%d, fd:%d, err=%d", op, fd, err);
         }
     }
 
@@ -4446,8 +4440,8 @@ public:
             try {
                 SelectItem &si = items.element(i);
                 epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
-                si.sock->Release();
                 si.nfy->Release();
+                si.sock->Release();
             }
             catch (IException *e) {
                 EXCLOG(e,"~CSocketEpollThread");
@@ -4478,8 +4472,10 @@ public:
                 reindex = true;
             }
             if (si.del) {
-                epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
-                epfdtbl[si.handle] = -1;
+                if (epfdtbl[si.handle] >= 0) {
+                    epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
+                    epfdtbl[si.handle] = -1;
+                }
                 reindex = true;
                 si.nfy->Release();
                 try {
@@ -4492,6 +4488,7 @@ public:
                     EXCLOG(e,"CSocketEpollThread::updateItems");
                     e->Release();
                 }
+                // NOTE: si is a reference, put last item into remove slot
                 n--;
                 if (i<n)
                     si = items.item(n);
@@ -4510,8 +4507,7 @@ public:
                 epfdtbl[si.handle] = j;
                 if (si.add_epoll) {
                     si.add_epoll = false;
-                    int srtn, ep_mode;
-                    struct epoll_event event;
+                    int ep_mode;
                     if (si.mode != 0) {
                         ep_mode = 0;
                         if (si.mode & SELECTMODE_READ) {
@@ -4803,9 +4799,11 @@ public:
 };
 #endif // _HAS_EPOLL_SUPPORT
 
+#ifdef _HAS_EPOLL_SUPPORT
 enum EpollMethod { EPOLL_INIT = 0, EPOLL_DISABLED, EPOLL_ENABLED };
 static EpollMethod epoll_method = EPOLL_INIT;
 static CriticalSection epollsect;
+#endif
 
 ISocketSelectHandler *createSocketSelectHandler(const char *trc)
 {
@@ -4941,7 +4939,6 @@ class CSingletonSocketConnection: public CInterface, implements IConversation
     Owned<ISocket> sock;
     Owned<ISocket> listensock;
     enum { Snone, Saccept, Sconnect, Srecv, Ssend, Scancelled } state;
-    bool accepting;
     bool cancelling;
     SocketEndpoint ep;
     CriticalSection crit;
@@ -5250,7 +5247,7 @@ class CSocketBufferReader: public CInterface, implements ISocketBufferReader
         {
             CriticalBlock block(sect);
             assertex(pending);
-            size32_t sz = blk.length();
+            size32_t sz = (size32_t)blk.length();
             if (sz)
                 mb.setBuffer(sz,blk.detach(),true);
             pending = false;
@@ -5262,7 +5259,7 @@ class CSocketBufferReader: public CInterface, implements ISocketBufferReader
         }
         size32_t size()
         {
-            return blk.length();
+            return (size32_t)blk.length();
         }
         ISocket *getSocket() { return sock; }
     } *elems;
@@ -5530,7 +5527,7 @@ void multiConnect(const SocketEndpointArray &eps, IPointerArrayOf<ISocket> &rets
         IPointerArrayOf<ISocket> &retsockets;
     public:
         cNotify(IPointerArrayOf<ISocket> &_retsockets,CriticalSection &_sect)
-            : retsockets(_retsockets),sect(_sect)
+            : sect(_sect), retsockets(_retsockets)
         {
         }
         
@@ -5678,7 +5675,6 @@ inline bool appendv4range(SocketEndpointArray *array,char *str,SocketEndpoint &e
             }
             StringBuffer tmp;
             ep.getIpText(tmp);
-            size32_t l = tmp.length();
             dc++;
             loop { 
                 if (tmp.length()==0)
@@ -6161,7 +6157,7 @@ int wait_multiple(bool isRead,               //IN   true if wait read, false it 
                 dbgSB.appendf(" %d",socks.item(idx));
 #endif
                 readySocks.append(socks.item(idx));
-                if (readySocks.length() == res)
+                if ((int) readySocks.length() == res)
                     break;
             }
         }

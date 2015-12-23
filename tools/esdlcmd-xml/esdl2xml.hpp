@@ -47,7 +47,7 @@ public:
 
     void transform(const char * source, const char * outdir="", StringBuffer * out=NULL, bool outputIncludes=true, bool includedESDL=false)
     {
-        if (added.getValue(source) == false)
+        if (!added.getValue(source))
         {
             if (optVerbose)
             {
@@ -75,6 +75,8 @@ public:
                    transform(subfile, outdir, out, outputIncludes, true);
                 }
             }
+            if (optVerbose)
+                fprintf(stdout, "Finished processing ESDL definition\n");
         }
         else if (optVerbose)
             fprintf(stdout, "ESDL definition: %s has already been loaded!\n", source);

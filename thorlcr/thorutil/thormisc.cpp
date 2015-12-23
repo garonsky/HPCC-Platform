@@ -310,6 +310,7 @@ public:
     MessageAudience errorAudience() const { return audience; }
 };
 
+CThorException *_MakeThorException(LogMsgAudience audience,int code, const char *format, va_list args) __attribute__((format(printf,3,0)));
 CThorException *_MakeThorException(LogMsgAudience audience,int code, const char *format, va_list args)
 {
     StringBuffer eStr;
@@ -317,6 +318,7 @@ CThorException *_MakeThorException(LogMsgAudience audience,int code, const char 
     return new CThorException(audience, code, eStr.str());
 }
 
+CThorException *_ThorWrapException(IException *e, const char *format, va_list args) __attribute__((format(printf,2,0)));
 CThorException *_ThorWrapException(IException *e, const char *format, va_list args)
 {
     StringBuffer eStr;
@@ -370,6 +372,7 @@ void setExceptionActivityInfo(CGraphElementBase &container, IThorException *e)
     e->setGraphId(container.queryOwner().queryGraphId());
 }
 
+IThorException *_MakeActivityException(CGraphElementBase &container, int code, const char *format, va_list args) __attribute__((format(printf,3,0)));
 IThorException *_MakeActivityException(CGraphElementBase &container, int code, const char *format, va_list args)
 {
     IThorException *e = _MakeThorException(MSGAUD_user, code, format, args);
@@ -377,14 +380,14 @@ IThorException *_MakeActivityException(CGraphElementBase &container, int code, c
     return e;
 }
 
+IThorException *_MakeActivityException(CGraphElementBase &container, IException *e, const char *_format, va_list args) __attribute__((format(printf,3,0)));
 IThorException *_MakeActivityException(CGraphElementBase &container, IException *e, const char *_format, va_list args)
 {
-    StringBuffer format;
-    e->errorMessage(format);
+    StringBuffer msg;
+    e->errorMessage(msg);
     if (_format)
-        format.append(", ").append(_format);
-    _format = format.str();
-    IThorException *e2 = _MakeThorException(e->errorAudience(), e->errorCode(), format.str(), args);
+        msg.append(", ").limited_valist_appendf(1024, _format, args);
+    IThorException *e2 = new CThorException(e->errorAudience(), e->errorCode(), msg.str());
     setExceptionActivityInfo(container, e2);
     return e2;
 }
@@ -777,7 +780,7 @@ StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *query
     return compoundName.append('V').append(version).append('_').append(queryName);
 }
 
-void setClusterGroup(INode *_masterNode, IGroup *_rawGroup, unsigned slavesPerProcess, unsigned portBase, unsigned portInc)
+void setClusterGroup(INode *_masterNode, IGroup *_rawGroup, unsigned slavesPerNode, unsigned channelsPerSlave, unsigned portBase, unsigned portInc)
 {
     ::Release(masterNode);
     ::Release(rawGroup);
@@ -788,46 +791,61 @@ void setClusterGroup(INode *_masterNode, IGroup *_rawGroup, unsigned slavesPerPr
     ::Release(nodeComm);
     masterNode = LINK(_masterNode);
     rawGroup = LINK(_rawGroup);
-    IArrayOf<INode> nodes;
-    if (slavesPerProcess) // if 0, then processPerSlave is enabled and slavesPerProcess/portBase/portInc not provided
+
+    SocketEndpointArray epa;
+    OwnedMalloc<unsigned> hostStartPort, hostNextStartPort;
+    hostStartPort.allocateN(rawGroup->ordinality());
+    hostNextStartPort.allocateN(rawGroup->ordinality());
+    for (unsigned n=0; n<rawGroup->ordinality(); n++)
     {
-        nodes.append(*LINK(masterNode));
-        for (unsigned s=0; s<slavesPerProcess; s++)
+        SocketEndpoint ep = rawGroup->queryNode(n).endpoint();
+        unsigned hostPos = epa.find(ep);
+        if (NotFound == hostPos)
+        {
+            hostPos = epa.ordinality();
+            epa.append(ep);
+            hostStartPort[n] = portBase;
+            hostNextStartPort[hostPos] = portBase + (slavesPerNode * channelsPerSlave * portInc);
+        }
+        else
+        {
+            hostStartPort[n] = hostNextStartPort[hostPos];
+            hostNextStartPort[hostPos] += (slavesPerNode * channelsPerSlave * portInc);
+        }
+    }
+    IArrayOf<INode> clusterGroupNodes, nodeGroupNodes;
+    clusterGroupNodes.append(*LINK(masterNode));
+    nodeGroupNodes.append(*LINK(masterNode));
+    for (unsigned p=0; p<slavesPerNode; p++)
+    {
+        for (unsigned s=0; s<channelsPerSlave; s++)
         {
             for (unsigned n=0; n<rawGroup->ordinality(); n++)
             {
                 SocketEndpoint ep = rawGroup->queryNode(n).endpoint();
-                ep.port = portBase + (s * portInc);
-                nodes.append(*createINode(ep));
+                ep.port = hostStartPort[n] + (((p * channelsPerSlave) + s) * portInc);
+                Owned<INode> node = createINode(ep);
+                clusterGroupNodes.append(*node.getLink());
+                if (0 == s)
+                    nodeGroupNodes.append(*node.getLink());
             }
         }
-        clusterGroup = createIGroup(nodes.ordinality(), nodes.getArray());
-        // slaveGroup contains endpoints with mp ports of slaves
-        slaveGroup = clusterGroup->remove(0);
-        nodes.kill();
+    }
+    // clusterGroup contains master + all slaves (including virtuals)
+    clusterGroup = createIGroup(clusterGroupNodes.ordinality(), clusterGroupNodes.getArray());
 
-        nodes.append(*LINK(masterNode));
-        unsigned n=0;
-        for (n=0; n<rawGroup->ordinality(); n++)
-        {
-            SocketEndpoint ep = rawGroup->queryNode(n).endpoint();
-            ep.port = portBase;
-            nodes.append(*createINode(ep));
-        }
-        nodeGroup = createIGroup(nodes.ordinality(), nodes.getArray());
-        nodes.kill();
-    }
-    else
-    {
-        slaveGroup = LINK(rawGroup);
-        clusterGroup = rawGroup->add(masterNode, 0);
-        nodeGroup = LINK(clusterGroup);
-    }
-    // dfsGroup will match named group in dfs
+    // nodeGroup container master + all slave processes (excludes virtual slaves)
+    nodeGroup = createIGroup(nodeGroupNodes.ordinality(), nodeGroupNodes.getArray());
+
+    // slaveGroup contains all slaves (including virtuals) but excludes master
+    slaveGroup = clusterGroup->remove(0);
+
+    // dfsGroup is same as slaveGroup, but stripped of ports. So is a IP group as wide as slaveGroup, used for publishing
+    IArrayOf<INode> slaveGroupNodes;
     Owned<INodeIterator> nodeIter = slaveGroup->getIterator();
     ForEach(*nodeIter)
-        nodes.append(*createINodeIP(nodeIter->query().endpoint(),0));
-    dfsGroup = createIGroup(nodes.ordinality(), nodes.getArray());
+    slaveGroupNodes.append(*createINodeIP(nodeIter->query().endpoint(),0));
+    dfsGroup = createIGroup(slaveGroupNodes.ordinality(), slaveGroupNodes.getArray());
 
     nodeComm = createCommunicator(nodeGroup);
 }
@@ -1318,3 +1336,6 @@ IPerfMonHook *createThorMemStatsPerfMonHook(CJobBase &job, int maxLevel, IPerfMo
     };
     return new CPerfMonHook(job, maxLevel, chain);
 }
+
+
+const StatisticsMapping spillStatistics(StTimeSpillElapsed, StTimeSortElapsed, StNumSpills, StSizeSpillFile, StKindNone);

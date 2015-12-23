@@ -22,6 +22,7 @@
 #include "jiter.ipp"
 #include "jlog.hpp"
 #include "jregexp.hpp"
+#include "jfile.hpp"
 
 #ifdef _WIN32
 #include <sys/timeb.h>
@@ -62,7 +63,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 //--------------------------------------------------------------------------------------------------------------------
 
 // Textual forms of the different enumerations, first items are for none and all.
-static const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", NULL };
+static const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", NULL };
 static const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
 static const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", NULL };
 
@@ -322,6 +323,9 @@ void formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasur
     case SMeasureIPV4:
         formatIPV4(out, value);
         break;
+    case SMeasureCycle:
+        out.append(value);
+        break;
     default:
         throwUnexpected();
     }
@@ -366,6 +370,7 @@ const char * queryMeasurePrefix(StatisticMeasure measure)
     case SMeasureNode:          return "Node";
     case SMeasurePercent:       return "Per";
     case SMeasureIPV4:          return "Ip";
+    case SMeasureCycle:         return "Cycle";
     default:
         throwUnexpected();
     }
@@ -391,14 +396,15 @@ StatsMergeAction queryMergeMode(StatisticMeasure measure)
     switch (measure)
     {
     case SMeasureTimeNs:        return StatsMergeSum;
-    case SMeasureTimestampUs:   return StatsMergeKeep;
+    case SMeasureTimestampUs:   return StatsMergeKeepNonZero;
     case SMeasureCount:         return StatsMergeSum;
     case SMeasureSize:          return StatsMergeSum;
     case SMeasureLoad:          return StatsMergeMax;
     case SMeasureSkew:          return StatsMergeMax;
-    case SMeasureNode:          return StatsMergeKeep;
+    case SMeasureNode:          return StatsMergeKeepNonZero;
     case SMeasurePercent:       return StatsMergeReplace;
-    case SMeasureIPV4:          return StatsMergeKeep;
+    case SMeasureIPV4:          return StatsMergeKeepNonZero;
+    case SMeasureCycle:         return StatsMergeSum;
     default:
         throwUnexpected();
     }
@@ -453,28 +459,14 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
     BASE_TAGS(x, y) \
     "@TimeDelta" # y
 
-#define LEGACYTAGS(dft)    \
-        dft, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL, \
-        NULL
-
 #define CORESTAT(x, y, m)     St##x##y, m, { NAMES(x, y) }, { TAGS(x, y) }
-#define STAT(x, y, m)         CORESTAT(x, y, m), { LEGACYTAGS(NULL) }
-#define TAGSTAT(x, y, m, dft) St##x##y, m, { NAMES(x, y) }, { TAGS(x, y) }, { LEGACYTAGS(dft) }
-
+#define STAT(x, y, m)         CORESTAT(x, y, m)
 
 //--------------------------------------------------------------------------------------------------------------------
 
 //These are the macros to use to define the different entries in the stats meta table
 #define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
-#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }, { LEGACYTAGS(NULL) }
+#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, { TIMENAMES(When, y) }, { TIMETAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -482,10 +474,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 #define NODESTAT(y) STAT(Node, y, SMeasureNode)
 #define PERSTAT(y) STAT(Per, y, SMeasurePercent)
 #define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
-
-//The following variants are used where a different tag name is required
-#define TIMESTAT2(y, dft) TAGSTAT(Time, y, SMeasureTimeNs, dft)
-#define NUMSTAT2(y, dft) TAGSTAT(Num, y, SMeasureCount, dft)
+#define CYCLESTAT(y) STAT(Cycle, y, SMeasureCycle)
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -496,9 +485,9 @@ public:
     StatisticMeasure measure;
     const char * names[StNextModifier/StVariantScale];
     const char * tags[StNextModifier/StVariantScale];
-    const char * legacytags[StNextModifier/StVariantScale];
 };
 
+//The order of entries in this table must match the order in the enumeration
 static const StatisticMeta statsMetaData[StMax] = {
     { StKindNone, SMeasureNone, { "none" }, { "@none" } },
     { StKindAll, SMeasureAll, { "all" }, { "@all" } },
@@ -511,38 +500,38 @@ static const StatisticMeta statsMetaData[StMax] = {
     { WHENSTAT(Compiled) },
     { WHENSTAT(WorkunitModified) },
     { TIMESTAT(Elapsed) },
-    { CORESTAT(Time, LocalExecute, SMeasureTimeNs), { "@localTime", "@timeMinMs", "@timeMaxMs" } },
-    { TIMESTAT2(TotalExecute, "@totalTime") },
+    { TIMESTAT(LocalExecute) },
+    { TIMESTAT(TotalExecute) },
     { TIMESTAT(Remaining) },
     { SIZESTAT(GeneratedCpp) },
     { SIZESTAT(PeakMemory) },
     { SIZESTAT(MaxRowSize) },
-    { CORESTAT(Num, RowsProcessed, SMeasureCount), { "@count", "@min", "@max", NULL, "skew", "minskew", "maxskew", NULL, NULL, NULL } },
-    { NUMSTAT2(Slaves, "@slaves") },
-    { NUMSTAT2(Started, "@started") },
-    { NUMSTAT2(Stopped, "@stopped") },
-    { NUMSTAT2(IndexSeeks, "@seeks") },
-    { NUMSTAT2(IndexScans, "@scans") },
-    { NUMSTAT2(IndexWildSeeks, "@wildscans") },
-    { NUMSTAT2(IndexSkips, "@skips") },
-    { NUMSTAT2(IndexNullSkips, "@nullskips") },
-    { NUMSTAT2(IndexMerges, "@merges") },
-    { NUMSTAT2(IndexMergeCompares, "@mergecompares") },
-    { NUMSTAT2(PreFiltered, "@prefiltered") },
-    { NUMSTAT2(PostFiltered, "@postfiltered") },
-    { NUMSTAT2(BlobCacheHits, "@blobhit") },
-    { NUMSTAT2(LeafCacheHits, "@leafhit") },
-    { NUMSTAT2(NodeCacheHits, "@nodehit") },
-    { NUMSTAT2(BlobCacheAdds, "@blobadd") },
-    { NUMSTAT2(LeafCacheAdds, "@leadadd") },
-    { NUMSTAT2(NodeCacheAdds, "@nodeadd") },
-    { NUMSTAT2(PreloadCacheHits, "@preloadhits") },
-    { NUMSTAT2(PreloadCacheAdds, "@preloadadds") },
-    { NUMSTAT2(ServerCacheHits, "@sschits") },
-    { NUMSTAT2(IndexAccepted, "@accepted") },
-    { NUMSTAT2(IndexRejected, "@rejected") },
-    { NUMSTAT2(AtmostTriggered, "@atmost") },
-    { NUMSTAT2(DiskSeeks, "@fseeks") },
+    { NUMSTAT(RowsProcessed) },
+    { NUMSTAT(Slaves) },
+    { NUMSTAT(Started) },
+    { NUMSTAT(Stopped) },
+    { NUMSTAT(IndexSeeks) },
+    { NUMSTAT(IndexScans) },
+    { NUMSTAT(IndexWildSeeks) },
+    { NUMSTAT(IndexSkips) },
+    { NUMSTAT(IndexNullSkips) },
+    { NUMSTAT(IndexMerges) },
+    { NUMSTAT(IndexMergeCompares) },
+    { NUMSTAT(PreFiltered) },
+    { NUMSTAT(PostFiltered) },
+    { NUMSTAT(BlobCacheHits) },
+    { NUMSTAT(LeafCacheHits) },
+    { NUMSTAT(NodeCacheHits) },
+    { NUMSTAT(BlobCacheAdds) },
+    { NUMSTAT(LeafCacheAdds) },
+    { NUMSTAT(NodeCacheAdds) },
+    { NUMSTAT(PreloadCacheHits) },
+    { NUMSTAT(PreloadCacheAdds) },
+    { NUMSTAT(ServerCacheHits) },
+    { NUMSTAT(IndexAccepted) },
+    { NUMSTAT(IndexRejected) },
+    { NUMSTAT(AtmostTriggered) },
+    { NUMSTAT(DiskSeeks) },
     { NUMSTAT(Iterations) },
     { LOADSTAT(WhileSorting) },
     { NUMSTAT(LeftRows) },
@@ -554,6 +543,22 @@ static const StatisticMeta statsMetaData[StMax] = {
     { NUMSTAT(DiskRejected) },
     { TIMESTAT(Soapcall) },
     { TIMESTAT(FirstExecute) },
+    { TIMESTAT(DiskReadIO) },
+    { TIMESTAT(DiskWriteIO) },
+    { SIZESTAT(DiskRead) },
+    { SIZESTAT(DiskWrite) },
+    { CYCLESTAT(DiskReadIOCycles) },
+    { CYCLESTAT(DiskWriteIOCycles) },
+    { NUMSTAT(DiskReads) },
+    { NUMSTAT(DiskWrites) },
+    { NUMSTAT(Spills) },
+    { TIMESTAT(SpillElapsed) },
+    { TIMESTAT(SortElapsed) },
+    { NUMSTAT(Groups) },
+    { NUMSTAT(GroupMax) },
+    { SIZESTAT(SpillFile) },
+    { CYCLESTAT(SpillElapsedCycles) },
+    { CYCLESTAT(SortElapsedCycles) },
 };
 
 
@@ -599,6 +604,24 @@ const char * queryStatisticName(StatisticKind kind)
     return statsMetaData[rawkind].names[variant];
 }
 
+
+unsigned __int64 convertMeasure(StatisticMeasure from, StatisticMeasure to, unsigned __int64 value)
+{
+    if (from == to)
+        return value;
+    if ((from == SMeasureCycle) && (to == SMeasureTimeNs))
+        return cycle_to_nanosec(value);
+    if ((from == SMeasureTimeNs) && (to == SMeasureCycle))
+        return nanosec_to_cycle(value);
+    throwUnexpected();
+}
+
+unsigned __int64 convertMeasure(StatisticKind from, StatisticKind to, unsigned __int64 value)
+{
+    return convertMeasure(queryMeasure(from), queryMeasure(to), value);
+}
+
+
 //--------------------------------------------------------------------------------------------------------------------
 
 void queryLongStatisticName(StringBuffer & out, StatisticKind kind)
@@ -615,15 +638,6 @@ const char * queryTreeTag(StatisticKind kind)
     dbgassertex(rawkind >= StKindNone && rawkind < StMax);
     dbgassertex(variant < (StNextModifier/StVariantScale));
     return statsMetaData[rawkind].tags[variant];
-}
-
-const char * queryLegacyTreeTag(StatisticKind kind)
-{
-    StatisticKind rawkind = (StatisticKind)(kind & StKindMask);
-    unsigned variant = (kind / StVariantScale);
-    dbgassertex(rawkind >= StKindNone && rawkind < StMax);
-    dbgassertex(variant < (StNextModifier/StVariantScale));
-    return statsMetaData[rawkind].legacytags[variant];
 }
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -683,6 +697,7 @@ inline void mergeUpdate(StatisticMeasure measure, unsigned __int64 & value, cons
     case SMeasureSize:
     case SMeasureLoad:
     case SMeasureSkew:
+    case SMeasureCycle:
         value += otherValue;
         break;
     case SMeasureTimestampUs:
@@ -702,8 +717,10 @@ unsigned __int64 mergeStatisticValue(unsigned __int64 prevValue, unsigned __int6
 {
     switch (mergeAction)
     {
-    case StatsMergeKeep:
-        return prevValue;
+    case StatsMergeKeepNonZero:
+        if (prevValue)
+            return prevValue;
+        return newValue;
     case StatsMergeAppend:
     case StatsMergeReplace:
         return newValue;
@@ -799,6 +816,10 @@ void StatisticsMapping::createMappings()
 }
 
 const StatisticsMapping allStatistics;
+const StatisticsMapping diskLocalStatistics(StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StKindNone);
+const StatisticsMapping diskRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StKindNone);
+const StatisticsMapping diskReadRemoteStatistics(StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StKindNone);
+const StatisticsMapping diskWriteRemoteStatistics(StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StKindNone);
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -969,36 +990,6 @@ void StatsScopeId::setSubgraphId(unsigned _id)
     setId(SSTsubgraph, _id);
 }
 
-
-//Use an atom table to minimimize memory usage in esp.
-//The class could try and use a combination of the scope type and an unsigned, but I suspect not worth it.
-IAtom * createStatsScope(const char * name)
-{
-    //MORE: Should this use a separate atom table?
-    return createAtom(name);
-}
-
-IAtom * createActivityScope(unsigned value)
-{
-    char temp[12];
-    sprintf(temp, ActivityScopePrefix "%u", value);
-    return createStatsScope(temp);
-}
-
-static IAtom * createSubGraphScope(unsigned value)
-{
-    char temp[13];
-    sprintf(temp, SubGraphScopePrefix "%u", value);
-    return createStatsScope(temp);
-}
-
-IAtom * createEdgeScope(unsigned value1, unsigned value2)
-{
-    StringBuffer temp;
-    temp.append(EdgeScopePrefix).append(value1).append("_").append(value2);
-    return createStatsScope(temp);
-}
-
 //--------------------------------------------------------------------------------------------------------------------
 
 enum
@@ -1031,7 +1022,7 @@ class CStatisticCollection : public CInterfaceOf<IStatisticCollection>
 {
     friend class CollectionHashTable;
 public:
-    CStatisticCollection(CStatisticCollection * _parent, const StatsScopeId & _id) : parent(_parent), id(_id)
+    CStatisticCollection(CStatisticCollection * _parent, const StatsScopeId & _id) : id(_id), parent(_parent)
     {
     }
 
@@ -1404,11 +1395,13 @@ void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & othe
         StatisticKind kind = other.getKind(i);
         unsigned __int64 value = other.getStatisticValue(kind);
         if (value)
-        {
-            StatsMergeAction mergeAction = queryMergeMode(kind);
-            mergeStatistic(kind, other.getStatisticValue(kind), mergeAction);
-        }
+            mergeStatistic(kind, other.getStatisticValue(kind));
     }
+}
+
+void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value)
+{
+    queryStatistic(kind).merge(value, queryMergeMode(kind));
 }
 
 void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContextLogger * const * targets) const
@@ -1528,6 +1521,7 @@ bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
     }
     return numValid != 0;
 }
+
 
 //---------------------------------------------------
 
@@ -1832,11 +1826,18 @@ extern int registerStatsCategory(const char *longName, const char *shortName)
 
 static void checkKind(StatisticKind kind)
 {
+    if (kind < StMax)
+    {
+        const StatisticMeta & meta = statsMetaData[kind];
+        if (meta.kind != kind)
+            throw makeStringExceptionV(0, "Statistic %u in the wrong order", kind);
+    }
+
     StatisticMeasure measure = queryMeasure(kind);
     const char * shortName = queryStatisticName(kind);
     StringBuffer longName;
     queryLongStatisticName(longName, kind);
-    const char * tagName = queryTreeTag(kind);
+    const char * tagName __attribute__ ((unused)) = queryTreeTag(kind);
     const char * prefix = queryMeasurePrefix(measure);
     //Check short names are all correctly prefixed.
     assertex(strncmp(shortName, prefix, strlen(prefix)) == 0);
@@ -1865,7 +1866,7 @@ void verifyStatisticFunctions()
     //Check the various functions return values for all possible values.
     for (unsigned i1=SMeasureAll; i1 < SMeasureMax; i1++)
     {
-        const char * prefix = queryMeasurePrefix((StatisticMeasure)i1);
+        const char * prefix __attribute__((unused)) = queryMeasurePrefix((StatisticMeasure)i1);
         const char * name = queryMeasureName((StatisticMeasure)i1);
         assertex(queryMeasure(name) == i1);
     }

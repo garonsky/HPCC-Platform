@@ -87,9 +87,10 @@ void CInclude::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 
 void CIncludeArray::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 {
-    //this->setEnvXPath(strXPath);
-    //strXPath.clear();
+    this->setEnvXPath(strXPath);
+    strXPath.clear();
     //QUICK_ENV_XPATH_WITH_INDEX(strXPath, index);
+    QUICK_ENV_XPATH(strXPath);
 }
 
 CIncludeArray* CIncludeArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, const char *xpath)

@@ -555,7 +555,8 @@ interface IDistributedFileDirectory: extends IInterface
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
 
-    virtual IDistributedFile *createNew(IFileDescriptor *desc,bool includeports=false) = 0;
+    virtual IDistributedFile *createNew(IFileDescriptor *desc, bool includeports=false) = 0;
+    virtual IDistributedFile *createExternal(IFileDescriptor *desc, const char *name, bool includeports=false) = 0;
 
     virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user) = 0;
             // wildname is in form scope/name and may contain wild components for either
@@ -772,7 +773,7 @@ extern da_decl bool removeClusterSpares(const char *clusterName, const char *typ
 // should poss. belong in lib workunit
 extern da_decl StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupName);
 extern da_decl StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &groupName);
-extern da_decl IGroup *getClusterGroup(const char *clusterName, const char *type, bool expand, unsigned timems=INFINITE);
+extern da_decl IGroup *getClusterNodeGroup(const char *clusterName, const char *type, unsigned timems=INFINITE);
 
 extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user);
 

@@ -582,7 +582,7 @@ public:
         else
         {
             size32_t bitSetMemSz = getBitSetMemoryRequirement(rowCount);
-            void *pBitSetMem = activity.queryJob().queryRowManager()->allocate(bitSetMemSz, activity.queryContainer().queryId(), SPILL_PRIORITY_LOW);
+            void *pBitSetMem = activity.queryRowManager().allocate(bitSetMemSz, activity.queryContainer().queryId(), SPILL_PRIORITY_LOW);
             if (!pBitSetMem)
                 return false;
 
@@ -1391,6 +1391,7 @@ protected:
     using PARENT::helper;
     using PARENT::clearHT;
     using PARENT::rhs;
+    using PARENT::queryRowManager;
 
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
@@ -1403,6 +1404,7 @@ protected:
     // Handling failover to a) hashed local lookupjoin b) hash distributed standard join
     bool smart;
     bool rhsCollated, rhsCompacted;
+    bool compressSpills;
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
     ICompare *compareLeft;
     UnsignedArray flushedRowMarkers;
@@ -1645,7 +1647,7 @@ protected:
                  * Need to remove spill callback and broadcast one last message to know.
                  */
 
-                queryJob().queryRowManager()->removeRowBuffer(this);
+                queryRowManager().removeRowBuffer(this);
 
                 ActPrintLog("Broadcasting final split status");
                 broadcaster.reset();
@@ -1772,7 +1774,7 @@ protected:
                             /* NB: will kill array when stream exhausted or if spilt
                              * Ensure spill priority of these spillable streams is lower than the stream in the loader in the next stage
                              */
-                            rightStreams.append(*rows.createRowStream()); // NB: default SPILL_PRIORITY_SPILLABLE_STREAM is lower than SPILL_PRIORITY_LOOKUPJOIN
+                            rightStreams.append(*rows.createRowStream(SPILL_PRIORITY_SPILLABLE_STREAM, compressSpills)); // NB: default SPILL_PRIORITY_SPILLABLE_STREAM is lower than SPILL_PRIORITY_LOOKUPJOIN
                         }
                     }
                     // NB: 'right' deliberately added after rhsNodeRow streams, so that rhsNodeRow can be consumed into loader 1st
@@ -1981,6 +1983,7 @@ public:
                 break;
         }
         overflowWriteCount = 0;
+        compressSpills = getOptBool(THOROPT_COMPRESS_SPILLS, true);
         ActPrintLog("Smart join = %s", smart?"true":"false");
     }
     bool exceedsLimit(rowidx_t count, const void *left, const void *right, const void *&failRow)
@@ -2053,7 +2056,7 @@ public:
                 overflowWriteCount = 0;
                 overflowWriteFile.clear();
                 overflowWriteStream.clear();
-                queryJob().queryRowManager()->addRowBuffer(this);
+                queryRowManager().addRowBuffer(this);
             }
         }
         else
@@ -2151,6 +2154,10 @@ public:
     {
         return SPILL_PRIORITY_LOOKUPJOIN;
     }
+    virtual unsigned getActivityId() const
+    {
+        return this->queryActivityId();
+    }
     virtual bool freeBufferedRows(bool critical)
     {
         // NB: only installed if lookup join and global
@@ -2221,7 +2228,7 @@ public:
         memsize_t sz = (memsize_t)_sz;
         if (sz != _sz) // treat as OOM exception for handling purposes.
             throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Unsigned overflow, trying to allocate hash table of size: %" I64F "d ", _sz);
-        void *ht = activity->queryJob().queryRowManager()->allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
+        void *ht = activity->queryRowManager().allocate(sz, activity->queryContainer().queryId(), SPILL_PRIORITY_LOW);
         memset(ht, 0, sz);
         htMemory.setown(ht);
         htSize = size;
@@ -2261,11 +2268,7 @@ class CLookupHT : public CHTBase
     }
     void releaseHTRows()
     {
-        for (rowidx_t r=0; r<htSize; r++)
-        {
-            if (ht[r])
-                ReleaseThorRow(ht[r]);
-        }
+        roxiemem::ReleaseRoxieRowArray(htSize, ht);
     }
 public:
     CLookupHT()

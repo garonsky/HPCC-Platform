@@ -3284,15 +3284,6 @@ class CLock : public CInterface, implements IInterface
 
     LockStatus doLock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback, bool change=false)
     {
-        class CLockCallbackUnblock
-        {
-        public:
-            CLockCallbackUnblock(IUnlockCallback &_callback) : callback(_callback) { callback.unblock(); }
-            ~CLockCallbackUnblock() { callback.block(); }
-        private:
-            IUnlockCallback &callback;
-        };
-
         if (INFINITE == timeout)
         {
             loop
@@ -3308,8 +3299,9 @@ class CLock : public CInterface, implements IInterface
                     waiting++;
                     {
                         CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
-                        CLockCallbackUnblock cb(callback);
+                        callback.unblock();
                         timedout = !sem.wait(LOCKSESSCHECK);
+                        callback.block();
                     }
                     if (timedout)
                     {
@@ -3322,8 +3314,9 @@ class CLock : public CInterface, implements IInterface
                         }
                         {
                             CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
-                            CLockCallbackUnblock cb(callback);
+                            callback.unblock();
                             validateConnectionSessions();
+                            callback.block();
                         }
                     }
                 }
@@ -3345,10 +3338,11 @@ class CLock : public CInterface, implements IInterface
                     waiting++;
                     {
                         CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
-                        CLockCallbackUnblock cb(callback);
+                        callback.unblock();
                         unsigned remaining;
                         if (tm.timedout(&remaining) || !sem.wait(remaining>LOCKSESSCHECK?LOCKSESSCHECK:remaining))
                             timedout = true;
+                        callback.block();
                     }
                     if (timedout) {
                         if (!sem.wait(0))
@@ -3357,8 +3351,9 @@ class CLock : public CInterface, implements IInterface
                         bool disconnects;
                         {
                             CHECKEDCRITICALUNBLOCK(crit, fakeCritTimeout);
-                            CLockCallbackUnblock cb(callback);
+                            callback.unblock();
                             disconnects = validateConnectionSessions();
+                            callback.block();
                         }
                         if (tm.timedout())
                         {
@@ -6014,6 +6009,19 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             Owned<IPropertyTree> envTree = createPTreeFromXMLFile(environment);
             if (0 != stricmp("Environment", envTree->queryName()))
                 throw MakeStringException(0, "External environment file '%s', has '%s' as root, expecting a 'Environment' xml node.", environment, envTree->queryName());
+
+            Owned <IMPServer> thisDali = getMPServer();
+            assertex(thisDali);
+            IPropertyTree *thisDaliInfo = findDaliProcess(envTree, thisDali->queryMyNode()->endpoint());
+            assertex(thisDaliInfo);
+            Owned<IPropertyTreeIterator> plugins = thisDaliInfo->getElements("Plugin");
+            ForEach(*plugins)
+            {
+                Owned<IPluggableFactory> factory = loadPlugin(&plugins->query());
+                assertex (factory);
+                if (!factory->initializeStore())
+                    throw MakeStringException(0, "Failed to initialize plugin store '%s'", plugins->query().queryProp("@name"));
+            }
 
             oldEnvironment.setown(root->getPropTree("Environment"));
             root->removeTree(oldEnvironment);

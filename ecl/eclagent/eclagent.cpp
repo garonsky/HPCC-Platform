@@ -2496,16 +2496,21 @@ bool EclAgent::checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * lo
     crcName.append(lfn).append("$crc");
     eclName.append(lfn).append("$eclcrc");
 
-    if (!isResult(lfn, (unsigned)-2))
+    if (!isResult(lfn, ResultSequencePersist))
         errText.appendf("Building PERSIST('%s'): It hasn't been calculated before", logicalName);
-    else if (!isResult(crcName, (unsigned)-2))
-        errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
     else if (isFile && !fileExists(logicalName))
         errText.appendf("Rebuilding PERSIST('%s'): Persistent file does not exist", logicalName);
+    else if (!item.queryPersistRefresh())
+    {
+        errText.appendf("Not rebuilding PERSIST('%s'): due to REFRESH(false)", logicalName);
+        return true;
+    }
+    else if (!isResult(crcName, ResultSequencePersist))
+        errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
     else
     {
-        unsigned savedEclCRC = (unsigned)getResultInt(eclName, (unsigned)-2);
-        unsigned __int64 savedCRC = (unsigned __int64)getResultInt(crcName, (unsigned)-2);
+        unsigned savedEclCRC = (unsigned)getResultInt(eclName, ResultSequencePersist);
+        unsigned __int64 savedCRC = (unsigned __int64)getResultInt(crcName, ResultSequencePersist);
         if (savedEclCRC != eclCRC)
             errText.appendf("Rebuilding PERSIST('%s'): ECL has changed", logicalName);
         else if (savedCRC != allCRC)
@@ -2613,9 +2618,14 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
         StringBuffer dummy;
         if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
         {
-            StringBuffer msg;
-            msg.append("PERSIST('").append(logicalName).append("') is up to date");
-            logException(SeverityInformation, 0, msg.str(), false);
+            if (dummy.length())
+                logException(SeverityInformation, 0, dummy.str(), false);
+            else
+            {
+                StringBuffer msg;
+                msg.append("PERSIST('").append(logicalName).append("') is up to date");
+                logException(SeverityInformation, 0, msg.str(), false);
+            }
             return true;
         }
 
@@ -2636,9 +2646,17 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
     StringBuffer errText;
     if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, errText) && !rebuildAllPersists)
     {
-        StringBuffer msg;
-        msg.append("PERSIST('").append(logicalName).append("') is up to date (after being calculated by another job)");
-        logException(SeverityInformation, 0, msg.str(), false);
+        if (errText.length())
+        {
+            errText.append(" (after being calculated by another job)");
+            logException(SeverityInformation, 0, errText.str(), false);
+        }
+        else
+        {
+            StringBuffer msg;
+            msg.append("PERSIST('").append(logicalName).append("') is up to date (after being calculated by another job)");
+            logException(SeverityInformation, 0, msg.str(), false);
+        }
         changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
         return true;
     }
@@ -3587,7 +3605,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
 //=======================================================================================
 //copied/modified from ccdserver
-class InputProbe : public CInterface, implements IHThorInput // base class for the edge probes used for tracing and debugging....
+class InputProbe : public CInterface, implements IHThorInput, implements IEngineRowStream // base class for the edge probes used for tracing and debugging....
 {
 protected:
     IHThorInput *in;
@@ -3649,14 +3667,14 @@ public:
             return NULL;
     }
 
-    virtual const void * nextGE(const void * seek, unsigned numFields)
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        return in->nextGE(seek, numFields);
+        return in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
-        const void *ret = in->nextInGroup();
+        const void *ret = in->nextRow();
         if (ret)
         {
             size32_t size = in->queryOutputMeta()->getRecordSize(ret);
@@ -3681,10 +3699,10 @@ public:
         in->ready(); 
     }
 
-    virtual void done() 
+    virtual void stop() 
     { 
         hasStopped = true;
-        in->done(); 
+        in->stop(); 
     }
 };
 
@@ -4034,12 +4052,19 @@ public:
         InputProbe::ready();
     }
 
-    virtual const void * nextGE(const void * seek, unsigned numFields)
+    virtual IEngineRowStream &queryStream() { return *this; }
+
+    virtual const void * nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
     {
-        return in->nextGE(seek, numFields);
+        return in->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 
-    virtual const void *nextInGroup()
+    virtual void stop()
+    {
+        in->stop();
+    }
+
+    virtual const void *nextRow()
     {
         // Code is a little complex to avoid interpreting a skip on all rows in a group as EOF
         try
@@ -4048,7 +4073,7 @@ public:
                 return NULL;
             loop
             {
-                const void *ret = InputProbe::nextInGroup();
+                const void *ret = InputProbe::nextRow();
                 if (!ret)
                 {
                     if (EOGseen)

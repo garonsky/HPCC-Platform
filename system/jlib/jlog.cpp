@@ -134,7 +134,6 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
     }
     if(fields & MSGFIELD_node)
     {
-        size32_t len = out.length();
         sysInfo.queryNode()->getUrlStr(out);
         out.append(" ");
     }
@@ -923,7 +922,8 @@ void FileLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
 
 // RollingFileLogMsgHandler
 
-RollingFileLogMsgHandler::RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields, bool _append, bool _flushes, const char *initialName, const char *_alias, bool daily) : messageFields(_fields), filebase(_filebase), fileextn(_fileextn), append(_append), flushes(_flushes), handle(0), alias(_alias)
+RollingFileLogMsgHandler::RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields, bool _append, bool _flushes, const char *initialName, const char *_alias, bool daily)
+  : handle(0), messageFields(_fields), alias(_alias), filebase(_filebase), fileextn(_fileextn), append(_append), flushes(_flushes)
 {
     time_t tNow;
     time(&tNow);
@@ -2486,8 +2486,8 @@ int CSysLogEventLogger::writeDataLog(size32_t datasize, byte const * data)
     off_t fpos = lseek(dataLogFile, 0, SEEK_CUR);
     while(datasize > 0)
     {
-        size32_t written = write(dataLogFile, data, datasize);
-        if(written == -1)
+        ssize_t written = write(dataLogFile, data, datasize);
+        if (written == -1)
             return -1;
         data += written;
         datasize -= written;
@@ -2547,13 +2547,13 @@ public:
     virtual void Link() const {}
     virtual bool Release() const { return false; }
 
-    virtual void CTXLOGva(const char *format, va_list args) const
+    virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
     {
         StringBuffer ss;
         ss.valist_appendf(format, args);
         DBGLOG("%s", ss.str());
     }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
     {
         StringBuffer ss;
         ss.append("ERROR");
@@ -2678,7 +2678,7 @@ public:
             _properties->getProp("@logDir", logDir);
     }
 
-    CComponentLogFileCreator(const char *_logDir, const char *_component) : logDir(_logDir), component(_component)
+    CComponentLogFileCreator(const char *_logDir, const char *_component) : component(_component), logDir(_logDir)
     {
         setDefaults();
     }

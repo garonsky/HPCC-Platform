@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#ifdef _WIN32
 #pragma warning(disable: 4996)
-#ifdef _WIN32 
 #include "winprocess.hpp"
 #include <conio.h>
 #endif
@@ -60,6 +60,8 @@ static CriticalSection * protectedGeneratorCs;
 
 #if defined (__APPLE__)
 #include <mach-o/dyld.h>
+#include <mach/mach_time.h> /* mach_absolute_time */
+mach_timebase_info_data_t timebase_info  = { 1,1 };
 #endif
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
@@ -68,6 +70,10 @@ MODULE_INIT(INIT_PRIORITY_SYSTEM)
 #ifdef _WIN32
     protectedGenerator = createRandomNumberGenerator();
     protectedGeneratorCs = new CriticalSection;
+#endif
+#if defined (__APPLE__)
+    if (mach_timebase_info(&timebase_info) != KERN_SUCCESS)
+        return false;
 #endif
     return true;
 }
@@ -395,7 +401,7 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
         if (!streq(ext.str(), SharedObjectExtension))
         {
             // Assume if there's no .so, there may also be no lib at the beginning
-            if (strncmp(tail.str(), SharedObjectPrefix, strlen(SharedObjectPrefix) != 0))
+            if (strncmp(tail.str(), SharedObjectPrefix, strlen(SharedObjectPrefix)) != 0)
                 path.append(SharedObjectPrefix);
             path.append(tail).append(ext).append(SharedObjectExtension);
             name = path.str();
@@ -479,11 +485,35 @@ bool SharedObject::loadCurrentExecutable()
     return true;
 }
 
+void *SharedObject::getEntry(const char * name) const
+{
+    return GetSharedProcedure(getInstanceHandle(), name);
+}
 
 void SharedObject::unload()
 {
     if (h && bRefCounted) FreeSharedObject(h);
     h = 0;
+}
+
+//-----------------------------------------------------------------------
+
+IPluggableFactory *loadPlugin(const IPropertyTree *pluginInfo)
+{
+    const char *pluginName = pluginInfo->queryProp("@name");
+    const char *entrypoint = pluginInfo->queryProp("@entrypoint");
+    if (!pluginName || !entrypoint)
+        throw makeStringException(0, "Plugin information missing plugin name or entrypoint");
+    Owned<SharedObject> pluginDll = new SharedObject;
+    if (!pluginDll->load(pluginName, false, true))
+        throw makeStringExceptionV(0, "Failed to load plugin %s", pluginName);
+    IPluggableFactoryFactory pf = (IPluggableFactoryFactory) pluginDll->getEntry(entrypoint);
+    if (!pf)
+        throw makeStringExceptionV(0, "Function %s not found in plugin %s", entrypoint,  pluginName);
+    IPluggableFactory *factory =  pf(pluginDll, pluginInfo);
+    if (!factory)
+        throw makeStringExceptionV(0, "Factory function %s returned NULL in plugin %s", entrypoint, pluginName);
+    return factory;
 }
 
 //-----------------------------------------------------------------------
@@ -1459,6 +1489,20 @@ unsigned usTick()
     gettimeofday(&tm,NULL);
     return tm.tv_sec*1000000+tm.tv_usec; 
 }
+#elif __APPLE__
+
+unsigned usTick()
+{
+    __uint64 nano = mach_absolute_time() * (uint64_t)timebase_info.numer / (uint64_t)timebase_info.denom;
+    return nano / 1000;
+}
+
+unsigned msTick()
+{
+    __uint64 nano = mach_absolute_time() * (uint64_t)timebase_info.numer / (uint64_t)timebase_info.denom;
+    return nano / 1000000;
+}
+
 #else
 #warning "clock_gettime(CLOCK_MONOTONIC) not supported"
 unsigned msTick() 
@@ -1529,29 +1573,6 @@ int make_daemon(bool printpid)
 
 }
 
-#ifndef _WIN32 
-static int exec(const char* _command)
-{
-    const char* tok=" \t";
-    size32_t sz=16, count=0;
-    char* command = strdup(_command);
-    char **args=(char**)malloc(sz*sizeof(char*));
-    
-    for(char *temp, *p=strtok_r(command,tok,&temp);;p=strtok_r(NULL,tok,&temp))
-    {
-        if(count>=sz)
-            args=(char**)realloc(args,(sz*=2)*sizeof(char*));
-        args[count++]=p;
-        if(!p)
-            break;
-    }
-    int ret=execv(*args,args);
-    free(args);
-    free(command);
-    return ret;
-}
-#endif 
-
 //Calculate the greatest common divisor using Euclid's method
 unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 right)
 {
@@ -1584,7 +1605,7 @@ void doStackProbe()
 {
     byte local;
     const volatile byte * x = (const byte *)&local;
-    byte forceload = x[-4096];
+    byte forceload __attribute__((unused)) = x[-4096];
 }
 
 #ifdef __GNUC__
