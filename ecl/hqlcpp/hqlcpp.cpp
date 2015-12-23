@@ -1752,7 +1752,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.alwaysUseGraphResults,"alwaysUseGraphResults",false),
         DebugOption(options.noConditionalLinks,"noConditionalLinks",false),
         DebugOption(options.reportAssertFilenameTail,"reportAssertFilenameTail",false),        
-        DebugOption(options.newBalancedSpotter,"newBalancedSpotter",false),
+        DebugOption(options.newBalancedSpotter,"newBalancedSpotter",true),
         DebugOption(options.keyedJoinPreservesOrder,"keyedJoinPreservesOrder",true),
         DebugOption(options.expandSelectCreateRow,"expandSelectCreateRow",false),
         DebugOption(options.obfuscateOutput,"obfuscateOutput",false),
@@ -2385,6 +2385,8 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
     case no_nohoist:
     case no_section:
     case no_sectioninput:
+    case no_forcegraph:
+    case no_nocombine:
         buildExprAssign(ctx, target, expr->queryChild(0));
         break;
     case no_realformat:
@@ -3251,6 +3253,8 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_section:
     case no_sectioninput:
     case no_pure:
+    case no_forcegraph:
+    case no_nocombine:
         buildExpr(ctx, expr->queryChild(0), tgt);
         return;
     case no_band:
@@ -3633,6 +3637,8 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_nothor:
     case no_section:
     case no_sectioninput:
+    case no_forcegraph:
+    case no_nocombine:
         buildStmt(ctx, expr->queryChild(0));
         return;
     case no_null:
@@ -11676,7 +11682,17 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
         startLine += memcount(body-start, start, '\n');
     }
 
-    funcctx.addQuotedCompound(proto);
+    funcctx.addQuoted("#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+            "#pragma GCC diagnostic error \"-Wall\"\n"
+            "#pragma GCC diagnostic error \"-Wextra\"\n"
+            "#pragma GCC diagnostic ignored \"-Wunused-parameter\"\n"  // Generated prototype tends to include ctx that is often not used
+            "#endif\n");
+
+    funcctx.addQuotedCompound(proto, "\n#if defined(__clang__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2))\n"
+            "#pragma GCC diagnostic ignored \"-Wall\"\n"
+            "#pragma GCC diagnostic ignored \"-Wextra\"\n"
+            "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"  // Some variants of gcc seemt to be buggy - this SHOULD be covered by -Wall above but gcc4.8.4 needs it explicit
+            "#endif\n");
     if (location)
         funcctx.addLine(locationFilename, startLine);
     funcctx.addQuoted(body);

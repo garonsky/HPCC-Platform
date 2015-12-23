@@ -106,9 +106,10 @@ bool CKeyRef::checkConstraint(const char *pValue) const
         StringBuffer strQName(this->getXSDXPath());
         strQName.append("/").append(this->getRefer());
 
-        CKey *pKey = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getKeyFromXSDXPath(strQName.str());
-        return pKey->checkConstraint(pValue);
+        //CKey *pKey = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getKeyFromXSDXPath(strQName.str());
+        //return pKey->checkConstraint(pValue);
     }
+    return true;
 }
 
 void CKeyRef::populateEnvXPath(StringBuffer strXPath, unsigned int index)

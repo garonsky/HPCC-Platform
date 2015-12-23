@@ -75,8 +75,8 @@ public:
     void addKeyRefForReverseAssociation(const CKeyRef *pKeyRef) const;
     void processKeyRefReverseAssociation() const;
 
-    void addKeyForReverseAssociation(const CKey *pKeyRef) const;
-    void processKeyReverseAssociation() const;
+    void addKeyForReverseAssociation(const CKey *pKey) const;
+    void processKeyReverseAssociation();
 
     bool getXMLFromSchema(StringBuffer& strXML, const char* pXSD); //test purposes
     void populateEnvXPath();
@@ -163,6 +163,7 @@ protected:
     ::CIArrayOf<CXSDNodeWithBase> m_nodeWithBaseArr;
     ::CIArrayOf<CElement> m_ElementArr;
     ::CIArrayOf<CKeyRef> m_KeyRefArr;
+    ::CIArrayOf<CKey> m_KeyArr;
     ::StringArray m_strToolTipsJS;
     ::StringArray m_strArrayEnvXPaths;
     ::StringArray m_strArrayEnvXMLComponentInstances;

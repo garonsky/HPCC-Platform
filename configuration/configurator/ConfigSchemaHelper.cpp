@@ -819,7 +819,7 @@ bool CConfigSchemaHelper::saveConfigurationFile() const
         return false;
 
     StringBuffer strXML;
-    strXML.appendf("<"XML_HEADER">\n<!-- Edited with THE CONFIGURATOR -->\n");
+    strXML.appendf("<" XML_HEADER ">\n<!-- Edited with THE CONFIGURATOR -->\n");
     ::toXML(this->getConstEnvPropertyTree(), strXML, 0, XML_SortTags | XML_Format);
 
     if (CConfigFileUtils::getInstance()->writeConfigurationToFile(m_strEnvFilePath.str(), strXML.str(), strXML.length()) == CConfigFileUtils::CF_NO_ERROR)
@@ -839,7 +839,7 @@ bool CConfigSchemaHelper::saveConfigurationFileAs(const char *pFilePath)
         return false;
 
     StringBuffer strXML;
-    strXML.appendf("<"XML_HEADER">\n<!-- Edited with THE CONFIGURATOR -->\n");
+    strXML.appendf("<" XML_HEADER ">\n<!-- Edited with THE CONFIGURATOR -->\n");
     ::toXML(this->getConstEnvPropertyTree(), strXML, 0, XML_SortTags | XML_Format);
 
     if (CConfigFileUtils::getInstance()->writeConfigurationToFile(pFilePath, strXML.str(), strXML.length()) == CConfigFileUtils::CF_NO_ERROR)
@@ -853,18 +853,39 @@ bool CConfigSchemaHelper::saveConfigurationFileAs(const char *pFilePath)
 
 void CConfigSchemaHelper::addKeyRefForReverseAssociation(const CKeyRef *pKeyRef) const
 {
+    assert(pKeyRef != NULL);
+    //assert(m_KeyRefArr.find(*pKeyRef) == NotFound);
+
+    //m_KeyRefArr.append(*pKeyRef);
 }
 
 void CConfigSchemaHelper::processKeyRefReverseAssociation() const
 {
 }
 
-void CConfigSchemaHelper::addKeyForReverseAssociation(const CKey *pKeyRef) const
+void CConfigSchemaHelper::addKeyForReverseAssociation(const CKey *pKey) const
 {
+    assert(pKey != NULL);
+    //assert(m_KeyArr.find(*pKey) == NotFound);
+
+    //m_KeyArr.append(*pKey);
 }
 
-void CConfigSchemaHelper::processKeyReverseAssociation() const
+void CConfigSchemaHelper::processKeyReverseAssociation()
 {
+    StringBuffer strXPath;
+
+    for (int idx1 = 0; idx1 < m_KeyArr.length(); idx1++)
+    {
+        const CKey *pKey =  &(m_KeyArr.item(idx1));
+        pKey->getEnvXPathToKey(strXPath);
+        PROGLOG("Processing key with XPATH: %s", strXPath.str());
+
+        CAttribute *pAttribute = this->getSchemaMapManager()->getAttributeFromXSDXPath(strXPath.str());
+        assert(pAttribute != NULL);
+
+        pAttribute->appendReverseKey(pKey);
+    }
 }
 
 int CConfigSchemaHelper::getInstancesOfComponentType(const char *pCompType) const

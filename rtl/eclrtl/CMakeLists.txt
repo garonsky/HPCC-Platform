@@ -52,9 +52,7 @@ set (    SRCS
          rtlread_imp.hpp
          rtlsize.hpp
          rtltype.hpp
-
          rtlbcdtest.cpp 
-
     )
 
 include_directories ( 
@@ -70,13 +68,16 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DECLRTL_EXPORTS )
 
+if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
+    set_source_files_properties(eclrtl.cpp PROPERTIES COMPILE_FLAGS -std=c++98)
+endif ()
+
 if (WIN32)
 else ()
     ADD_DEFINITIONS( -DBOOST_DYN_LINK )
 endif ()
 
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
-install ( TARGETS eclrtl RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
 target_link_libraries ( eclrtl 
       ${BOOST_REGEX_LIBRARIES}
       ${ICU_LIBRARIES}
@@ -85,7 +86,9 @@ target_link_libraries ( eclrtl
       roxiemem
     )
 
-FOREACH( iFILES
+if (NOT MAKE_R_ONLY)
+  install ( TARGETS eclrtl RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
+  FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclinclude4.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eclrtl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eclrtl_imp.hpp
@@ -94,7 +97,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlds_imp.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlfield_imp.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlkey.hpp
-)
-    Install ( FILES ${iFILES} DESTINATION componentfiles/cl/include COMPONENT Runtime )
-ENDFOREACH ( iFILES )
-
+  )
+    install ( FILES ${iFILES} DESTINATION componentfiles/cl/include COMPONENT Runtime )
+  ENDFOREACH ( iFILES )
+endif()

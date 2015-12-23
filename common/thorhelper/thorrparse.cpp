@@ -884,7 +884,7 @@ void RegexUnicodePattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
     RegexPattern::toXMLattr(out, state);
 
     out.appendf(" text=\"");
-    encodeUnicode(out, text.length()/2, (const UChar *)text.get());
+    encodeUnicode(out, (size32_t)(text.length()/2), (const UChar *)text.get());
     out.append("\"");
 }
 
@@ -894,7 +894,7 @@ inline bool RegexUnicodePattern::doMatch(RegexState & state)
 {
     const byte * cur = state.cur;
     const byte * end = state.end;
-    unsigned len = text.length();
+    size32_t len = (size32_t)text.length();
     if (cur + len <= end)
     {
         if (memcmp(cur, text.get(), len) == 0)
@@ -954,7 +954,7 @@ void RegexUnicodeIPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
     RegexPattern::toXMLattr(out, state);
 
     out.appendf(" text=\"");
-    encodeUnicode(out, lower.length()/2, (const UChar *)lower.get());
+    encodeUnicode(out, (size32_t)(lower.length()/2), (const UChar *)lower.get());
     out.append("\"");
 }
 
@@ -965,7 +965,7 @@ inline bool RegexUnicodeIPattern::doMatch(RegexState & state)
     const byte * start = state.cur;
     const byte * end = state.end;
 
-    unsigned size = lower.length();
+    size32_t size = (size32_t)lower.length();
     if (start + size <= end)
     {
         unsigned i;
@@ -1082,7 +1082,7 @@ void RegexUtf8Pattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
     RegexPattern::toXMLattr(out, state);
 
     out.appendf(" text=\"");
-    encodeXML((const char *)text.get(), out, ENCODE_WHITESPACE, text.length(), true);
+    encodeXML((const char *)text.get(), out, ENCODE_WHITESPACE, (size32_t)text.length(), true);
     out.append("\"");
 }
 
@@ -1092,7 +1092,7 @@ inline bool RegexUtf8Pattern::doMatch(RegexState & state)
 {
     const byte * cur = state.cur;
     const byte * end = state.end;
-    unsigned size = text.length();
+    size32_t size = (size32_t)text.length();
     if (cur + size <= end)
     {
         if (memcmp(cur, text.get(), size) == 0)
@@ -1156,7 +1156,7 @@ void RegexUtf8IPattern::toXMLattr(StringBuffer & out, RegexXmlState & state)
     RegexPattern::toXMLattr(out, state);
 
     out.appendf(" text=\"");
-    encodeUnicode(out, lower.length()/2, (const UChar *)lower.get());
+    encodeUnicode(out, (size32_t)(lower.length()/2), (const UChar *)lower.get());
     out.append("\"");
 }
 
@@ -1166,8 +1166,8 @@ inline bool RegexUtf8IPattern::doMatch(RegexState & state)
 {
     const byte * end = state.end;
 
-    unsigned size = lower.length();
-    unsigned len = size/sizeof(UChar);
+    size32_t size = (size32_t)lower.length();
+    size32_t len = size/(size32_t)sizeof(UChar);
     const byte * cur = state.cur;
     const UChar * curLower = (const UChar *)lower.get();
     const UChar * curUpper = (const UChar *)upper.get();
@@ -3391,43 +3391,46 @@ bool RegexParser::performMatch(IMatchedAction & action, const void * row, unsign
         const byte * end = endData - algo->minPatternLength;
 
         RegexState state(cache, algo->kind, helper, this, algo->inputFormat, len, start);
-        state.row = row;
-        state.processor = &action;
-        state.best = NULL;
-        for (const byte * curScan = start; curScan <= end;)
+        if (len >= algo->minPatternLength)
         {
-            state.cur = curScan;
-            state.top.start = curScan;
-            state.nextScanPosition = NULL;
-            state.score = 0;
-            if (!algo->singleChoicePerLine)
-                state.best = NULL;
-            if ((size32_t)(endData - curScan) > maxSize)
+            state.row = row;
+            state.processor = &action;
+            state.best = NULL;
+            for (const byte * curScan = start; curScan <= end;)
             {
-                state.end = curScan + (maxSize + charWidth);
-                state.lengthIsLimited = true;
+                state.cur = curScan;
+                state.top.start = curScan;
+                state.nextScanPosition = NULL;
+                state.score = 0;
+                if (!algo->singleChoicePerLine)
+                    state.best = NULL;
+                if ((size32_t)(endData - curScan) > maxSize)
+                {
+                    state.end = curScan + (maxSize + charWidth);
+                    state.lengthIsLimited = true;
+                }
+                else
+                {
+                    state.end = endData;
+                    state.lengthIsLimited = false;
+                }
+                algo->match(state);
+                if (state.numMatched >= algo->keepLimit)
+                    break;
+                if (state.numMatched > algo->atMostLimit)
+                {
+                    results.reset();
+                    return false;
+                }
+                if (algo->scanAction == INlpParseAlgorithm::NlpScanWhole)
+                    break;
+                if (state.numMatched && (algo->scanAction == INlpParseAlgorithm::NlpScanNone))
+                    break;
+                if (state.nextScanPosition && (algo->scanAction == INlpParseAlgorithm::NlpScanNext) && (curScan != state.nextScanPosition))
+                    curScan = state.nextScanPosition;
+                else
+                    curScan += charWidth;
             }
-            else
-            {
-                state.end = endData;
-                state.lengthIsLimited = false;
-            }
-            algo->match(state);
-            if (state.numMatched >= algo->keepLimit)
-                break;
-            if (state.numMatched > algo->atMostLimit)
-            {
-                results.reset();
-                return false;
-            }
-            if (algo->scanAction == INlpParseAlgorithm::NlpScanWhole)
-                break;
-            if (state.numMatched && (algo->scanAction == INlpParseAlgorithm::NlpScanNone))
-                break;
-            if (state.nextScanPosition && (algo->scanAction == INlpParseAlgorithm::NlpScanNext) && (curScan != state.nextScanPosition))
-                curScan = state.nextScanPosition;
-            else
-                curScan += charWidth;
         }
 
         if (state.numMatched == 0)

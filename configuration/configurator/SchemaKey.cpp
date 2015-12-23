@@ -86,8 +86,6 @@ CKey* CKey::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSchemaRoot, co
          strXPathExt.append("/").append(XSD_TAG_ANNOTATION);
          pKey->m_pAnnotation = CAnnotation::load(pKey, pSchemaRoot, strXPathExt.str());
     }
-    StringBuffer strTemp;
-    pKey->getEnvXPathToKey(strTemp);
     return pKey;
 }
 
@@ -102,37 +100,55 @@ void CKey::populateEnvXPath(::StringBuffer strXPath, unsigned int index)
         this->m_pSelector->populateEnvXPath(strXPath.str());
         CConfigSchemaHelper::getInstance()->addKeyForReverseAssociation(this);
     }
+    StringBuffer strTemp;
+    this->getEnvXPathToKey(strTemp);
 }
 
-bool CKey::checkConstraint(const char *pValue) const
+bool CKey::checkConstraint(const CAttribute *pAttrib, const char *pValue) const
 {
+    assert(pAttrib != NULL);
+
     bool bRetVal = true;
 
-    if (m_pSelector != NULL && m_pFieldArray->length() != 0)
+    if (pAttrib == NULL)
+        return false;
+
+    const CElementArray *pElementArray = dynamic_cast<const CElementArray*>(pAttrib->getParentNodeByType(XSD_ELEMENT_ARRAY));
+
+    assert(pElementArray != NULL);
+
+    for (int idx2 = 0; idx2 < pElementArray->length(); idx2++)
     {
-        for (int idx = 0; idx < m_pFieldArray->length(); idx++)
+        const CComplexTypeArray *pComplexTypeArray = pElementArray->item(idx2).getComplexTypeArray();
+
+        if (pComplexTypeArray == NULL || pComplexTypeArray->length() == 0)
         {
-            assert(!"Multiple fields not implemented");
-            CField *m_pField = &(m_pFieldArray->item(idx));
+            assert(!"not expecting to have different attributes in the same elementarray or no complexType with attribute");
+            continue;
+        }
 
-            assert(m_pField != NULL);
-            if (m_pField == NULL)
+        const CComplexType *pComplexType = const_cast<const CComplexType*>(&(pComplexTypeArray->item(0)));
+        const CAttributeArray *pAttributeArray = const_cast<const CAttributeArray*>(pComplexType->getAttributeArray());
+
+        if (pAttributeArray == NULL || pAttributeArray->length() == 0)
+        {
+            assert(!"not expecting to not find attributes");
+            continue;
+        }
+
+        for (int idx3 = 0; idx3 < pAttributeArray->length(); idx3++)
+        {
+            const CAttribute *pAttribute = &(pAttributeArray->item(idx3));
+            assert(pAttribute != NULL);
+
+            if (strcmp(pAttribute->getName(), pAttrib->getName()) != 0)
+                continue; // not the attribute that i am looking for
+
+            if (pAttribute->getInstanceValue() != NULL && pValue != NULL && strcmp(pAttribute->getInstanceValue(), pValue) == 0)
                 return false;
-
-            ::StringBuffer strXPathForConstraintCheck(this->getEnvXPath());
-            strXPathForConstraintCheck.appendf("/%s", this->m_pSelector->getXPath());
-
-            const CElement *pElement = CConfigSchemaHelper::getInstance()->getSchemaMapManager()->getElementFromXPath(strXPathForConstraintCheck.str());
-            if (pElement == NULL)
-                return false;
-
-            const CAttribute *pAttribute = dynamic_cast<const CAttribute*>(pElement->getNodeByTypeAndNameDescending(XSD_ATTRIBUTE, m_pField->getXPath()));  // needs to be first possible descendent
-            if (pAttribute != NULL && pAttribute->getParentNodeByType(XSD_ELEMENT) != pElement)
-            {
-                assert(!"Could not find match for key");
-            }
         }
     }
+
     return bRetVal;
 }
 
@@ -199,7 +215,7 @@ CKeyArray* CKeyArray::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSche
     return pKeyArray;
 }
 
-bool CKeyArray::checkConstraint(const char *pValue) const
+bool CKeyArray::checkConstraint(const CAttribute *pAttrib, const char *pValue) const
 {
     assert(pValue != NULL);
 
@@ -208,7 +224,7 @@ bool CKeyArray::checkConstraint(const char *pValue) const
 
     for (int idx = 0; idx < this->length(); idx++)
     {
-        if ((this->item(idx)).checkConstraint(pValue) == false)
+        if ((this->item(idx)).checkConstraint(pAttrib, pValue) == false)
             return false;
     }
     return true;

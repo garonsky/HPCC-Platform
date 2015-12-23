@@ -360,10 +360,15 @@ private:
 
         if (!isResult(lfn, ResultSequencePersist))
             errText.appendf("Building PERSIST('%s'): It hasn't been calculated before", logicalName);
-        else if (!isResult(crcName, ResultSequencePersist))
-            errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
         else if (isFile && !fileExists(lfn))
             errText.appendf("Rebuilding PERSIST('%s'): Persistent file does not exist", logicalName);
+        else if (!item.queryPersistRefresh())
+        {
+            errText.appendf("Not rebuilding PERSIST('%s'): due to REFRESH(false)", logicalName);
+            return true;
+        }
+        else if (!isResult(crcName, ResultSequencePersist))
+            errText.appendf("Rebuilding PERSIST('%s'): Saved CRC isn't present", logicalName);
         else
         {
             unsigned savedEclCRC = (unsigned) getResultInt(eclName, ResultSequencePersist);
@@ -474,7 +479,10 @@ private:
             StringBuffer dummy;
             if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
             {
-                logctx.CTXLOG("PERSIST('%s') is up to date", logicalName);
+                if (dummy.length())
+                    logctx.CTXLOG("%s", dummy.str());
+                else
+                    logctx.CTXLOG("PERSIST('%s') is up to date", logicalName);
                 return true;
             }
 
@@ -495,7 +503,13 @@ private:
         StringBuffer errText;
         if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, errText) && !rebuildAllPersists)
         {
-            logctx.CTXLOG("PERSIST('%s') is up to date (after being calculated by another job)", logicalName);
+            if (errText.length())
+            {
+                errText.append(" (after being calculated by another job)");
+                logctx.CTXLOG("%s", errText.str());
+            }
+            else
+                logctx.CTXLOG("PERSIST('%s') is up to date (after being calculated by another job)", logicalName);
             changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
             return true;
         }
@@ -655,7 +669,7 @@ public:
     {
         idx = 0;
     }
-    virtual const void * nextInGroup()
+    virtual const void * nextRow()
     {
         if (idx < count)
         {
@@ -762,7 +776,7 @@ public:
         RtlLinkedDatasetBuilder builder(rowAllocator);
         loop
         {
-            const void *ret = nextInGroup();
+            const void *ret = nextRow();
             if (!ret)
             {
                 if (atEOG || !isGrouped)
@@ -820,7 +834,7 @@ public:
         if (bufferBase)
             free(bufferBase);
     }
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (eof)
             return NULL;
@@ -996,7 +1010,7 @@ public:
         rows->first();
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (rows->isValid())
         {
@@ -1328,31 +1342,41 @@ public:
     {
         if (graph)
         {
-            unsigned __int64 elapsedTime = cycle_to_nanosec(get_cycles_now() - startCycles);
-            if (debugContext)
-                debugContext->checkBreakpoint(aborting ? DebugStateGraphAbort : DebugStateGraphEnd, NULL, graph->queryName());
-            if (aborting)
-                graph->abort();
-            if (workUnit)
+            IException * error = NULL;
+            try
             {
-                unsigned __int64 totalTimeNs = 0;
-                unsigned __int64 totalThisTimeNs = 0;
-                const char *totalTimeStr = "Total cluster time";
-                getWorkunitTotalTime(workUnit, "roxie", totalTimeNs, totalThisTimeNs);
+                unsigned __int64 elapsedTime = cycle_to_nanosec(get_cycles_now() - startCycles);
+                if (debugContext)
+                    debugContext->checkBreakpoint(aborting ? DebugStateGraphAbort : DebugStateGraphEnd, NULL, graph->queryName());
+                if (aborting)
+                    graph->abort();
+                if (workUnit)
+                {
+                    unsigned __int64 totalTimeNs = 0;
+                    unsigned __int64 totalThisTimeNs = 0;
+                    const char *totalTimeStr = "Total cluster time";
+                    getWorkunitTotalTime(workUnit, "roxie", totalTimeNs, totalThisTimeNs);
 
-                const char * graphName = graph->queryName();
-                StringBuffer graphDesc;
-                formatGraphTimerLabel(graphDesc, graphName);
-                WorkunitUpdate progressWorkUnit(&workUnit->lock());
-                updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
-                updateWorkunitTimeStat(progressWorkUnit, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedTime);
-                progressWorkUnit->setStatistic(SCTsummary, "roxie", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedTime, 1, 0, StatsMergeReplace);
+                    const char * graphName = graph->queryName();
+                    StringBuffer graphDesc;
+                    formatGraphTimerLabel(graphDesc, graphName);
+                    WorkunitUpdate progressWorkUnit(&workUnit->lock());
+                    updateWorkunitTimeStat(progressWorkUnit, SSTgraph, graphName, StTimeElapsed, graphDesc, elapsedTime);
+                    updateWorkunitTimeStat(progressWorkUnit, SSTglobal, GLOBAL_SCOPE, StTimeElapsed, NULL, totalThisTimeNs+elapsedTime);
+                    progressWorkUnit->setStatistic(SCTsummary, "roxie", SSTglobal, GLOBAL_SCOPE, StTimeElapsed, totalTimeStr, totalTimeNs+elapsedTime, 1, 0, StatsMergeReplace);
+                }
+                graph->reset();
             }
-            graph->reset();
+            catch (IException * e)
+            {
+                error = e;
+            }
             graph.clear();
             childGraphs.kill();
             if (graphStats)
                 graphStats.clear();
+            if (error)
+                throw error;
         }
     }
 
@@ -1860,7 +1884,7 @@ protected:
     IPropertyTree &useContext(unsigned sequence)
     {
         checkAbort();
-        switch (sequence)
+        switch ((int) sequence)
         {
         case ResultSequenceStored:
             if (context)
@@ -1898,7 +1922,7 @@ protected:
     IDeserializedResultStore &useResultStore(unsigned sequence)
     {
         checkAbort();
-        switch (sequence)
+        switch ((int) sequence)
         {
         case ResultSequenceOnce:
             return factory->queryOnceResultStore();

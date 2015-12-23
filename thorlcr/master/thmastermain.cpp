@@ -73,11 +73,6 @@
 #define SHUTDOWN_IN_PARALLEL 20
 
 
-#define DEFAULT_THORMASTERPORT 20000
-#define DEFAULT_THORSLAVEPORT 20100
-#define DEFAULT_SLAVEPORTINC 200
-
-
 class CRegistryServer : public CSimpleInterface
 {
     unsigned msgDelay, slavesRegistered;
@@ -343,16 +338,15 @@ public:
     {
         CriticalBlock block(crit);
         unsigned i=0;
+        mptag_t shutdownTag = createReplyTag();
         for (; i<queryNodeClusterWidth(); i++)
         {
             if (status->test(i))
             {
-                status->set(i, false);
                 SocketEndpoint ep = queryNodeGroup().queryNode(i+1).endpoint();
-                if (watchdog)
-                    watchdog->removeSlave(ep);
                 CMessageBuffer msg;
                 msg.append((unsigned)Shutdown);
+                serializeMPtag(msg, shutdownTag);
                 try
                 {
                     queryNodeComm().send(msg, i+1, masterSlaveMpTag, MP_ASYNC_SEND);
@@ -363,6 +357,48 @@ public:
                     EXCLOG(e, "Shutting down slave");
                     e->Release();
                 }
+                if (watchdog)
+                    watchdog->removeSlave(ep);
+            }
+        }
+
+        CTimeMon tm(20000);
+        unsigned numReplied = 0;
+        while (numReplied < slavesRegistered)
+        {
+            unsigned remaining;
+            if (tm.timedout(&remaining))
+            {
+                PROGLOG("Timeout waiting for Shutdown reply from slave(s) (%u replied out of %u total)", numReplied, slavesRegistered);
+                StringBuffer slaveList;
+                for (i=0;i<slavesRegistered;i++)
+                {
+                    if (status->test(i))
+                    {
+                        if (slaveList.length())
+                            slaveList.append(",");
+                        slaveList.append(i+1);
+                    }
+                }
+                if (slaveList.length())
+                    PROGLOG("Slaves that have not replied: %s", slaveList.str());
+                break;
+            }
+            try
+            {
+                rank_t sender;
+                CMessageBuffer msg;
+                if (queryNodeComm().recv(msg, RANK_ALL, shutdownTag, &sender, remaining))
+                {
+                    if (sender) // paranoid, sender should always be > 0
+                        status->set(sender-1, false);
+                    numReplied++;
+                }
+            }
+            catch (IException *e)
+            {
+                // do not log MP link closed exceptions from ending slaves
+                e->Release();
             }
         }
     }
@@ -375,13 +411,13 @@ CRegistryServer *CRegistryServer::registryServer = NULL;
 //
 //////////////////
 
-bool checkClusterRelicateDAFS(IGroup *grp)
+bool checkClusterRelicateDAFS(IGroup &grp)
 {
     // check the dafilesrv is running (and right version) 
     unsigned start = msTick();
     PROGLOG("Checking cluster replicate nodes");
     SocketEndpointArray epa;
-    grp->getSocketEndpoints(epa);
+    grp.getSocketEndpoints(epa);
     ForEachItemIn(i1,epa) {
         epa.element(i1).port = getDaliServixPort();
     }
@@ -505,7 +541,6 @@ int main( int argc, char *argv[]  )
     removeSentinelFile(sentinelFile);
 
     setMachinePortBase(thorEp.port);
-    unsigned slavePort = globals->hasProp("@slaveport")?atoi(globals->queryProp("@slaveport")):THOR_BASESLAVE_PORT;
 
     EnableSEHtoExceptionMapping(); 
 #ifndef __64BIT__
@@ -565,22 +600,19 @@ int main( int argc, char *argv[]  )
             globals->setProp("@name", thorname);
         }
 
-        if (!globals->getProp("@nodeGroup", nodeGroup)) {
+        if (!globals->getProp("@nodeGroup", nodeGroup))
+        {
             nodeGroup.append(thorname);
             globals->setProp("@nodeGroup", thorname);
         }
-        bool processPerSlave = globals->getPropBool("@processPerSlave", true);
-        Owned<IGroup> rawGroup = getClusterGroup(thorname, "ThorCluster", processPerSlave);
         unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
-        if (processPerSlave)
-            setClusterGroup(queryMyNode(), rawGroup);
-        else
+        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
+        unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
+        Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
+        setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, channelsPerSlave, slaveBasePort, localThorPortInc);
+        if (globals->getPropBool("@replicateOutputs")&&globals->getPropBool("@validateDAFS",true)&&!checkClusterRelicateDAFS(queryNodeGroup()))
         {
-            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
-            unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
-            setClusterGroup(queryMyNode(), rawGroup, slavesPerNode, slaveBasePort, localThorPortInc);
-        }
-        if (globals->getPropBool("@replicateOutputs")&&globals->getPropBool("@validateDAFS",true)&&!checkClusterRelicateDAFS(rawGroup)) {
             FLLOG(MCoperatorError, thorJob, "ERROR: Validate failure(s) detected, exiting Thor");
             return globals->getPropBool("@validateDAFSretCode"); // default is no recycle!
         }
@@ -633,9 +665,9 @@ int main( int argc, char *argv[]  )
                     mmemSize = gmemSize; // default to same as slaves
             }
             unsigned perSlaveSize = gmemSize;
-            if (processPerSlave && slavesPerNode>1)
+            if (slavesPerNode>1)
             {
-                PROGLOG("Sharing globalMemorySize(%d MB), between %d slave. %d MB each", perSlaveSize, slavesPerNode, perSlaveSize / slavesPerNode);
+                PROGLOG("Sharing globalMemorySize(%d MB), between %d slave processes. %d MB each", perSlaveSize, slavesPerNode, perSlaveSize / slavesPerNode);
                 perSlaveSize /= slavesPerNode;
             }
             globals->setPropInt("@globalMemorySize", perSlaveSize);

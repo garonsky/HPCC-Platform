@@ -894,6 +894,8 @@ void EclSubGraph::doExecute(const byte * parentExtract, bool checkDependencies)
         return;
     }
 
+    if (startGraphTime == 0)
+        startGraphTime = getTimeStampNowValue();
     cycle_t startGraphCycles = get_cycles_now();
     ForEachItemIn(idx, elements)
     {
@@ -918,7 +920,7 @@ void EclSubGraph::doExecute(const byte * parentExtract, bool checkDependencies)
     ForEachItemIn(ie, sinks)
         sinks.item(ie).execute();
     ForEachItemIn(id, sinks)
-        sinks.item(id).done();
+        sinks.item(id).stop();
 
     elapsedGraphCycles += (get_cycles_now() - startGraphCycles);
     executed = true;
@@ -939,8 +941,6 @@ void EclSubGraph::execute(const byte * parentExtract)
         return;
     }
 
-    startGraphTime = getTimeStampNowValue();
-    cycle_t startGraphCycles = get_cycles_now();
     createActivities();
     if (debugContext)
         debugContext->checkBreakpoint(DebugStateGraphStart, NULL, parent.queryGraphName() );    //debug probes exist so we can now check breakpoints
@@ -950,7 +950,7 @@ void EclSubGraph::execute(const byte * parentExtract)
 
     if(!owner)
         PROGLOG("Completed subgraph %u", id);
-    if (!parent.queryLibrary())
+    if (!owner && !parent.queryLibrary())
     {
         updateProgress();
         cleanupActivities();
@@ -1226,7 +1226,7 @@ void EclGraph::abort()
             {
                 EclGraphElement & sink = graph.sinks.item(idx2);
                 if (sink.activity)
-                    sink.activity->done();
+                    sink.activity->stop();
             }
         }
     }

@@ -22,6 +22,7 @@
 #include "jcrc.hpp"
 #include "jsort.hpp"
 #include "jdebug.hpp"
+#include "jfile.hpp"
 #include "eclhelper.hpp"
 #include "thorhelper.hpp"
 #include "thorxmlwrite.hpp"
@@ -71,7 +72,7 @@ interface IRowInterfaces: extends IInterface
     virtual IOutputRowSerializer * queryRowSerializer()=0; 
     virtual IOutputRowDeserializer * queryRowDeserializer()=0; 
     virtual IOutputMetaData *queryRowMetaData()=0;
-    virtual unsigned queryActivityId()=0;
+    virtual unsigned queryActivityId() const=0;
     virtual ICodeContext *queryCodeContext()=0;
 };
 
@@ -101,6 +102,7 @@ interface IExtRowStream: extends IRowStream
     virtual const void *prefetchRow(size32_t *sz=NULL) = 0;
     virtual void prefetchDone() = 0;
     virtual void reinit(offset_t offset,offset_t len,unsigned __int64 maxrows) = 0;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) = 0;
 };
 
 interface IExtRowWriter: extends IRowWriter

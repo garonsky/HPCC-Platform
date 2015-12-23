@@ -173,8 +173,8 @@ static struct __initShiftArray {
 
 #define PUTCODE(code)                                       \
 {                                                            \
-  register unsigned inbits=code;                             \
-  register int shift=curShift;                               \
+  unsigned inbits=code;                                      \
+  int shift=curShift;                                        \
   int copyBits = dict.curbits - BITS_PER_UNIT;               \
                                                              \
   *(outbytes++) = (unsigned char)(inbits&0xff);              \
@@ -482,7 +482,7 @@ void CLZWExpander::expand(void *buf)
     unsigned char *outend = out+outlen;
     int oldcode ;
     GETCODE(oldcode);
-    register int ch=oldcode;
+    int ch=oldcode;
     *(out++)=(unsigned char)ch;
     while (out!=outend) {
         int newcode;
@@ -1827,9 +1827,9 @@ IRandRowExpander *createRandRDiffExpander()
 
 typedef enum { ICFcreate, ICFread, ICFappend } ICFmode;
 
-#define COMPRESSEDFILEFLAG (I64C(0xc0528ce99f10da55))
+static const __int64 COMPRESSEDFILEFLAG = I64C(0xc0528ce99f10da55);
 #define COMPRESSEDFILEBLOCKSIZE (0x10000)
-#define FASTCOMPRESSEDFILEFLAG (I64C(0xc1518de99f10da55))
+static const __int64 FASTCOMPRESSEDFILEFLAG = I64C(0xc1518de99f10da55);
 
 #pragma pack(push,1)
 
@@ -1840,7 +1840,7 @@ struct CompressedFileTrailer
     offset_t        indexPos;       // end of blocks
     size32_t        blockSize;
     size32_t        recordSize;     // 0 is lzw compressed
-    __int64         compressedType;
+    __int64        compressedType;
     unsigned        crc;                // must be last
     unsigned numBlocks() { return (unsigned)((indexPos+blockSize-1)/blockSize); }
     unsigned method()
@@ -1920,7 +1920,6 @@ class CCompressedFile : public CInterface, implements ICompressedFileIO
     CriticalSection crit;
     MemoryBuffer overflow;          // where partial row written
     MemoryAttr prevrowbuf; 
-    bool checkcrc;
     bool setcrc;
     bool writeException;
     Owned<ICompressor> compressor;
@@ -2233,6 +2232,11 @@ public:
             flush();
         }
         return ret;
+    }
+
+    virtual unsigned __int64 getStatistic(StatisticKind kind)
+    {
+        return fileio->getStatistic(kind);
     }
 
     void setSize(offset_t size) { UNIMPLEMENTED; }

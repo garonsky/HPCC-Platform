@@ -254,30 +254,6 @@ protected:
             unsigned __int64 value;
             collection.getStatistic(kind, value, i);
             formatStatistic(formattedValue.clear(), value, kind);
-
-                //Until 6.0 generate the backward compatible tag name
-            const char * legacyTreeTag = queryLegacyTreeTag(kind);
-            if (legacyTreeTag)
-            {
-                StatisticMeasure measure = queryMeasure(kind);
-                if (measure == SMeasureSkew)
-                {
-                    //Minimum stats were always output as +ve numbers
-                    if (queryStatsVariant(kind) == StSkewMin)
-                        value = -value;
-
-                    target->setPropInt64(legacyTreeTag, value/100);
-                }
-                else if (measure == SMeasureTimeNs)
-                {
-                    //Legacy timings are in ms => scale
-                    target->setPropInt64(legacyTreeTag, value/1000000);
-                }
-                else
-                    target->setProp(legacyTreeTag, formattedValue);
-            }
-
-            //Unconditionally output in the new format.
             target->setProp(queryTreeTag(kind), formattedValue);
         }
     }
@@ -1852,7 +1828,7 @@ public:
 
 extern WORKUNIT_API bool isSpecialResultSequence(unsigned sequence)
 {
-    switch (sequence)
+    switch ((int) sequence)
     {
     case ResultSequenceInternal:
     case ResultSequenceOnce:
@@ -2686,6 +2662,10 @@ public:
     {
         removeShutdownHook(*this);
     }
+    virtual bool initializeStore()
+    {
+        throwUnexpected(); // Used when loading a plugin factory - not applicable here
+    }
     virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const
     {
         return new CDaliWorkUnitWatcher(subscriber, options, wuid);
@@ -2896,9 +2876,12 @@ public:
         StringAttr namefilterlo;
         StringAttr namefilterhi;
         StringArray unknownAttributes;
-        if (filters) {
-            const char *fv = (const char *)filterbuf;
-            for (unsigned i=0;filters[i]!=WUSFterm;i++) {
+        if (filters)
+        {
+            const char *fv = (const char *) filterbuf;
+            for (unsigned i=0;filters[i]!=WUSFterm;i++)
+            {
+                assertex(fv);
                 int fmt = filters[i];
                 int subfmt = (fmt&0xff);
                 if (subfmt==WUSFwuid)
@@ -2909,17 +2892,21 @@ public:
                     namefilter.set(fv);
                 else if (subfmt==WUSFappvalue)
                 {
-                    query.append("[Application/").append(fv).append("=?~\"");
+                    const char *app = fv;
                     fv = fv + strlen(fv)+1;
-                    query.append(fv).append("\"]");
+                    query.append("[Application/").append(app);
+                    if (*fv)
+                        query.append("=?~\"").append(fv).append('\"');
+                    query.append("]");
                 }
-                else if (!fv || !*fv)
+                else if (!*fv)
                 {
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
                     if (subfmt==WUSFtotalthortime)
                         sortorder = (WUSortField) (sortorder | WUSFnumeric);
                 }
-                else {
+                else
+                {
                     query.append('[').append(getEnumText(subfmt,workunitSortFields)).append('=');
                     if (fmt&WUSFnocase)
                         query.append('?');
@@ -3082,7 +3069,6 @@ extern WORKUNIT_API IConstWorkUnitIterator *createSecureConstWUIterator(IPropert
 
 
 static CriticalSection factoryCrit;
-static Owned<ILoadedDllEntry> workunitServerPlugin;  // NOTE - unload AFTER the factory is released!
 static Owned<IWorkUnitFactory> factory;
 
 void CDaliWorkUnitFactory::clientShutdown()
@@ -3113,24 +3099,17 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
         {
             const char *forceEnv = getenv("FORCE_DALI_WORKUNITS");
             bool forceDali = forceEnv && !strieq(forceEnv, "off") && !strieq(forceEnv, "0");
-            Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/WorkUnitsServer", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-            // MORE - arguably should be looking in the config section that corresponds to the dali we connected to. If you want to allow some dalis to be configured to use a WU server and others not.
-            if (conn && !forceDali)
+            Owned<IRemoteConnection> env = querySDS().connect("/Environment", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+            IPropertyTree *pluginInfo = NULL;
+            if (env)
             {
-                const IPropertyTree *ptree = conn->queryRoot();
-                const char *pluginName = ptree->queryProp("@plugin");
-                if (!pluginName)
-                    throw makeStringException(WUERR_WorkunitPluginError, "WorkUnitsServer information missing plugin name");
-                workunitServerPlugin.setown(createDllEntry(pluginName, false, NULL));
-                if (!workunitServerPlugin)
-                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: failed to load plugin %s", pluginName);
-                WorkUnitFactoryFactory pf = (WorkUnitFactoryFactory) workunitServerPlugin->getEntry("createWorkUnitFactory");
-                if (!pf)
-                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: function createWorkUnitFactory not found in plugin %s", pluginName);
-                factory.setown(pf(ptree));
-                if (!factory)
-                    throw makeStringExceptionV(WUERR_WorkunitPluginError, "WorkUnitsServer: createWorkUnitFactory returned NULL in plugin %s", pluginName);
+                SocketEndpoint targetDali = queryCoven().queryGroup().queryNode(0).endpoint();
+                IPropertyTree *daliInfo = findDaliProcess(env->queryRoot(), targetDali);
+                if (daliInfo)
+                    pluginInfo = daliInfo->queryPropTree("Plugin[@type='WorkunitServer']");
             }
+            if (pluginInfo && !forceDali)
+                factory.setown( (IWorkUnitFactory *) loadPlugin(pluginInfo));
             else
                 factory.setown(new CDaliWorkUnitFactory());
         }
@@ -3149,6 +3128,10 @@ public:
     CSecureWorkUnitFactory(IWorkUnitFactory *_baseFactory, ISecManager *_secMgr, ISecUser *_secUser)
         : baseFactory(_baseFactory), defaultSecMgr(_secMgr), defaultSecUser(_secUser)
     {
+    }
+    virtual bool initializeStore()
+    {
+        throwUnexpected(); // Used when loading a plugin factory - not applicable here
     }
     virtual IWorkUnitWatcher *getWatcher(IWorkUnitSubscriber *subscriber, WUSubscribeOptions options, const char *wuid) const
     {
@@ -4293,6 +4276,7 @@ void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
 class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
 {
     StringAttr name;
+    StringAttr alias;
     StringAttr serverQueue;
     StringAttr agentQueue;
     StringAttr roxieProcess;
@@ -4311,8 +4295,8 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
 
 public:
     IMPLEMENT_IINTERFACE;
-    CEnvironmentClusterInfo(const char *_name, const char *_prefix, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
-        : name(_name), prefix(_prefix), roxieRedundancy(0), channelsPerNode(0), roxieReplicateOffset(1)
+    CEnvironmentClusterInfo(const char *_name, const char *_prefix, const char *_alias, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
+        : name(_name), prefix(_prefix), alias(_alias), roxieRedundancy(0), channelsPerNode(0), roxieReplicateOffset(1)
     {
         StringBuffer queue;
         if (thors.ordinality())
@@ -4336,7 +4320,9 @@ public:
                 unsigned nodes = thor.getCount("ThorSlaveProcess");
                 if (!nodes)
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: Thor cluster can not have 0 slave processes");
-                unsigned ts = nodes * thor.getPropInt("@slavesPerNode", 1);
+                unsigned slavesPerNode = thor.getPropInt("@slavesPerNode", 1);
+                unsigned channelsPerSlave = thor.getPropInt("@channelsPerSlave", 1);
+                unsigned ts = nodes * slavesPerNode * channelsPerSlave;
                 if (clusterWidth && (ts!=clusterWidth)) 
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: mismatched thor sizes in cluster");
                 clusterWidth = ts;
@@ -4396,6 +4382,10 @@ public:
     {
         str.set(name.get());
         return str;
+    }
+    const char *getAlias() const
+    {
+        return alias;
     }
     IStringVal & getScope(IStringVal & str) const
     {
@@ -4672,7 +4662,7 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
         }
     }
     const char *roxieName = cluster->queryProp("RoxieCluster/@process");
-    return new CEnvironmentClusterInfo(clustname, prefix, agent, thors, queryRoxieProcessTree(environment, roxieName));
+    return new CEnvironmentClusterInfo(clustname, prefix, cluster->queryProp("@alias"), agent, thors, queryRoxieProcessTree(environment, roxieName));
 }
 
 IPropertyTree* getTopologyCluster(Owned<IPropertyTree> &envRoot, const char *clustname)

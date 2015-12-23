@@ -2563,9 +2563,8 @@ void CMasterGraph::getFinalProgress()
         if (0 == msg.remaining())
             continue;
 
-        bool processPerSlave = globals->getPropBool("@processPerSlave", true);
-        unsigned slavesPerProcess = processPerSlave ? 1 : globals->getPropInt("@slavesPerNode", 1); // JCSMORE - should move somewhere common
-        for (unsigned sc=0; sc<slavesPerProcess; sc++)
+        unsigned channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1); // JCSMORE - should move somewhere common
+        for (unsigned sc=0; sc<channelsPerSlave; sc++)
         {
             unsigned slave;
             msg.read(slave);
@@ -2765,11 +2764,31 @@ IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowIn
 
 ///////////////////////////////////////////////////
 
+static bool suppressStatisticIfZero(StatisticKind kind)
+{
+    switch (kind)
+    {
+    case StNumSpills:
+    case StSizeSpillFile:
+    case StTimeSpillElapsed:
+        return true;
+    }
+    return false;
+}
+
+
+///////////////////////////////////////////////////
+
 CThorStats::CThorStats(StatisticKind _kind) : kind(_kind)
 {
     unsigned c = queryClusterWidth();
     while (c--) counts.append(0);
     reset();
+}
+
+void CThorStats::extract(unsigned node, const CRuntimeStatisticCollection & stats)
+{
+    set(node, stats.getStatisticValue(kind));
 }
 
 void CThorStats::set(unsigned node, unsigned __int64 count)
@@ -2829,6 +2848,9 @@ void CThorStats::processInfo()
 void CThorStats::getStats(IStatisticGatherer & stats, bool suppressMinMaxWhenEqual)
 {
     processInfo();
+    if ((0 == tot) && suppressStatisticIfZero(kind))
+        return;
+
     //MORE: For most measures (not time stamps etc.) it would be sensible to output the total here....
     if (!suppressMinMaxWhenEqual || (maxSkew != minSkew))
     {

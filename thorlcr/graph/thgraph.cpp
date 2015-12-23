@@ -429,6 +429,35 @@ IThorGraphIterator *CGraphElementBase::getAssociatedChildGraphs() const
     return new CGraphArrayIterator(associatedChildGraphs);
 }
 
+StringBuffer &CGraphElementBase::getOpt(const char *prop, StringBuffer &out) const
+{
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    if (!queryXGMML().getProp(path.toLowerCase().str(), out))
+        queryJob().getOpt(prop, out);
+    return out;
+}
+
+bool CGraphElementBase::getOptBool(const char *prop, bool defVal) const
+{
+    bool def = queryJob().getOptBool(prop, defVal);
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    return queryXGMML().getPropBool(path.toLowerCase().str(), def);
+}
+
+int CGraphElementBase::getOptInt(const char *prop, int defVal) const
+{
+    int def = queryJob().getOptInt(prop, defVal);
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    return queryXGMML().getPropInt(path.toLowerCase().str(), def);
+}
+
+__int64 CGraphElementBase::getOptInt64(const char *prop, __int64 defVal) const
+{
+    __int64 def = queryJob().getOptInt64(prop, defVal);
+    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
+    return queryXGMML().getPropInt64(path.toLowerCase().str(), def);
+}
+
 IThorGraphDependencyIterator *CGraphElementBase::getDependsIterator() const
 {
     return new ArrayIIteratorOf<const CGraphDependencyArray, CGraphDependency, IThorGraphDependencyIterator>(dependsOn);
@@ -2401,13 +2430,13 @@ public:
     {
         traceLevel = 1;
     }
-    virtual void CTXLOGva(const char *format, va_list args) const
+    virtual void CTXLOGva(const char *format, va_list args) const __attribute__((format(printf,2,0)))
     {
         StringBuffer ss;
         ss.valist_appendf(format, args);
         LOG(MCdebugProgress, thorJob, "%s", ss.str());
     }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0)))
     {
         StringBuffer ss;
         ss.append("ERROR");
@@ -2474,12 +2503,10 @@ void CJobBase::init()
     pausing = false;
     resumed = false;
 
-    bool crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", false));
-    bool usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", true));
-    unsigned memorySpillAt = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
-    thorAllocator.setown(createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator));
+    crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", false));
+    usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", true));
+    memorySpillAt = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
 
-    unsigned defaultMemMB = globalMemorySize*3/4;
     PROGLOG("Global memory size = %d MB, memory spill at = %d%%", globalMemorySize, memorySpillAt);
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
@@ -2498,10 +2525,6 @@ void CJobBase::beforeDispose()
 
 CJobBase::~CJobBase()
 {
-    thorAllocator->queryRowManager()->reportMemoryUsage(false);
-    PROGLOG("CJobBase resetting memory manager");
-    thorAllocator.clear();
-
     ::Release(userDesc);
     ::Release(pluginMap);
 
@@ -2672,14 +2695,9 @@ __int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
     return getWorkUnitValueInt(opt, globals->getPropInt64(gOpt, dft));
 }
 
-IEngineRowAllocator *CJobBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+IThorAllocator *CJobBase::createThorAllocator()
 {
-    return thorAllocator->getRowAllocator(meta, activityId, flags);
-}
-
-roxiemem::IRowManager *CJobBase::queryRowManager() const
-{
-    return thorAllocator->queryRowManager();
+    return ::createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator);
 }
 
 /// CJobChannel
@@ -2689,6 +2707,7 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
 {
     aborted = false;
     codeCtx = NULL;
+    thorAllocator.setown(job.createThorAllocator());
     timeReporter = createStdTimeReporter();
     jobComm.setown(mpServer->createCommunicator(&job.queryJobGroup()));
     myrank = job.queryJobGroup().rank(queryMyNode());
@@ -2697,6 +2716,9 @@ CJobChannel::CJobChannel(CJobBase &_job, IMPServer *_mpServer, unsigned _channel
 
 CJobChannel::~CJobChannel()
 {
+    queryRowManager().reportMemoryUsage(false);
+    PROGLOG("CJobBase resetting memory manager");
+    thorAllocator.clear();
     wait();
     clean();
     ::Release(codeCtx);
@@ -2730,6 +2752,17 @@ mptag_t CJobChannel::deserializeMPTag(MemoryBuffer &mb)
     }
     return tag;
 }
+
+IEngineRowAllocator *CJobChannel::getRowAllocator(IOutputMetaData * meta, activity_id activityId, roxiemem::RoxieHeapFlags flags) const
+{
+    return thorAllocator->getRowAllocator(meta, activityId, flags);
+}
+
+roxiemem::IRowManager &CJobChannel::queryRowManager() const
+{
+    return thorAllocator->queryRowManager();
+}
+
 
 static void noteDependency(CGraphElementBase *targetActivity, CGraphElementBase *sourceActivity, CGraphBase *targetGraph, CGraphBase *sourceGraph, unsigned controlId)
 {
@@ -3044,7 +3077,7 @@ IEngineRowAllocator * CActivityBase::queryRowAllocator()
 {
     if (CABallocatorlock.lock()) {
         if (!rowAllocator)
-            rowAllocator.setown(queryJob().getRowAllocator(queryRowMetaData(),queryActivityId()));
+            rowAllocator.setown(getRowAllocator(queryRowMetaData()));
         CABallocatorlock.unlock();
     }
     return rowAllocator;
@@ -3054,7 +3087,7 @@ IOutputRowSerializer * CActivityBase::queryRowSerializer()
 {
     if (CABserializerlock.lock()) {
         if (!rowSerializer)
-            rowSerializer.setown(queryRowMetaData()->createDiskSerializer(queryCodeContext(),queryActivityId()));
+            rowSerializer.setown(queryRowMetaData()->createDiskSerializer(queryCodeContext(),queryId()));
         CABserializerlock.unlock();
     }
     return rowSerializer;
@@ -3064,7 +3097,7 @@ IOutputRowDeserializer * CActivityBase::queryRowDeserializer()
 {
     if (CABdeserializerlock.lock()) {
         if (!rowDeserializer)
-            rowDeserializer.setown(queryRowMetaData()->createDiskDeserializer(queryCodeContext(),queryActivityId()));
+            rowDeserializer.setown(queryRowMetaData()->createDiskDeserializer(queryCodeContext(),queryId()));
         CABdeserializerlock.unlock();
     }
     return rowDeserializer;
@@ -3074,6 +3107,11 @@ IRowInterfaces *CActivityBase::getRowInterfaces()
 {
     // create an independent instance, to avoid circular link dependency problems
     return createRowInterfaces(queryRowMetaData(), container.queryId(), queryCodeContext());
+}
+
+IEngineRowAllocator *CActivityBase::getRowAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags) const
+{
+    return queryJobChannel().getRowAllocator(meta, queryId(), flags);
 }
 
 bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
@@ -3095,33 +3133,4 @@ void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
     cancelledReceive = true;
     if (receiving)
         queryJobChannel().queryJobComm().cancel(rank, mpTag);
-}
-
-StringBuffer &CActivityBase::getOpt(const char *prop, StringBuffer &out) const
-{
-    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    if (!container.queryXGMML().getProp(path.toLowerCase().str(), out))
-        queryJob().getOpt(prop, out);
-    return out;
-}
-
-bool CActivityBase::getOptBool(const char *prop, bool defVal) const
-{
-    bool def = queryJob().getOptBool(prop, defVal);
-    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropBool(path.toLowerCase().str(), def);
-}
-
-int CActivityBase::getOptInt(const char *prop, int defVal) const
-{
-    int def = queryJob().getOptInt(prop, defVal);
-    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropInt(path.toLowerCase().str(), def);
-}
-
-__int64 CActivityBase::getOptInt64(const char *prop, __int64 defVal) const
-{
-    __int64 def = queryJob().getOptInt64(prop, defVal);
-    VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropInt64(path.toLowerCase().str(), def);
 }

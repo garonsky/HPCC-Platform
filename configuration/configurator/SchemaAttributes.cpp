@@ -354,6 +354,17 @@ bool CAttribute::setEnvValueFromXML(const char *p)
             return false;
         }
 
+        for (int idx1 = 0; idx1 < this->m_ReverseKeyArray.length(); idx1++)
+        {
+            const CKey *pKey = static_cast<const CKey*>(this->m_ReverseKeyArray.item(idx1));
+
+            if (pKey->checkConstraint(this, p) == false)
+            {
+                this->setInstanceAsValid(false);
+                return false;
+            }
+        }
+
         /*if (this->getTypeNode()->getNodeType() == XSD_SIMPLE_TYPE)
         {
             const CSimpleType *pNodeSimpleType = dynamic_cast<const CSimpleType*>(this->getTypeNode());
@@ -415,6 +426,7 @@ CAttribute* CAttribute::load(CXSDNodeBase* pParentNode, const IPropertyTree *pSc
     CAttribute *pAttribute = new CAttribute(pParentNode);
 
     pAttribute->setXSDXPath(xpath);
+    CConfigSchemaHelper::getInstance()->getSchemaMapManager()->addMapOfXSDXPathToAttribute(xpath, pAttribute);
 
     Owned<IAttributeIterator> iterAttrib = pSchemaRoot->queryPropTree(xpath)->getAttributes(true);
 

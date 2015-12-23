@@ -97,7 +97,7 @@ void CSelector::populateEnvXPath(StringBuffer strXPath, unsigned int index)
 
 const char* CSelector::getXPath(bool bStripDotSlash) const
 {
-    if (bStripDotSlash && m_strEnvXPath.length() > 2 && m_strEnvXPath[0] == '.' && m_strEnvXPath[0] == '.')
+    if (bStripDotSlash && m_strXPath.length() > 2 && m_strXPath[0] == '.' && m_strXPath[0] == '.')
         return &(m_strXPath.str()[2]);
     else
         return m_strXPath.str();

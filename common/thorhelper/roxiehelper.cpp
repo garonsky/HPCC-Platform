@@ -33,16 +33,13 @@ unsigned traceLevel = 0;
 //OwnedRowArray
 void OwnedRowArray::clear()
 {
-    ForEachItemIn(idx, buff)
-        ReleaseRoxieRow(buff.item(idx));
+    roxiemem::ReleaseRoxieRowArray(buff.ordinality(), buff.getArray());
     buff.kill();
 }
 
 void OwnedRowArray::clearPart(aindex_t from, aindex_t to)
 {
-    aindex_t idx;
-    for(idx = from; idx < to; idx++)
-        ReleaseRoxieRow(buff.item(idx));
+    roxiemem::ReleaseRoxieRowRange(buff.getArray(), from, to);
     buff.removen(from, to-from);
 }
 
@@ -85,7 +82,7 @@ CRHRollingCache::~CRHRollingCache()
     }  
 }
 
-void CRHRollingCache::init(IInputBase *_in, unsigned _max)
+void CRHRollingCache::init(IRowStream *_in, unsigned _max)
 {
     max = _max;
     in =_in;
@@ -136,9 +133,9 @@ void CRHRollingCache::advance()
     if (!eos) {
         if (!e)
             e = new CRHRollingCacheElem();
-        const void * nextrec = in->nextInGroup();//get row from CRHCRHDualCache::cOut, which gets from CRHCRHDualCache, which gets from input
+        const void * nextrec = in->nextRow();//get row from CRHCRHDualCache::cOut, which gets from CRHCRHDualCache, which gets from input
         if (!nextrec)
-            nextrec = in->nextInGroup();
+            nextrec = in->nextRow();
         if (nextrec) {
             e->set(nextrec);
             cache.enqueue(e);
@@ -180,7 +177,7 @@ CRHDualCache::~CRHDualCache()
     }  
 }
 
-void CRHDualCache::init(IInputBase * _in)
+void CRHDualCache::init(IRowStream * _in)
 {
     in = _in;
     cache.clear();
@@ -223,9 +220,9 @@ bool CRHDualCache::get(unsigned n, CRHRollingCacheElem *&out)
     {
         if (!e)
             e = new CRHRollingCacheElem;
-        const void * nextrec = in->nextInGroup();   //get from activity
+        const void * nextrec = in->nextRow();   //get from activity
         if (!nextrec)
-            nextrec = in->nextInGroup();
+            nextrec = in->nextRow();
         if (!nextrec) {
             eos = true;
             break;
@@ -246,21 +243,6 @@ bool CRHDualCache::get(unsigned n, CRHRollingCacheElem *&out)
     return true;
 }
 
-size32_t CRHDualCache::getRecordSize(const void *ptr)
-{
-    return in->queryOutputMeta()->getRecordSize(ptr);
-}
-
-size32_t CRHDualCache::getFixedSize() const
-{
-    return in->queryOutputMeta()->getFixedSize();
-}
-
-size32_t CRHDualCache::getMinRecordSize() const
-{
-    return in->queryOutputMeta()->getMinRecordSize();
-}
-
 CRHDualCache::cOut::cOut(CRHDualCache *_parent, unsigned &_pos) 
 : pos(_pos)
 {
@@ -268,7 +250,7 @@ CRHDualCache::cOut::cOut(CRHDualCache *_parent, unsigned &_pos)
     stopped = false;
 }
 
-const void * CRHDualCache::cOut::nextInGroup()
+const void * CRHDualCache::cOut::nextRow()
 {
     CRHRollingCacheElem *e;
     if (stopped || !parent->get(pos,e))
@@ -276,11 +258,6 @@ const void * CRHDualCache::cOut::nextInGroup()
     LinkRoxieRow(e->row);
     pos++;
     return e->row;
-}
-
-IOutputMetaData * CRHDualCache::cOut::queryOutputMeta() const
-{
-    return parent->input()->queryOutputMeta();
 }
 
 void CRHDualCache::cOut::stop()
@@ -298,7 +275,7 @@ IRHLimitedCompareHelper *createRHLimitedCompareHelper()
 
 //CRHLimitedCompareHelper
 void CRHLimitedCompareHelper::init( unsigned _atmost,
-                                 IInputBase *_in,
+                                 IRowStream *_in,
                                  ICompare * _cmp,
                                  ICompare * _limitedcmp )
 {
@@ -417,25 +394,25 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
 //=========================================================================================
 
 // default implementations - can be overridden for efficiency...
-bool ISimpleInputBase::nextGroup(ConstPointerArray & group)
+bool IEngineRowStream::nextGroup(ConstPointerArray & group)
 {
     // MORE - this should be replaced with a version that reads to a builder
     const void * next;
-    while ((next = nextInGroup()) != NULL)
+    while ((next = nextRow()) != NULL)
         group.append(next);
     if (group.ordinality())
         return true;
     return false;
 }
 
-void ISimpleInputBase::readAll(RtlLinkedDatasetBuilder &builder)
+void IEngineRowStream::readAll(RtlLinkedDatasetBuilder &builder)
 {
     loop
     {
-        const void *nextrec = nextInGroup();
+        const void *nextrec = nextRow();
         if (!nextrec)
         {
-            nextrec = nextInGroup();
+            nextrec = nextRow();
             if (!nextrec)
                 break;
             builder.appendEOG();
@@ -454,16 +431,16 @@ using roxiemem::OwnedConstRoxieRow;
 class InputReaderBase  : public CInterfaceOf<IGroupedInput>
 {
 protected:
-    IInputBase *input;
+    IEngineRowStream *input;
 public:
-    InputReaderBase(IInputBase *_input)
+    InputReaderBase(IEngineRowStream *_input)
     : input(_input)
     {
     }
 
-    virtual IOutputMetaData * queryOutputMeta() const
+    virtual void stop()
     {
-        return input->queryOutputMeta();
+        input->stop();
     }
 };
 
@@ -476,7 +453,7 @@ protected:
     OwnedConstRoxieRow next;
     const ICompare *compare;
 public:
-    GroupedInputReader(IInputBase *_input, const ICompare *_compare)
+    GroupedInputReader(IEngineRowStream *_input, const ICompare *_compare)
     : InputReaderBase(_input), compare(_compare)
     {
         firstRead = false;
@@ -484,12 +461,12 @@ public:
         endGroupPending = false;
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (!firstRead)
         {
             firstRead = true;
-            next.setown(input->nextInGroup());
+            next.setown(input->nextRow());
         }
 
         if (eof || endGroupPending)
@@ -499,7 +476,7 @@ public:
         }
 
         OwnedConstRoxieRow prev(next.getClear());
-        next.setown(input->nextUngrouped());  // skip incoming grouping if present
+        next.setown(input->ungroupedNextRow());  // skip incoming grouping if present
 
         if (next)
         {
@@ -516,12 +493,12 @@ public:
 class DegroupedInputReader : public InputReaderBase
 {
 public:
-    DegroupedInputReader(IInputBase *_input) : InputReaderBase(_input)
+    DegroupedInputReader(IEngineRowStream *_input) : InputReaderBase(_input)
     {
     }
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
-        return input->nextUngrouped();
+        return input->ungroupedNextRow();
     }
 };
 
@@ -532,13 +509,13 @@ protected:
     Owned<ISortAlgorithm> sorter;
     bool firstRead;
 public:
-    SortedInputReader(IInputBase *_input, ISortAlgorithm *_sorter)
+    SortedInputReader(IEngineRowStream *_input, ISortAlgorithm *_sorter)
       : InputReaderBase(_input), degroupedInput(_input), sorter(_sorter), firstRead(false)
     {
         sorter->reset();
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (!firstRead)
         {
@@ -557,12 +534,12 @@ protected:
     OwnedConstRoxieRow next;
     const ICompare *compare;
 public:
-    SortedGroupedInputReader(IInputBase *_input, const ICompare *_compare, ISortAlgorithm *_sorter)
+    SortedGroupedInputReader(IEngineRowStream *_input, const ICompare *_compare, ISortAlgorithm *_sorter)
       : SortedInputReader(_input, _sorter), compare(_compare), eof(false), endGroupPending(false)
     {
     }
 
-    virtual const void *nextInGroup()
+    virtual const void *nextRow()
     {
         if (!firstRead)
         {
@@ -592,25 +569,25 @@ public:
     }
 };
 
-extern IGroupedInput *createGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare)
+extern IGroupedInput *createGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare)
 {
     dbgassertex(_input && _groupCompare);
     return new GroupedInputReader(_input, _groupCompare);
 }
 
-extern IGroupedInput *createDegroupedInputReader(IInputBase *_input)
+extern IGroupedInput *createDegroupedInputReader(IEngineRowStream *_input)
 {
     dbgassertex(_input);
     return new DegroupedInputReader(_input);
 }
 
-extern IGroupedInput *createSortedInputReader(IInputBase *_input, ISortAlgorithm *_sorter)
+extern IGroupedInput *createSortedInputReader(IEngineRowStream *_input, ISortAlgorithm *_sorter)
 {
     dbgassertex(_input && _sorter);
     return new SortedInputReader(_input, _sorter);
 }
 
-extern IGroupedInput *createSortedGroupedInputReader(IInputBase *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter)
+extern IGroupedInput *createSortedGroupedInputReader(IEngineRowStream *_input, const ICompare *_groupCompare, ISortAlgorithm *_sorter)
 {
     dbgassertex(_input && _groupCompare && _sorter);
     return new SortedGroupedInputReader(_input, _groupCompare, _sorter);
@@ -621,6 +598,8 @@ extern IGroupedInput *createSortedGroupedInputReader(IInputBase *_input, const I
 class CSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
 {
 public:
+    CSortAlgorithm() { elapsedCycles = 0; }
+
     virtual void getSortedGroup(ConstPointerArray & result)
     {
         loop
@@ -631,6 +610,17 @@ public:
             result.append(row);
         }
     }
+
+    virtual cycle_t getElapsedCycles(bool reset)
+    {
+        cycle_t ret = elapsedCycles;
+        if (reset)
+            elapsedCycles = 0;
+        return ret;
+    }
+
+protected:
+    cycle_t elapsedCycles;
 };
 
 class CInplaceSortAlgorithm : public CSortAlgorithm
@@ -655,8 +645,7 @@ public:
 
     virtual void reset()
     {
-        while (sorted.isItem(curIndex))
-            ReleaseRoxieRow(sorted.item(curIndex++));
+        roxiemem::ReleaseRoxieRowRange(sorted.getArray(), curIndex, sorted.ordinality());
         curIndex = 0;
         sorted.kill();
     }
@@ -672,11 +661,49 @@ class CQuickSortAlgorithm : public CInplaceSortAlgorithm
 public:
     CQuickSortAlgorithm(ICompare *_compare) : CInplaceSortAlgorithm(_compare) {}
 
-    virtual void prepare(IInputBase *input)
+    virtual void prepare(IEngineRowStream *input)
     {
         curIndex = 0;
         if (input->nextGroup(sorted))
+        {
+            cycle_t startCycles = get_cycles_now();
             qsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
+            elapsedCycles += (get_cycles_now() - startCycles);
+        }
+    }
+};
+
+class CParallelQuickSortAlgorithm : public CInplaceSortAlgorithm
+{
+public:
+    CParallelQuickSortAlgorithm(ICompare *_compare) : CInplaceSortAlgorithm(_compare) {}
+
+    virtual void prepare(IEngineRowStream *input)
+    {
+        curIndex = 0;
+        if (input->nextGroup(sorted))
+        {
+            cycle_t startCycles = get_cycles_now();
+            parqsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
+            elapsedCycles += (get_cycles_now() - startCycles);
+        }
+    }
+};
+
+class CTbbQuickSortAlgorithm : public CInplaceSortAlgorithm
+{
+public:
+    CTbbQuickSortAlgorithm(ICompare *_compare) : CInplaceSortAlgorithm(_compare) {}
+
+    virtual void prepare(IEngineRowStream *input)
+    {
+        curIndex = 0;
+        if (input->nextGroup(sorted))
+        {
+            cycle_t startCycles = get_cycles_now();
+            tbbqsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
+            elapsedCycles += (get_cycles_now() - startCycles);
+        }
     }
 };
 
@@ -687,7 +714,7 @@ public:
 
     virtual void sortRows(void * * rows, size_t numRows, void * * temp) = 0;
 
-    virtual void prepare(IInputBase *input)
+    virtual void prepare(IEngineRowStream *input)
     {
         curIndex = 0;
         if (input->nextGroup(sorted))
@@ -696,7 +723,9 @@ public:
             void **rows = const_cast<void * *>(sorted.getArray());
             MemoryAttr tempAttr(numRows*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
             void **temp = (void **) tempAttr.bufferBase();
+            cycle_t startCycles = get_cycles_now();
             sortRows(rows, numRows, temp);
+            elapsedCycles += (get_cycles_now() - startCycles);
         }
     }
 };
@@ -709,6 +738,17 @@ public:
     virtual void sortRows(void * * rows, size_t numRows, void * * temp)
     {
         qsortvecstableinplace(rows, numRows, *compare, temp);
+    }
+};
+
+class CParallelStableQuickSortAlgorithm : public CStableInplaceSortAlgorithm
+{
+public:
+    CParallelStableQuickSortAlgorithm(ICompare *_compare) : CStableInplaceSortAlgorithm(_compare) {}
+
+    virtual void sortRows(void * * rows, size_t numRows, void * * temp)
+    {
+        parqsortvecstableinplace(rows, numRows, *compare, temp);
     }
 };
 
@@ -734,6 +774,17 @@ public:
     }
 };
 
+class CTbbStableQuickSortAlgorithm : public CStableInplaceSortAlgorithm
+{
+public:
+    CTbbStableQuickSortAlgorithm(ICompare *_compare) : CStableInplaceSortAlgorithm(_compare) {}
+
+    virtual void sortRows(void * * rows, size_t numRows, void * * temp)
+    {
+        tbbqsortstable(rows, numRows, *compare, temp);
+    }
+};
+
 #define INSERTION_SORT_BLOCKSIZE 1024
 
 class SortedBlock : public CInterface, implements IInterface
@@ -756,8 +807,7 @@ public:
 
     ~SortedBlock()
     {
-        while (pos < length)
-            ReleaseRoxieRow(rows[pos++]);
+        roxiemem::ReleaseRoxieRowRange(rows, pos, length);
         ReleaseRoxieRow(rows);
     }
 
@@ -913,13 +963,13 @@ public:
         blockNo = 0;
     }
 
-    virtual void prepare(IInputBase *input)
+    virtual void prepare(IEngineRowStream *input)
     {
         blockNo = 0;
         curBlock = new SortedBlock(blockNo++, rowManager, activityId);
         loop
         {
-            const void *next = input->nextInGroup();
+            const void *next = input->nextRow();
             if (!next)
                 break;
             if (!curBlock->insert(next, compare))
@@ -1107,25 +1157,25 @@ public:
         eof = false;
         if (inputAlreadySorted)
         {
-            while (sorted.isItem(curIndex))
-                ReleaseRoxieRow(sorted.item(curIndex++));
+            roxiemem::ReleaseRoxieRowRange(sorted.getArray(), curIndex, sorted.ordinality());
             sorted.kill();
         }
         else
         {
             roxiemem::ReleaseRoxieRows(sorted);
         }
+        curIndex = 0;
         inputAlreadySorted = true;
         sequences.kill();
     }
 
-    virtual void prepare(IInputBase *input)
+    virtual void prepare(IEngineRowStream *input)
     {
         inputAlreadySorted = true;
         curIndex = 0;
         eof = false;
         assertex(sorted.ordinality()==0);
-        const void *next = input->nextInGroup();
+        const void *next = input->nextRow();
         if (!next)
         {
             eof = true;
@@ -1134,7 +1184,7 @@ public:
         loop
         {
             insertHeap(next);
-            next = input->nextInGroup();
+            next = input->nextRow();
             if (!next)
                 break;
         }
@@ -1192,11 +1242,11 @@ public:
 
     virtual void sortRows(void * * rows, size_t numRows, ICompare & compare, void * * stableTemp) = 0;
 
-    virtual void prepare(IInputBase *input)
+    virtual void prepare(IEngineRowStream *input)
     {
         loop
         {
-            const void * next = input->nextInGroup();
+            const void * next = input->nextRow();
             if (!next)
                 break;
             if (!rowsToSort.append(next))
@@ -1265,6 +1315,10 @@ public:
             return 20;
         return 10;
     }
+    virtual unsigned getActivityId() const
+    {
+        return activityId;
+    }
     virtual bool freeBufferedRows(bool critical)
     {
         roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
@@ -1277,6 +1331,7 @@ protected:
         unsigned numRows = rowsToSort.numCommitted();
         if (numRows)
         {
+            cycle_t startCycles = get_cycles_now();
             void ** rows = const_cast<void * *>(rowsToSort.getBlock(numRows));
             //MORE: Should this be parallel?  Should that be dependent on whether it is grouped?  Should be a hint.
             if (stable)
@@ -1287,6 +1342,7 @@ protected:
             }
             else
                 sortRows(rows, numRows, *compare, NULL);
+            elapsedCycles += (get_cycles_now() - startCycles);
         }
     }
     bool spillRows()
@@ -1367,9 +1423,29 @@ extern ISortAlgorithm *createQuickSortAlgorithm(ICompare *_compare)
     return new CQuickSortAlgorithm(_compare);
 }
 
+extern ISortAlgorithm *createParallelQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CParallelQuickSortAlgorithm(_compare);
+}
+
 extern ISortAlgorithm *createStableQuickSortAlgorithm(ICompare *_compare)
 {
     return new CStableQuickSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createParallelStableQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CParallelStableQuickSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createTbbQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CTbbQuickSortAlgorithm(_compare);
+}
+
+extern ISortAlgorithm *createTbbStableQuickSortAlgorithm(ICompare *_compare)
+{
+    return new CTbbStableQuickSortAlgorithm(_compare);
 }
 
 extern ISortAlgorithm *createInsertionSortAlgorithm(ICompare *_compare, roxiemem::IRowManager *_rowManager, unsigned _activityId)
@@ -1409,6 +1485,10 @@ extern ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm _algorithm, ICompa
         return createQuickSortAlgorithm(_compare);
     case stableQuickSortAlgorithm:
         return createStableQuickSortAlgorithm(_compare);
+    case parallelQuickSortAlgorithm:
+        return createParallelQuickSortAlgorithm(_compare);
+    case parallelStableQuickSortAlgorithm:
+        return createParallelStableQuickSortAlgorithm(_compare);
     case spillingQuickSortAlgorithm:
     case stableSpillingQuickSortAlgorithm:
         return createSpillingQuickSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, _algorithm==stableSpillingQuickSortAlgorithm);
@@ -1420,6 +1500,10 @@ extern ISortAlgorithm *createSortAlgorithm(RoxieSortAlgorithm _algorithm, ICompa
         return new CSpillingMergeSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, false);
     case spillingParallelMergeSortAlgorithm:
         return new CSpillingMergeSortAlgorithm(_compare, _rowManager, _rowMeta, _ctx, _tempDirectory, _activityId, true);
+    case tbbQuickSortAlgorithm:
+        return createTbbQuickSortAlgorithm(_compare);
+    case tbbStableQuickSortAlgorithm:
+        return createTbbStableQuickSortAlgorithm(_compare);
     default:
         break;
     }
@@ -2508,7 +2592,7 @@ class COrderedOutputSerializer : implements IOrderedOutputSerializer, public CIn
             }
             return closed;
         }
-        size32_t printf(const char *format, va_list args)
+        size32_t printf(const char *format, va_list args)  __attribute__((format(printf,2,0)))
         {
             if (closed)
                 throw MakeStringException(0, "Attempting to append to previously closed result in COrderedResult::printf");

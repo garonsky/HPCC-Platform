@@ -65,6 +65,10 @@ public:
     void removeMapOfXPathToAttribute(const char* pXPath);
     CAttribute* getAttributeFromXPath(const char* pXPath);
 
+    void addMapOfXSDXPathToAttribute(const char* pXPath, CAttribute *pAttribute);
+    void removeMapOfXSDXPathToAttribute(const char* pXPath);
+    CAttribute* getAttributeFromXSDXPath(const char* pXPath);
+
     void addMapOfXPathToRestriction(const char*pXPath, CRestriction *pRestriction);
     void removeMapOfXPathToRestriction(const char*pXPath);
     CRestriction* getRestrictionFromXPath(const char* pXPath);
@@ -109,7 +113,8 @@ protected:
     Owned<MapStringToCAttributeGroup> m_pAttributeGroupTypePtrsMap;
 
     typedef MapStringTo<CAttribute*> MapStringToCAttribute;
-    Owned<MapStringToCAttribute> m_pAttributePtrsMap;
+    Owned<MapStringToCAttribute> m_pAttributePtrsXPathMap;
+    Owned<MapStringToCAttribute> m_pAttributePtrsXSDXPathMap;
 
     typedef MapStringTo<CRestriction*> MapStringToCRestriction;
     Owned<MapStringToCRestriction> m_pRestrictionPtrsMap;

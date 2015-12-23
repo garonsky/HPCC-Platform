@@ -95,13 +95,12 @@ void disableThorSlaveAsDaliClient()
 
 class CJobListener : public CSimpleInterface
 {
-    bool stopped;
+    bool &stopped;
     CriticalSection crit;
     OwningStringSuperHashTableOf<CJobSlave> jobs;
     CFifoFileCache querySoCache; // used to mirror master cache
     IArrayOf<IMPServer> mpServers;
-    bool processPerSlave;
-    unsigned slavesPerNode;
+    unsigned channelsPerSlave;
 
     class CThreadExceptionCatcher : implements IExceptionHandler
     {
@@ -159,26 +158,21 @@ class CJobListener : public CSimpleInterface
     } excptHandler;
 
 public:
-    CJobListener() : excptHandler(*this)
+    CJobListener(bool &_stopped) : stopped(_stopped), excptHandler(*this)
     {
         stopped = true;
-        processPerSlave = globals->getPropBool("@processPerSlave", true);
-        slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+        channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
+        unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
         mpServers.append(* getMPServer());
-        if (!processPerSlave)
+        for (unsigned sc=1; sc<channelsPerSlave; sc++)
         {
-            unsigned port = getMachinePortBase();
-            unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", 200);
-            for (unsigned sc=1; sc<slavesPerNode; sc++)
-            {
-                port += localThorPortInc;
-                mpServers.append(*startNewMPServer(port));
-            }
+            unsigned port = getMachinePortBase() + (sc * localThorPortInc);
+            mpServers.append(*startNewMPServer(port));
         }
     }
     ~CJobListener()
     {
-        for (unsigned sc=1; sc<slavesPerNode; sc++)
+        for (unsigned sc=1; sc<channelsPerSlave; sc++)
             mpServers.item(sc).stop();
         mpServers.kill();
         stop();
@@ -189,7 +183,7 @@ public:
     }
     virtual void main()
     {
-        if (!processPerSlave)
+        if (channelsPerSlave>1)
         {
             class CVerifyThread : public CInterface, implements IThreaded
             {
@@ -216,7 +210,7 @@ public:
                 }
             };
             CIArrayOf<CInterface> verifyThreads;
-            for (unsigned c=0; c<slavesPerNode; c++)
+            for (unsigned c=0; c<channelsPerSlave; c++)
                 verifyThreads.append(*new CVerifyThread(*this, c));
         }
 
@@ -344,7 +338,7 @@ public:
 
                         Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath.str(), mptag, slaveMsgTag);
                         job->setXGMML(deps);
-                        for (unsigned sc=0; sc<mpServers.ordinality(); sc++)
+                        for (unsigned sc=0; sc<channelsPerSlave; sc++)
                             job->addChannel(&mpServers.item(sc));
                         jobs.replace(*job.getLink());
                         job->startJob();
@@ -479,8 +473,15 @@ public:
                     }
                     case Shutdown:
                     {
-                        doReply = false;
                         stopped = true;
+                        PROGLOG("Shutdown received");
+                        if (watchdog)
+                            watchdog->stop();
+                        mptag_t sdreplyTag;
+                        deserializeMPtag(msg, sdreplyTag);
+                        msg.setReplyTag(sdreplyTag);
+                        msg.clear();
+                        msg.append(false);
                         break;
                     }
                     case GraphGetResult:
@@ -509,6 +510,26 @@ public:
                                 sendInChunks(jobChannel.queryJobComm(), 0, replyTag, resultStream, result->queryRowInterfaces());
                             }
                         }
+                        break;
+                    }
+                    case DebugRequest:
+                    {
+                        StringAttr jobKey;
+                        msg.read(jobKey);
+                        CJobSlave *job = jobs.find(jobKey.get());
+                        if (job)
+                        {
+                            mptag_t replyTag = job->deserializeMPTag(msg);
+                            msg.setReplyTag(replyTag);
+                            StringAttr rawText;
+                            msg.read(rawText);
+                            PROGLOG("DebugRequest: %s %s", jobKey.get(), rawText.get());
+                            msg.clear();
+                            job->debugRequest(msg, rawText);
+                        }
+                        else
+                            PROGLOG("DebugRequest: %s - Job not found", jobKey.get());
+
                         break;
                     }
                     default:
@@ -730,7 +751,7 @@ public:
     virtual IFileInProgressHandler &queryFileInProgressHandler() { return *fipHandler.get(); }
 };
 
-void slaveMain()
+void slaveMain(bool &jobListenerStopped)
 {
     unsigned masterMemMB = globals->getPropInt("@masterTotalMem");
     HardwareInfo hdwInfo;
@@ -748,7 +769,7 @@ void slaveMain()
     }
     roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)gmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
-    CJobListener jobListener;
+    CJobListener jobListener(jobListenerStopped);
     CThorResourceSlave slaveResource;
     setIThorResource(slaveResource);
 

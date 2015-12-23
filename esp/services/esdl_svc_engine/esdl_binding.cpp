@@ -259,8 +259,22 @@ void EsdlServiceImpl::configureJavaMethod(const char *method, IPropertyTree &ent
     if (!javaServiceMap.getValue(javaScopedClass))
     {
         VStringBuffer classPathOption("classpath=%s", classPath);
-        Owned<IEmbedServiceContext> srvctx = ensureJavaEmbeded().createServiceContext(javaScopedClass, EFimport, classPathOption);
-        javaServiceMap.setValue(javaScopedClass, srvctx.getClear());
+        try
+        {
+            Owned<IEmbedServiceContext> srvctx = ensureJavaEmbeded().createServiceContext(javaScopedClass, EFimport, classPathOption);
+            if (srvctx)
+                javaServiceMap.setValue(javaScopedClass, srvctx.getClear());
+            else
+            {
+                //Log error, but try again next reload, in case the java class is fixed
+                DBGLOG("ESDL binding - failed to load java class %s for target method %s", javaScopedClass.str(), method);
+            }
+        }
+        catch (IException *E)
+        {
+            DBGLOG(E, "DynamicESDL-JavaMethod:");
+            E->Release();
+        }
     }
 }
 
@@ -1412,7 +1426,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
         text.appendf("Parsing xml error: %s.", exml.getMessage().c_str());
         ESPLOG(LogMax, "%s\n", text.str());
 
-        throw makeWsException(  ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "Esp", text.str() );
+        throw makeWsException(  ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "Esp", "%s", text.str() );
     }
     catch (IException *e)
     {
@@ -1424,7 +1438,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
         StringBuffer text;
         text.append( "EsdlBindingImpl could not process SOAP request" );
         ESPLOG(LogMax,"%s", text.str());
-        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP", text.str() );
+        throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP", "%s", text.str() );
     }
 
     return 0;

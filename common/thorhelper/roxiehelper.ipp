@@ -19,32 +19,28 @@
 #define ROXIEHELPER_IPP
 
 #include "thorhelper.hpp"
-#include "rtlds_imp.hpp"
+#include "roxiestream.hpp"
 #include "jlog.hpp"
 
 extern THORHELPER_API unsigned traceLevel;
-
-//---------------------------------------------------
-// Base classes for all Roxie/HThor activities
-//---------------------------------------------------
-struct THORHELPER_API ISimpleInputBase //base for IInputBase and IHThorSimpleInput
-{
-    virtual const void * nextInGroup() = 0;     // return NULL for eog/eof
-    virtual bool nextGroup(ConstPointerArray & group);      // note: default implementation can be overridden for efficiency...
-    virtual void readAll(RtlLinkedDatasetBuilder &builder); // note: default implementation can be overridden for efficiency...
-    inline const void * nextUngrouped()
-    {
-        const void * ret = nextInGroup();
-        if (!ret)
-            ret = nextInGroup();
-        return ret;
-    };
-};
-
 interface IOutputMetaData;
-struct IInputBase : public ISimpleInputBase  //base for IRoxieInput and IHThorInput
+interface IInputSteppingMeta;
+
+struct IInputBase : public IInterface //base for IRoxieInput and IHThorInput
 {
     virtual IOutputMetaData * queryOutputMeta() const = 0;
+    virtual IInputSteppingMeta * querySteppingMeta() { return NULL; }
+    virtual void resetEOF() = 0;
+
+    // These will need some thought
+    virtual IEngineRowStream &queryStream() = 0;
+    inline bool nextGroup(ConstPointerArray & group) { return queryStream().nextGroup(group); }
+    inline void readAll(RtlLinkedDatasetBuilder &builder) { return queryStream().readAll(builder); }
+    inline const void *nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra) { return queryStream().nextRowGE(seek, numFields, wasCompleteMatch, stepExtra); }
+    inline const void *nextRow() { return queryStream().nextRow(); }
+    inline void stop() { queryStream().stop(); }
+    inline const void *ungroupedNextRow() { return queryStream().ungroupedNextRow(); }
+
 };
 
 //---------------------------------------------------
@@ -76,14 +72,14 @@ interface IRoxieContextLogger : extends IContextLogger
 {
     // Override base interface with versions that add prefix
     // We could consider moving some or all of these down into IContextLogger
-    virtual void CTXLOGva(const char *format, va_list args) const
+    virtual void CTXLOGva(const char *format, va_list args) const  __attribute__((format(printf,2,0)))
     {
         StringBuffer text, prefix;
         getLogPrefix(prefix);
         text.valist_appendf(format, args);
         CTXLOGa(LOG_TRACING, prefix.str(), text.str());
     }
-    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const  __attribute__((format(printf,5,0)))
     {
         StringBuffer prefix;
         getLogPrefix(prefix);
@@ -103,13 +99,14 @@ interface IRoxieContextLogger : extends IContextLogger
 //===================================================================================
 
 //IRHLimitedCompareHelper copied from THOR ILimitedCompareHelper, and modified to get input from IHThorInput instead of IReadSeqVar
+// Can probably common back up now
 class OwnedRowArray;
 interface ICompare;
 interface IRHLimitedCompareHelper: public IInterface
 {
     virtual void init(
             unsigned atmost,
-            IInputBase *strm,
+            IRowStream *strm,
             ICompare *compare,
             ICompare *limcompare
         )=0;

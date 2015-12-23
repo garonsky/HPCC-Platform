@@ -46,16 +46,16 @@ CHThorSteppedInput::CHThorSteppedInput(IHThorInput * _input)
 
 const void * CHThorSteppedInput::nextInputRow()
 {
-    const void * ret = input->nextInGroup();
+    const void * ret = input->nextRow();
     if (!ret)
-        ret = input->nextInGroup();
+        ret = input->nextRow();
     return ret;
 }
 
 const void * CHThorSteppedInput::nextInputRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
 {
-    //Currently isCompleteMatch is not handled by hthor
-    return input->nextGE(seek, numFields);
+    //Currently isCompleteMatch is not properly handled by hthor
+    return input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 }
 
 IInputSteppingMeta * CHThorSteppedInput::queryInputSteppingMeta()
@@ -76,12 +76,12 @@ CHThorNaryActivity::CHThorNaryActivity(IAgentContext & _agent, unsigned _activit
 {
 }
 
-void CHThorNaryActivity::done()
+void CHThorNaryActivity::stop()
 {
     ForEachItemIn(i, expandedInputs)
-        expandedInputs.item(i)->done();
+        expandedInputs.item(i)->stop();
     expandedInputs.kill();
-    CHThorMultiInputActivity::done();
+    CHThorMultiInputActivity::stop();
 }
 
 void CHThorNaryActivity::ready()
@@ -126,13 +126,13 @@ CHThorNWayMergeActivity::~CHThorNWayMergeActivity()
     merger.cleanup();
 }
 
-void CHThorNWayMergeActivity::done()    
+void CHThorNWayMergeActivity::stop()    
 {
     merger.done();
-    CHThorNaryActivity::done();
+    CHThorNaryActivity::stop();
 }
 
-const void * CHThorNWayMergeActivity::nextInGroup()
+const void * CHThorNWayMergeActivity::nextRow()
 {
     const void * next = merger.nextRow();
     if (next)
@@ -163,9 +163,8 @@ IInputSteppingMeta * CHThorNWayMergeActivity::querySteppingMeta()
     return &meta;
 }
 
-const void * CHThorNWayMergeActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorNWayMergeActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
-    SmartStepExtra stepExtra(SSEFreadAhead, NULL);
     bool matched = true;
     const void * next = merger.nextRowGE(seek, numFields, matched, stepExtra);
     if (next)
@@ -180,10 +179,10 @@ CHThorMergeJoinBaseActivity::CHThorMergeJoinBaseActivity(IAgentContext & _agent,
 {
 }
 
-void CHThorMergeJoinBaseActivity::done()
+void CHThorMergeJoinBaseActivity::stop()
 {
     processor.afterProcessing();
-    CHThorNaryActivity::done();
+    CHThorNaryActivity::stop();
 }
 
 
@@ -215,17 +214,16 @@ IInputSteppingMeta * CHThorMergeJoinBaseActivity::querySteppingMeta()
     return processor.queryInputSteppingMeta();
 }
 
-const void * CHThorMergeJoinBaseActivity::nextInGroup()
+const void * CHThorMergeJoinBaseActivity::nextRow()
 {
-    const void * next = processor.nextInGroup();
+    const void * next = processor.nextRow();
     if (next)
         processed++;
     return next;
 }
 
-const void * CHThorMergeJoinBaseActivity::nextGE(const void * seek, unsigned numFields)
+const void * CHThorMergeJoinBaseActivity::nextRowGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra &stepExtra)
 {
-    SmartStepExtra stepExtra(SSEFreadAhead, NULL);
     bool matched = true;
     const void * next = processor.nextGE(seek, numFields, matched, stepExtra);
     if (next)
@@ -264,60 +262,6 @@ CHThorProximityJoinActivity::CHThorProximityJoinActivity(IAgentContext & _agent,
 
 
 //---------------------------------------------------------------------------
-
-#ifdef archived_old_code
-
-CHThorNWayJoinActivity::CHThorNWayJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator) : CHThorNaryActivity(_agent, _activityId, _subgraphId, _arg), helper(_arg), processor(_inputAllocator, _outputAllocator, _arg)
-{
-}
-
-void CHThorNWayJoinActivity::done()
-{
-    processor.afterProcessing();
-    CHThorNaryActivity::done();
-}
-
-void CHThorNWayJoinActivity::ready()
-{
-    CHThorNaryActivity::ready();
-
-    UnsignedArray inputValues;
-    ForEachItemIn(i1, expandedInputs)
-    {
-        IHThorInput * cur = expandedInputs.item(i1);
-        Owned<CHThorSteppedInput> stepInput = new CHThorSteppedInput(cur);
-        inputValues.append(processor.addInput(stepInput, cur->querySteppingMeta()));
-    }
-    processor.addJoin(helper, inputValues);
-    processor.beforeProcessing();
-}
-
-
-IInputSteppingMeta * CHThorNWayJoinActivity::querySteppingMeta() 
-{ 
-    return processor.querySteppingMeta();
-}
-
-const void * CHThorNWayJoinActivity::nextInGroup()
-{
-    const void * next = processor.nextInGroup();
-    if (next)
-        processed++;
-    return next;
-}
-
-const void * CHThorNWayJoinActivity::nextGE(const void * seek, unsigned numFields)
-{
-    const void * next = processor.nextGE(seek, numFields);
-    if (next)
-        processed++;
-    return next;
-}
-
-#endif
-
-//---------------------------------------------------------------------------
-
 
 extern HTHOR_API IHThorActivity *createNWayMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind)
 {
