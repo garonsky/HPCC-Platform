@@ -100,7 +100,19 @@
                     </xsl:call-template>
                 </xsl:if>
             </xsl:for-each>
-            
+
+            <xsl:for-each select="SecurityManager">
+                <xsl:if test="../Authentication/@method='secmgr'">
+                    <xsl:variable name="instanceName" select="@type"/>
+                    <xsl:copy>
+                        <xsl:apply-templates select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']"/>
+                    </xsl:copy>
+                    <xsl:copy>
+                        <xsl:apply-templates select="@*"/>
+                    </xsl:copy>
+               </xsl:if>
+            </xsl:for-each>
+
             <xsl:variable name="maxRequestEntityLength">
                 <xsl:choose>
                     <xsl:when test="EspBinding[1]">
@@ -372,7 +384,7 @@
             <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$htpasswdFile"/> </xsl:attribute>
         </xsl:element>
     </xsl:template>
-    
+
     <xsl:template name="doAccurintSecurity">
         <xsl:param name="method"/>
         <xsl:param name="accurintSecurity"/>
@@ -590,5 +602,5 @@
             <xsl:apply-templates select="@*|*|text()" mode="processImportedServiceDefinitions"/>
          </xsl:copy>
      </xsl:template>
-        
+
 </xsl:stylesheet>
