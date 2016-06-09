@@ -503,6 +503,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
 {
     for(int i = 0; i < RT_SCOPE_MAX; i++)
         m_cache_off[i] = false;
+    m_cache_off[RT_VIEW_SCOPE] = true;
     
     m_usercache_off = false;
 
@@ -604,7 +605,196 @@ bool CLdapSecManager::authenticate(ISecUser* user)
 
         user->setAuthenticateStatus(AS_AUTHENTICATED);
     }
+//@@TEMP TEST CODE
+    int x = 0;
+    if (x)
+    {
+        StringArray foo1, foo2;
+        const char * p1, * p2;
+        bool bExists;
+        PROGLOG("HERE WE GO");
 
+        //-----------------------
+        //VIEW MANAGEMENT TESTS
+        //-----------------------
+#define DV() {foo1.clear();foo2.clear();queryAllViews(foo1, foo2); for (int x=0; x<foo1.ordinality(); x++)PROGLOG("%x %s : %s",x, foo1.item(x), foo2.item(x));}
+#define DVM(s) {foo1.clear();foo2.clear();queryViewMembers(s, foo1, foo2);for (int x=0; x<foo1.ordinality(); x++)PROGLOG("MEMBER %x %s",x, foo1.item(x));}
+#define QVC(s) {foo1.clear();foo2.clear();queryViewColumns(s, foo1, foo2);for (int x=0; x<foo1.ordinality(); x++)PROGLOG("%x %s %s",x, foo1.item(x), foo2.item(x));}
+        try
+        {
+        	DV();
+        	createView("View1", "Russ's smokin' view");
+        	DV();
+        	createView("View1", "Russ's smokin' view");//create existing view
+        	DV();
+        	deleteView("View1");
+        	DV();
+        	deleteView("View1");//delete nonexistent view
+        	DV();
+        	createView("View1", "1");
+        	createView("View2", "2");
+        	createView("View3", "3");
+        	DV();
+        	deleteView("View2");
+        	DV();
+        	deleteView("View3");
+        	DV();
+        	deleteView("View1");
+        	DV();
+        }
+        catch(IException* e)
+        {
+        	StringBuffer description;
+        	ERRLOG("%s", e->errorMessage(description).str());
+        	e->Release();
+        	return -1;
+        }
+
+        //-------------------
+        //VIEW MEMBER TESTS
+        //-------------------
+        try
+        {
+        	createView("View1", "Russ's smokin' view");
+        	DVM("View1");
+
+        	foo1.clear();foo2.clear();
+        	foo1.append("TheAdmin");
+        	addViewMembers("View1", foo1, foo2);
+        	DVM("View1");
+
+        	foo1.clear();foo2.clear();
+        	foo1.append("TheAdmin");//existing member
+        	addViewMembers("View1", foo1, foo2);
+        	DVM("View1");
+
+        	foo1.clear();foo2.clear();
+        	foo1.append("BigBob");
+        	addViewMembers("View1", foo1, foo2);//not a valid user
+        	DVM("View1");
+
+        	foo1.clear();foo2.clear();
+        	foo1.append("TheAdmin");
+        	addViewMembers("ViewWXYZ", foo1, foo2);//not a valid view
+        	DVM("View1");
+
+        	foo1.clear();foo2.clear();
+        	foo1.append("wwhitehead");//existing user
+        	foo1.append("rpastrana");//existing user
+        	addViewMembers("View1", foo1, foo2);
+        	DVM("View1");//3 members
+        	bExists = userInView("wwhitehead", "View1");
+        	assertex(bExists);
+        	bExists = userInView("rpastrana", "View1");
+        	assertex(bExists);
+        	bExists = userInView("TheAdmin", "View1");
+        	assertex(bExists);
+
+        	foo1.clear();foo2.clear();
+        	foo1.append("wwhitehead");//existing user
+        	foo1.append("rpastrana");//existing user
+        	removeViewMembers("View1", foo1, foo2);
+        	DVM("View1");//only TheAdmin should remain
+        	bExists = userInView("wwhitehead", "View1");
+        	assertex(!bExists);
+        	bExists = userInView("rpastrana", "View1");
+        	assertex(!bExists);
+        	bExists = userInView("TheAdmin", "View1");
+        	assertex(bExists);
+        	bExists = userInView("NotAUser", "View1");
+        	assertex(!bExists);
+
+        	bExists = userInView("TheAdmin", "ViewWXYZ");//not a valid view
+        	assertex(!bExists);
+        	bExists = userInView("TheAdminWXYZ", "View1");//not a valid user
+        	assertex(!bExists);
+
+        	deleteView("View1");
+        }
+        catch(IException* e)
+        {
+        	StringBuffer description;
+        	ERRLOG("%s", e->errorMessage(description).str());
+        	e->Release();
+        	return -1;
+        }
+
+        //-------------------
+        //VIEW lfn/column TESTS
+        //-------------------
+        try
+        {
+        	QVC("View1");
+        	createView("View1", "Russ's smokin' view");
+        	QVC("View1");
+
+           	foo1.clear();foo2.clear();
+            foo1.append("MyLFN1");
+            foo2.append("MyCol1");
+           	addViewColumns("ViewWXYZ", foo1, foo2);//not a view
+           	removeViewColumns("ViewWXYZ", foo1, foo2);//not a view
+           	QVC("ViewWXYZ");//not a view
+
+           	foo1.clear();foo2.clear();
+            foo1.append("MyLFN1");
+            foo2.append("MyCol1");
+           	addViewColumns("View1", foo1, foo2);
+           	QVC("View1");
+
+           	foo1.clear();foo2.clear();
+            foo1.append("MyLFN2");
+            foo2.append("MyCol2");
+            foo1.append("MyLFN3");
+            foo2.append("MyCol3");
+           	addViewColumns("View1", foo1, foo2);
+           	QVC("View1");
+
+           	foo1.clear();foo2.clear();
+            foo1.append("MyLFN1");
+            foo2.append("MyCol1");
+           	removeViewColumns("View1", foo1, foo2);
+           	QVC("View1");
+
+           	foo1.clear();foo2.clear();
+            foo1.append("MyLFN2");
+            foo2.append("MyCol2");
+            foo1.append("MyLFN3");
+            foo2.append("MyCol3");
+            removeViewColumns("View1", foo1, foo2);
+           	QVC("View1");
+
+           	deleteView("View1");
+        }
+        catch(IException* e)
+        {
+        	StringBuffer description;
+        	ERRLOG("%s", e->errorMessage(description).str());
+        	e->Release();
+        	return -1;
+        }
+
+
+
+        //Create resource list for each Logical File and columns combos
+        Owned<ISecResourceList> resList;
+        resList.setown(createResourceList("MyView"));//View Name
+
+        ISecResource* res = resList->addResource("MyView");
+        res->addParameter("file", "MyLFN1111");
+        res->addParameter("column", "MyCol1");
+        res->setResourceType(RT_VIEW_SCOPE);
+        LINK(res);
+
+        res = resList->addResource("MyView2");
+        res->addParameter("file", "MyLFN2");
+        res->addParameter("column", "MyCol2");
+        res->setResourceType(RT_VIEW_SCOPE);
+        LINK(res);
+
+        bool res2 = authorizeViewScope(*user, resList.get());
+        PROGLOG("RES = %s", res2 ? "OKAY" : "BAD");
+    }
+//@@END TEST CODE
     return ok;
 }
 
@@ -662,7 +852,7 @@ bool CLdapSecManager::authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISe
     }
     else
     {
-        rc = m_ldap_client->authorize(rtype, sec_user, rlist);
+        rc = m_ldap_client->authorize(rtype, sec_user, rlist, reslist->getName());
     }
     return rc;
 }
@@ -858,10 +1048,32 @@ int CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope)
     else
         return -1;
 }
-    
+
 bool CLdapSecManager::authorizeFileScope(ISecUser & user, ISecResourceList * resources)
 {
     return authorizeEx(RT_FILE_SCOPE, user, resources);
+}
+
+//METHOD: authorizeViewScope()
+//For all lfn/column resources in the given ISecResourceList, retrieve
+//perms and set them in their respective ISecResource entry.
+//Each ISecResource must have 2 parameters set, "file" and "column"
+
+/*following to be done by caller
+    //Create resource list for each Logical File and columns combos
+    Owned<ISecResourceList> resList;//Each list must contain a single view name. Do not combine
+    resList.setown(createResourceList("ViewName"));//identifies the view name
+    for(int idx = 0; idx < arrColumns.length(); idx++)
+    {
+        ISecResource* res = resList->addResource("file : col");//name must be unique within the list (map)
+        res->addParameter("file", lfn );
+        res->addParameter("column", arrColumns.item(idx) );
+        res->setResourceType(RT_VIEW_SCOPE);
+    }
+*/
+bool CLdapSecManager::authorizeViewScope(ISecUser & user, ISecResourceList * resources)
+{
+    return authorizeEx(RT_VIEW_SCOPE, user, resources);
 }
 
 int CLdapSecManager::authorizeWorkunitScope(ISecUser & user, const char * wuscope)
@@ -1313,6 +1525,57 @@ bool CLdapSecManager::authenticateUser(ISecUser & user, bool &superUser)
         return false;
     superUser = isSuperUser(&user);
     return true;
+}
+
+//Data View related interfaces
+void CLdapSecManager::createView(const char* viewName, const char * viewDescription)
+{
+    m_ldap_client->createView(viewName, viewDescription);
+}
+
+void CLdapSecManager::deleteView(const char* viewName)
+{
+    m_ldap_client->deleteView(viewName);
+}
+
+void CLdapSecManager::queryAllViews(StringArray & viewNames, StringArray & viewDescriptions)
+{
+    m_ldap_client->queryAllViews(viewNames, viewDescriptions);
+}
+
+void CLdapSecManager::addViewColumns(const char* viewName, StringArray & files, StringArray & columns)
+{
+    m_ldap_client->addViewColumns(viewName, files, columns);
+}
+
+void CLdapSecManager::removeViewColumns(const char* viewName, StringArray & files, StringArray & columns)
+{
+    m_ldap_client->removeViewColumns(viewName, files, columns);
+}
+
+void CLdapSecManager::queryViewColumns(const char* viewName, StringArray & files, StringArray & columns)
+{
+    m_ldap_client->queryViewColumns(viewName, files, columns);
+}
+
+void CLdapSecManager::addViewMembers(const char* viewName, StringArray & viewUsers, StringArray & viewGroups)
+{
+    m_ldap_client->addViewMembers(viewName, viewUsers, viewGroups);
+}
+
+void CLdapSecManager::removeViewMembers(const char* viewName, StringArray & viewUsers, StringArray & viewGroups)
+{
+    m_ldap_client->removeViewMembers(viewName, viewUsers, viewGroups);
+}
+
+void CLdapSecManager::queryViewMembers(const char* viewName, StringArray & viewUsers, StringArray & viewGroups)
+{
+    m_ldap_client->queryViewMembers(viewName, viewUsers, viewGroups);
+}
+
+bool CLdapSecManager::userInView(const char * user, const char* viewName)
+{
+    return m_ldap_client->userInView(user, viewName);
 }
 
 extern "C"
