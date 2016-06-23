@@ -158,6 +158,11 @@ if(APPLE OR WIN32)
     HPCC_ADD_SUBDIRECTORY(lib2)
 endif(APPLE OR WIN32)
 
+if ( MAKE_CONFIGURATOR )
+    MESSAGE( "Configurator app build ON" )
+    HPCC_ADD_SUBDIRECTORY (configuration)
+endif()
+
 ###
 ## CPack install and packaging setup.
 ###

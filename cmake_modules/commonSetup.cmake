@@ -112,6 +112,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(KAFKA "Create a package with ONLY the kafkaembed plugin" OFF)
   #"cmake -DEXAMPLEPLUGIN=ON <path-to/HPCC-Platform/>" will configure the plugin makefiles to be built with "make".
   option(EXAMPLEPLUGIN "Create a package with ONLY the exampleplugin plugin" OFF)
+  option(MAKE_CONFIGURATOR "Build Configurator" ON)
+  option(CONFIGURATOR_LIB "Build Configurator static library (.a)" OFF)
+
+  if ( CONFIGURATOR_LIB )
+        set( MAKE_CONFIGURATOR ON )
+  endif()
 
   if (APPLE OR WIN32)
       option(USE_TBB "Enable Threading Building Block support" OFF)

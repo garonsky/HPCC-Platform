@@ -1,0 +1,162 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2015 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+ESPRequest SetValueRequest
+{
+    string  XPath;
+    string  Value;
+};
+
+ESPRequest GetValueRequest
+{
+    string  XPath;
+};
+
+ESPRequest GetNumberOfRowsRequest
+{
+    string  XPath;
+};
+
+ESPResponse GetNumberOfRowsResponse
+{
+    int Rows;
+};
+
+ESPRequest SetTableValueRequest
+{
+    string  XPath;
+    string  Value;
+    int     Row;
+};
+
+ESPRequest GetTableValueRequest
+{
+    string  XPath;
+    int     Row;
+};
+
+ESPResponse [exceptions_inline, encode(0)] SetValueResponse
+{
+    string Empty;
+};
+
+ESPResponse [exceptions_inline, encode(0)] SetTableValueResponse
+{
+    string Empty;
+};
+
+ESPResponse [exceptions_inline, encode(0)] GetValueResponse
+{
+    string Value;
+};
+
+ESPResponse [exceptions_inline, encode(0)] GetTableValueResponse
+{
+    string Value;
+};
+
+ESPRequest OpenConfigurationFileRequest
+{
+   string FilePath;
+};
+
+ESPResponse [exceptions_inline, encode(0)]  OpenConfigurationFileResponse
+{
+   int code;
+};
+
+ESPRequest GetJSONForComponentRequest
+{
+   [json_inline(1)] string ComponentName;
+};
+
+ESPResponse GetJSONForComponentResponse
+{
+   [json_inline(1)] string JSON;
+};
+
+ESPRequest GetNumberOfAvailableComponentsRequest
+{
+   string Empty;
+};
+
+ESPResponse GetNumberOfAvailableComponentsResponse
+{
+   int Number;
+};
+
+ESPRequest GetComponentNameRequest
+{
+   int Number;
+};
+
+ESPResponse GetComponentNameResponse
+{
+   string ComponentName;
+};
+
+ESPRequest GetNavigatorJSONRequest
+{
+   string Empty;
+};
+
+ESPResponse GetNavigatorJSONResponse
+{
+   [json_inline(1)] string JSON;
+};
+
+ESPRequest SaveConfigurationFileAsRequest
+{
+   string FilePath;
+};
+
+ESPRequest SaveConfigurationFileRequest
+{
+   string Empty;
+};
+
+ESPResponse [exceptions_inline, encode(0)]  SaveConfigurationFileResponse
+{
+   int code;
+};
+
+ESPResponse [exceptions_inline, encode(0)]  SaveConfigurationFileAsResponse
+{
+   int code;
+};
+
+
+
+ESPservice [version("2.0"), default_client_version("2.0"), exceptions_inline("xslt/exceptions.xslt")] ws_configurator
+{
+    ESPMethod getValue(GetValueRequest, GetValueResponse);
+    ESPMethod setValue(SetValueRequest, SetValueResponse);
+    ESPMethod getTableValue(GetTableValueRequest, GetTableValueResponse);
+    ESPMethod setTableValue(SetTableValueRequest, SetTableValueResponse);
+    ESPMethod getNumberOfRows(GetNumberOfRowsRequest, GetNumberOfRowsResponse);
+    ESPMethod openConfigurationFile(OpenConfigurationFileRequest, OpenConfigurationFileResponse);
+    ESPMethod saveConfigurationFile(SaveConfigurationFileRequest, SaveConfigurationFileResponse);
+    ESPMethod saveConfigurationFileAs(SaveConfigurationFileAsRequest, SaveConfigurationFileAsResponse);
+    ESPMethod getJSONForComponent(GetJSONForComponentRequest, GetJSONForComponentResponse);
+    ESPMethod getNumberOfAvailableComponents(GetNumberOfAvailableComponentsRequest, GetNumberOfAvailableComponentsResponse);
+    ESPMethod getComponentName(GetComponentNameRequest, GetComponentNameResponse);
+    ESPMethod getNavigatorJSON(GetNavigatorJSONRequest, GetNavigatorJSONResponse);
+};
+
+SCMexportdef(ws_configurator);
+
+SCMapi(ws_configurator) IClientws_configurator *createws_configuratorClient();
