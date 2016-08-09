@@ -17,9 +17,9 @@
 
 
 EXPORT randomplugin := SERVICE : plugin('randomlib'), namespace('nsRandomLib')
-  UNSIGNED4 nextUniformRandom(CONST VARSTRING engine, UNSIGNED4 lower_bound, UNSIGNED4 upper_bound) : cpp,pure,action,entrypoint='prGetNextPseudoRandomNumberUniformDistribution';
-  UNSIGNED4 nextBinomialRandom(CONST VARSTRING engine, CONST REAL8 probability, UNSIGNED4 upper_bound) : cpp,pure,action,entrypoint='prGetNextPseudoRandomNumberBinomialDistribution';
-  UNSIGNED4 nextNegativeBinomialRandom(CONST VARSTRING engine, CONST REAL8 probability, UNSIGNED4 upper_bound) : cpp,pure,action,entrypoint='prGetNextPseudoRandomNumberNegativeBinomialDistribution';
-  UNSIGNED4 nextGeometricRandom(CONST VARSTRING engine, CONST REAL8 probability) : cpp,pure,action,entrypoint='prGetNextPseudoRandomNumberGeometricDistribution';
-  UNSIGNED4 nextPoissonRandom(CONST VARSTRING engine, CONST REAL8 mean) : cpp,pure,action,entrypoint='prGetNextPseudoRandomNumberPoissonDistribution';
+  UNSIGNED4 nextUniformRandom(CONST VARSTRING engine, UNSIGNED4 lower_bound, UNSIGNED4 upper_bound) : cpp,entrypoint='prGetNextPseudoRandomNumberUniformDistribution';
+  UNSIGNED4 nextBinomialRandom(CONST VARSTRING engine, CONST REAL8 probability, UNSIGNED4 upper_bound) : cpp,entrypoint='prGetNextPseudoRandomNumberBinomialDistribution';
+  UNSIGNED4 nextNegativeBinomialRandom(CONST VARSTRING engine, CONST REAL8 probability, UNSIGNED4 upper_bound) : cpp,entrypoint='prGetNextPseudoRandomNumberNegativeBinomialDistribution';
+  UNSIGNED4 nextGeometricRandom(CONST VARSTRING engine, CONST REAL8 probability) : cpp,entrypoint='prGetNextPseudoRandomNumberGeometricDistribution';
+  UNSIGNED4 nextPoissonRandom(CONST VARSTRING engine, CONST REAL8 mean) : cpp,entrypoint='prGetNextPseudoRandomNumberPoissonDistribution';
 END;

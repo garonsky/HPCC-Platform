@@ -32,16 +32,8 @@ static const char * EclDefinition =
 
 "END;";
 
-RANDOMLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
+RANDOMLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
-    //  Warning:    This function may be called without the plugin being loaded fully.  
-    //              It should not make any library calls or assume that dependent modules
-    //              have been loaded or that it has been initialised.
-    //
-    //              Specifically:  "The system does not call DllMain for process and thread 
-    //              initialization and termination.  Also, the system does not load 
-    //              additional executable modules that are referenced by the specified module."
-
     if (pb->size != sizeof(ECLPluginDefinitionBlock))
         return false;
 
@@ -49,7 +41,6 @@ RANDOMLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->version = RANDOMLIB_VERSION " $Revision: 62376 $";
     pb->moduleName = "lib_randomlib";
     pb->ECL = EclDefinition;
-    //pb->Hole = HoleDefinition;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
     pb->description = "RandomLib random services library";
     return true;
