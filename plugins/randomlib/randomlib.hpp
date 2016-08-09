@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "jutil.hpp"
 #ifndef RANDOMLIB_INCL
 #define RANDOMLIB_INCL
 
@@ -33,15 +32,18 @@
 
 #include "hqlplugins.hpp"
 
-
 extern "C" {
 RANDOMLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
 RANDOMLIB_API void setPluginContext(IPluginContext * _ctx);
-RANDOMLIB_API unsigned RANDOMLIB_CALL prGetNextPseudoRandomNumberUniformDistribution(enum IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine engine, unsigned lower_bound, unsigned upper_bound);
-//RANDOMLIB_API unsigned RANDOMLIB_CALL getNextPseudoRandomNumberBinomialDistribution(enum ePseudoRandomNumberEngine engine, double probability, unsigned int upper_bound);
-//RANDOMLIB_API unsigned RANDOMLIB_CALL getNextPseudoRandomNumberNegativeBinomialDistribution(enum ePseudoRandomNumberEngine engine, double probability, unsigned int upper_bound);
-//RANDOMLIB_API unsigned RANDOMLIB_CALL getNextPseudoRandomNumberGeometricDistribution(enum ePseudoRandomNumberEngine engine,double probability);
-//RANDOMLIB_API unsigned RANDOMLIB_CALL getNextPseudoRandomNumberPoissonDistribution(enum ePseudoRandomNumberEngine engine, double mean);
+}
+
+extern "C++"
+{
+RANDOMLIB_API unsigned RANDOMLIB_CALL prGetNextPseudoRandomNumberUniformDistribution(const char *engine, unsigned lower_bound, unsigned upper_bound);
+RANDOMLIB_API unsigned RANDOMLIB_CALL prGetNextPseudoRandomNumberBinomialDistribution(const char *engine, const double probability, unsigned upper_bound);
+RANDOMLIB_API unsigned RANDOMLIB_CALL prGetNextPseudoRandomNumberNegativeBinomialDistribution(const char *engine, const double probability, unsigned upper_bound);
+RANDOMLIB_API unsigned RANDOMLIB_CALL prGetNextPseudoRandomNumberGeometricDistribution(const char *engine, const double probability);
+RANDOMLIB_API unsigned RANDOMLIB_CALL prGetNextPseudoRandomNumberPoissonDistribution(const char *engine, const double mean);
 }
 
 #endif
