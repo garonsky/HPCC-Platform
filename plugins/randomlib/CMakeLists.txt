@@ -31,29 +31,14 @@ set (    SRCS
 include_directories ( 
          ./../../system/include 
          ./../../system/jlib
-	./../../rtl/include
     )
 
 ADD_DEFINITIONS ( -DRANDOMLIB_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( randomlib SHARED ${SRCS} )
-
-#if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
-#	message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-#elseif(NOT APPLE)
-#        set_target_properties(randomplugin PROPERTIES NO_SONAME 1)
-#endif()
-#HPCC_ADD_LIBRARY( randomlib SHARED ${SRCS} )
 install ( TARGETS randomlib DESTINATION plugins )
-
 target_link_libraries(
 	randomlib
         jlib
 )
 
-#if(PLATFORM)
-#    install(
-#        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_randomplugin.ecllib
-#        DESTINATION plugins
-#        COMPONENT Runtime)
-#endif()

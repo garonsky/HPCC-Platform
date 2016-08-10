@@ -25,26 +25,16 @@
 project(randomplugin)
 
 if(RANDOMPLUGIN)
-    #ADD_PLUGIN(...) executes HPCC/cmake_modules/FindRANDOM_PLUGIN_DEP.cmake to find any required DEPendencies such
-    #as include files and libraries to link against. MAKE_RANDOMPLUGIN is set true if all the required dependencies
-    #set in HPCC/cmake_modules/FindRANDOM_PLUGIN_DEP.cmake are met.
-    #Both RANDOM_PLUGIN_DEP_INCLUDE_DIR and RANDOM_PLUGIN_DEP_LIBRARIES are also found and set in
-    #HPCC/cmake_modules/FindRANDOM_PLUGIN_DEP.cmake.
     ADD_PLUGIN(randomplugin PACKAGES RANDOM_PLUGIN_DEP MINVERSION 0.1.0)
 
     if(MAKE_RANDOMPLUGIN)
         set(
             SRCS
-            #Add all sources to be compiled here.
             randomplugin.hpp
             randomplugin.cpp)
 
         include_directories(
-            #Add any required HPCC include dirs here. RANDOM_PLUGIN_DEP_INCLUDE_DIR contains any and all external (non HPCC) paths.
             ./../../system/include
-            ./../../rtl/eclrtl
-            ./../../rtl/include
-            ./../../common/deftype
             ./../../system/jlib
             ${RANDOM_PLUGIN_DEP_INCLUDE_DIR})
 
@@ -63,22 +53,14 @@ if(RANDOMPLUGIN)
 
         target_link_libraries(
             randomplugin
-            #Add any required HPCC libraries to be linked against here. RANDOM_PLUGIN_DEP_LIBRARIES contains any and all external (non HPCC) libraries.
-            eclrtl
             jlib
             ${RANDOM_PLUGIN_DEP_LIBRARIES})
     endif()
 endif()
 
-#Here the ECL plugin/service definitions contained with *.ecllib are set to be installed with the platform regardless
-#of whether the plugin itself was configured to be built. This is because the plugin libraries are dynamically linked
-#with the platform such that ECL queries can be compiled without the plugin needing to be installed locally, e.g. as
-#it the case for eclserver. Adequate tests must be conducted to ensure against undefined references. In addition,
-#this means that any changes to the plugin/service definitions must be correlated with the correct platform build
-#version when installing.
-if(PLATFORM)
-    install(
-        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_randomplugin.ecllib
-        DESTINATION plugins
-        COMPONENT Runtime)
-endif()
+#if(PLATFORM)
+#    install(
+#        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_randomplugin.ecllib
+#        DESTINATION plugins
+#        COMPONENT Runtime)
+#endif()
