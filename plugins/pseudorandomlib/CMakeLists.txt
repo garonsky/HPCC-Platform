@@ -15,17 +15,17 @@
 ################################################################################
 
 
-# Component: randomlib 
+# Component: pseudorandomlib 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for randomlib
+#    Cmake Input File for pseudorandomlib
 #####################################################
 
-project( randomlib ) 
+project( pseudorandomlib ) 
 
 set (    SRCS 
-         randomlib.cpp 
+         pseudorandomlib.cpp 
     )
 
 include_directories ( 
@@ -35,10 +35,10 @@ include_directories (
 
 ADD_DEFINITIONS ( -DRANDOMLIB_EXPORTS -D_USRDLL )
 
-HPCC_ADD_LIBRARY( randomlib SHARED ${SRCS} )
-install ( TARGETS randomlib DESTINATION plugins )
+HPCC_ADD_LIBRARY( pseudorandomlib SHARED ${SRCS} )
+install ( TARGETS pseudorandomlib DESTINATION plugins )
 target_link_libraries(
-	randomlib
+	pseudorandomlib
         jlib
 )
 

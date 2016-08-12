@@ -14,53 +14,46 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: randomplugin
+# Component: pseudorandomplugin
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for randomplugin
+#    Cmake Input File for pseudorandomplugin
 #####################################################
 
-project(randomplugin)
+project(pseudorandomplugin)
 
-if(RANDOMPLUGIN)
-    ADD_PLUGIN(randomplugin PACKAGES RANDOM_PLUGIN_DEP MINVERSION 0.1.0)
+if(PSEUDO_RANDOMPLUGIN)
+    ADD_PLUGIN(pseudorandomplugin PACKAGES PSEUDO_RANDOM_PLUGIN_DEP MINVERSION 0.1.0)
 
-    if(MAKE_RANDOMPLUGIN)
+    if(MAKE_PSEUDO_RANDOMPLUGIN)
         set(
             SRCS
-            randomplugin.hpp
-            randomplugin.cpp)
+            pseudorandomplugin.hpp
+            pseudorandomplugin.cpp)
 
         include_directories(
             ./../../system/include
             ./../../system/jlib
-            ${RANDOM_PLUGIN_DEP_INCLUDE_DIR})
+            ${PSEUDO_RANDOM_PLUGIN_DEP_INCLUDE_DIR})
 
         add_definitions(-D_USRDLL -DECL_EXMAPLE_PLUGIN_EXPORTS)
 
-        HPCC_ADD_LIBRARY(randomplugin SHARED ${SRCS})
+        HPCC_ADD_LIBRARY(pseudorandomplugin SHARED ${SRCS})
         if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
             message(WARNING "Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
         elseif(NOT APPLE)
-            set_target_properties(randomplugin PROPERTIES NO_SONAME 1)
+            set_target_properties(pseudorandomplugin PROPERTIES NO_SONAME 1)
         endif()
 
         install(
-            TARGETS randomplugin
+            TARGETS pseudorandomplugin
             DESTINATION plugins)
 
         target_link_libraries(
-            randomplugin
+            pseudorandomplugin
             jlib
-            ${RANDOM_PLUGIN_DEP_LIBRARIES})
+            ${PSEUDO_RANDOM_PLUGIN_DEP_LIBRARIES})
     endif()
 endif()
-
-#if(PLATFORM)
-#    install(
-#        FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_randomplugin.ecllib
-#        DESTINATION plugins
-#        COMPONENT Runtime)
-#endif()
