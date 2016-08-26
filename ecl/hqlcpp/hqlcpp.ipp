@@ -1371,7 +1371,6 @@ public:
     void doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprSubString(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprSysFunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, IIdAtom * funcName);
-    void doBuildExprPseudoRandomFunc(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, IIdAtom * funcName);
     void doBuildExprTransfer(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprTrim(BuildCtx & ctx, IHqlExpression * target, CHqlBoundExpr & tgt);
     void doBuildExprTrunc(BuildCtx & ctx, IHqlExpression * target, CHqlBoundExpr & tgt);
