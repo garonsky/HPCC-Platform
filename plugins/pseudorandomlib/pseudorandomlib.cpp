@@ -46,7 +46,7 @@ PSEUDO_RANDOMLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->moduleName = "lib_pseudorandomlib";
     pb->ECL = EclDefinition;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
-    pb->description = "RandomLib pseudorandom services library";
+    pb->description = "PsuedoRandomLib pseudorandom services library";
     return true;
 }
 
@@ -59,7 +59,7 @@ PSEUDO_RANDOMLIB_API void setPluginContext(IPluginContext * _ctx) { parentCtx = 
 
 //-------------------------------------------------------------------------------------------------------------------------------------------
 
-namespace nsRandomLib
+namespace nsPseudoRandomLib
 {
 
 #ifdef __APPLE__

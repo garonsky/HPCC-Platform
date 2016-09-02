@@ -36,7 +36,7 @@ ECL_PSEUDO_RANDOM_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBloc
     return true;
 }
 
-namespace RandomPlugin {
+namespace nsPsuedoRandomPlugin {
 
 ECL_PSEUDO_RANDOM_PLUGIN_API unsigned ECL_PSEUDO_RANDOM_PLUGIN_CALL prGetNextPseudoRandomNumberUniformDistribution(unsigned engine, unsigned lower_bound, unsigned upper_bound)
 {

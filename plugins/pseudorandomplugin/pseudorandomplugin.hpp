@@ -41,7 +41,7 @@ extern "C"
 
 extern "C++"
 {
-namespace RandomPlugin {
+namespace nsPseudoRandomPlugin {
     //--------------------------SET----------------------------------------
 //    ECL_RANDOM_PLUGIN_API unsigned ECL_RANDOM_PLUGIN_CALL func1  (ICodeContext * _ctx, const char * param1, const char * param2, unsigned param3);
 //    ECL_RANDOM_PLUGIN_API void ECL_RANDOM_PLUGIN_CALL func2 (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * param1, const char * param2, size32_t param3ValueLength, const char * param3Value);

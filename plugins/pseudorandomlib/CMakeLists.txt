@@ -15,21 +15,21 @@
 ################################################################################
 
 
-# Component: pseudorandomlib 
+# Component: pseudorandomlib
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for pseudorandomlib
 #####################################################
 
-project( pseudorandomlib ) 
+project( pseudorandomlib )
 
-set (    SRCS 
-         pseudorandomlib.cpp 
+set (    SRCS
+         pseudorandomlib.cpp
     )
 
-include_directories ( 
-         ./../../system/include 
+include_directories (
+         ./../../system/include
          ./../../system/jlib
     )
 
