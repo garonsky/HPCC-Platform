@@ -402,6 +402,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="addressCleaner" type="addressCleanerType" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Specifies the address cleaner component.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="pluginsPath" type="relativePath" use="optional" default="${PLUGINS_PATH}">
         <xs:annotation>
           <xs:appinfo>

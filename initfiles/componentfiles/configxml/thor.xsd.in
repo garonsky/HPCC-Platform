@@ -367,6 +367,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="addressCleaner" type="addressCleanerType" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Specifies the address cleaner component.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="daliServers" type="daliServersType" use="required">
         <xs:annotation>
           <xs:appinfo>
