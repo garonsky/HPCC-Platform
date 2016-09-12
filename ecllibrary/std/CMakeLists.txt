@@ -26,7 +26,7 @@ set(
     Metaphone.ecl
     Str.ecl
     Uni.ecl
-    Random.ecl
+    PseudoRandom.ecl
     )
 
 foreach(module ${SRCS})

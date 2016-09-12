@@ -33,7 +33,7 @@ include_directories (
          ./../../system/jlib
     )
 
-ADD_DEFINITIONS ( -DRANDOMLIB_EXPORTS -D_USRDLL )
+ADD_DEFINITIONS ( -DPSEUDO_RANDOMLIB_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( pseudorandomlib SHARED ${SRCS} )
 install ( TARGETS pseudorandomlib DESTINATION plugins )

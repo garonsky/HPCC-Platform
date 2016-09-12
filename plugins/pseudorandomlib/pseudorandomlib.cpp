@@ -32,8 +32,11 @@ static const char * HoleDefinition = NULL;
 
 static const char * EclDefinition =
 "export RandomLib := SERVICE\n"
-"  unsigned4 GetNextPseudoRandomNumberUniformDistribution(unsigned4 engine, unsigned4 lower_bound, unsigned4 upper_bound) : cpp, pure,fold,entrypoint='prGetNextPseudoRandomNumberUniformDistribution'; \n"
-
+"  UNSIGNED4 nextUniformRandom(UNSIGNED4 engine, UNSIGNED4 lower_bound, UNSIGNED4 upper_bound) : cpp,entrypoint='prGetNextPseudoRandomNumberUniformDistribution'; \n"
+"  UNSIGNED4 nextBinomialRandom(UNSIGNED4 engine, CONST REAL8 probability, UNSIGNED4 upper_bound) : cpp,entrypoint='prGetNextPseudoRandomNumberBinomialDistribution'; \n"
+"  UNSIGNED4 nextNegativeBinomialRandom(UNSIGNED4 engine, CONST REAL8 probability, UNSIGNED4 upper_bound) : cpp,entrypoint='prGetNextPseudoRandomNumberNegativeBinomialDistribution'; \n"
+"  UNSIGNED4 nextGeometricRandom(UNSIGNED4 engine, CONST REAL8 probability) : cpp,entrypoint='prGetNextPseudoRandomNumberGeometricDistribution'; \n"
+"  UNSIGNED4 nextPoissonRandom(UNSIGNED4 engine, CONST REAL8 mean) : cpp,entrypoint='prGetNextPseudoRandomNumberPoissonDistribution'; \n"
 "END;";
 
 PSEUDO_RANDOMLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)

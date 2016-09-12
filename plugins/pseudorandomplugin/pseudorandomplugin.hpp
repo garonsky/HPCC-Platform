@@ -15,19 +15,19 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef ECL_RANDOM_PLUGIN_SYNC_INCL
-#define ECL_RANDOM_PLUGIN_SYNC_INCL
+#ifndef ECL_PSEUDO_RANDOM_PLUGIN_SYNC_INCL
+#define ECL_PSEUDO_RANDOM_PLUGIN_SYNC_INCL
 
 #ifdef _WIN32
-#define ECL_RANDOM_PLUGIN_CALL _cdecl
-#ifdef ECL_RANDOM_PLUGIN_EXPORTS
-#define ECL_RANDOM_PLUGIN_API __declspec(dllexport)
+#define ECL_PSEUDO_RANDOM_PLUGIN_CALL _cdecl
+#ifdef ECL_PSEUDO_RANDOM_PLUGIN_EXPORTS
+#define ECL_PSEUDO_RANDOM_PLUGIN_API __declspec(dllexport)
 #else
-#define ECL_RANDOM_PLUGIN_API __declspec(dllimport)
+#define ECL_PSEUDO_RANDOM_PLUGIN_API __declspec(dllimport)
 #endif
 #else
-#define ECL_RANDOM_PLUGIN_CALL
-#define ECL_RANDOM_PLUGIN_API
+#define ECL_PSEUDO_RANDOM_PLUGIN_CALL
+#define ECL_PSEUDO_RANDOM_PLUGIN_API
 #endif
 
 #include "hqlplugins.hpp"
@@ -35,18 +35,18 @@
 
 extern "C"
 {
-    ECL_RANDOM_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
-    ECL_RANDOM_PLUGIN_API void setPluginContext(IPluginContext * _ctx);
+    ECL_PSEUDO_RANDOM_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+    ECL_PSEUDO_RANDOM_PLUGIN_API void setPluginContext(IPluginContext * _ctx);
 }
 
 extern "C++"
 {
 namespace nsPseudoRandomPlugin {
     //--------------------------SET----------------------------------------
-//    ECL_RANDOM_PLUGIN_API unsigned ECL_RANDOM_PLUGIN_CALL func1  (ICodeContext * _ctx, const char * param1, const char * param2, unsigned param3);
-//    ECL_RANDOM_PLUGIN_API void ECL_RANDOM_PLUGIN_CALL func2 (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * param1, const char * param2, size32_t param3ValueLength, const char * param3Value);
+//    ECL_PSEUDO_RANDOM_PLUGIN_API unsigned ECL_PSEUDO_RANDOM_PLUGIN_CALL func1  (ICodeContext * _ctx, const char * param1, const char * param2, unsigned param3);
+//    ECL_PSEUDO_RANDOM_PLUGIN_API void ECL_PSEUDO_RANDOM_PLUGIN_CALL func2 (ICodeContext * _ctx, size32_t & returnLength, char * & returnValue, const char * param1, const char * param2, size32_t param3ValueLength, const char * param3Value);
 
-    ECL_RANDOM_PLUGIN_API unsigned ECL_RANDOM_PLUGIN_CALL prGetNextPseudoRandomNumberUniformDistribution(/*enum IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine*/unsigned engine, unsigned lower_bound, unsigned upper_bound);
+    ECL_PSEUDO_RANDOM_PLUGIN_API unsigned ECL_PSEUDO_RANDOM_PLUGIN_CALL prGetNextPseudoRandomNumberUniformDistribution(/*enum IPseudoRandomNumberGenerator::ePseudoRandomNumberEngine*/unsigned engine, unsigned lower_bound, unsigned upper_bound);
 
 }
 }

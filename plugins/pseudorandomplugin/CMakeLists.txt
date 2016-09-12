@@ -38,7 +38,7 @@ if(PSEUDO_RANDOMPLUGIN)
             ./../../system/jlib
             ${PSEUDO_RANDOM_PLUGIN_DEP_INCLUDE_DIR})
 
-        add_definitions(-D_USRDLL -DECL_EXMAPLE_PLUGIN_EXPORTS)
+        add_definitions(-D_USRDLL -DPSEUDO_RANDOM_PLUGIN_EXPORTS)
 
         HPCC_ADD_LIBRARY(pseudorandomplugin SHARED ${SRCS})
         if(${CMAKE_VERSION} VERSION_LESS "2.8.9")
