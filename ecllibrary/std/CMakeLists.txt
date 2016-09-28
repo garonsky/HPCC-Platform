@@ -27,6 +27,7 @@ set(
     Str.ecl
     Uni.ecl
     PseudoRandom.ecl
+    PseudoRandomEngines.ecl
     )
 
 foreach(module ${SRCS})
