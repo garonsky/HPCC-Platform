@@ -50,6 +50,9 @@
 #include <map>
 #include "build-config.h"
 #endif
+#ifdef __APPLE__
+#include <mutex>
+#endif
 
 #include "portlist.h"
 
@@ -816,7 +819,11 @@ public:
 
 };
 
+#ifdef __APPLE__
+__thread Owned<IRandomNumberGenerator> RandomMain = createRandomNumberGenerator();
+#else
 thread_local Owned<IRandomNumberGenerator> RandomMain = createRandomNumberGenerator();
+#endif
 
 unsigned getRandom()
 {
