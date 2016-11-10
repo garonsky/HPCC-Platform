@@ -5160,6 +5160,23 @@ bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &
         }
       }
     }
+    /*else if (((processName && *processName) && (strcmp(processName,"ESPLoggingAgent") == 0) ||
+             strcmp(processName,"MySQLLoggingAgent") == 0 || strcmp(processName,"CassandraLoggingAgent") == 0)) // add new logging agents as neeed
+    {
+        if (!strcmp(rowType,"FieldMap"))
+        {
+            pCompTree = createPTree("FieldMap");
+            IPropertyTree* pComponent = pEnvRoot->queryPropTree(xpath.str());
+            pComponent->addPropTree("FieldMap", pCompTree);
+        }
+        else if (!strcmp(rowType,"LogGroup"))
+        {
+            pCompTree = createPTree("LogGroup");
+            IPropertyTree* pComponent = pEnvRoot->queryPropTree(xpath.str());
+            pComponent->addPropTree("LogGroup", pCompTree);
+//            break;
+        }
+    }*/
     else
     {
       xpath.clear().appendf("./Software/%s[@name='%s']", processName, name);
@@ -5206,8 +5223,22 @@ bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &
           }
         }
 
-        IPropertyTree* pComponent = pEnvRoot->queryPropTree(xpath.str());   
-        IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName());
+        IPropertyTree* pComponent = pEnvRoot->queryPropTree(xpath.str());
+        IPropertyTree* pCompTree = nullptr;
+        if (!strcmp(rowType,"FieldMap"))
+        {
+            pCompTree = createPTree("FieldMap");
+
+            /*
+            StringBuffer s1("s_1");
+            const char *pName = getUniqueName2(pComponent, s1, xpath.str(), "name"); // will need to modify this to work
+            */
+            pCompTree->addProp("@name",pName);
+            pComponent->addPropTree("FieldMap", pCompTree);
+            break;
+        }
+        else
+            pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName());
         StringBuffer sb(rowType);
 
         if (!strncmp(sb.str(), "_", 1))
@@ -5356,7 +5387,25 @@ bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &
         }
       }
 
-      if (pComponent)
+      if (((processName && *processName) && (strcmp(processName,"ESPLoggingAgent") == 0) ||
+                          strcmp(processName,"MySQLLoggingAgent") == 0 || strcmp(processName,"CassandraLoggingAgent") == 0)) // add new logging agents as neeed
+      {
+          const char* params = pRow->queryProp("@params");
+          StringBuffer decodedParams(params);
+          decodedParams.replaceString("::", "\n");
+
+          Owned<IProperties> pParams = createProperties();
+          pParams->loadProps(decodedParams.str());
+
+          const char* pszCompType = pParams->queryProp("pcType");
+          const char* pszCompName = pParams->queryProp("pcName");
+          const char* pszSubType = pParams->queryProp("subType");
+          const char* pszSubTypeKey = pParams->queryProp("subTypeKey");
+
+          //VStringBuffer removeXPath("./Software/%s[@name='%s']/")  // need to create proper xpath from variables above
+
+      }
+      else if (pComponent)
       {
         xpath.append("[1]");
         pComponent->removeTree(pComponent->queryPropTree(xpath.str()));
